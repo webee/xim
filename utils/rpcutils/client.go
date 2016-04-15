@@ -38,6 +38,7 @@ func Connect(netAddr *netutils.NetAddr) (client *rpc.Client, err error) {
 	if err != nil {
 		log.Printf("rpc.Dial(%s) error: %s.\n", netAddr, err)
 	}
+	log.Printf("rpc %s connected.\n", netAddr)
 	return
 }
 
@@ -49,7 +50,6 @@ func (cli *RPCClient) RetryingReconnect() {
 			log.Printf("retry connecting %s.\n", netAddr)
 			if client, err := Connect(netAddr); err == nil {
 				cli.client = client
-				log.Printf("rpc %s connected.\n", netAddr)
 			}
 		}
 		select {
@@ -68,6 +68,21 @@ func (cli *RPCClient) Ping() error {
 	}
 	call := <-cli.client.Go("RPCServer.Ping", new(NoArgs), new(NoReply), nil).Done
 	return call.Error
+}
+
+// Time get server's time.
+func (cli *RPCClient) Time() (t time.Time, err error) {
+	if cli.client == nil {
+		err = errors.New("rpc client not initialized")
+		return
+	}
+	reply := new(RPCServerTimeReply)
+	call := <-cli.client.Go("RPCServer.Time", new(NoArgs), reply, nil).Done
+	err = call.Error
+	if err == nil {
+		t = reply.T
+	}
+	return
 }
 
 // Close close rpc client.

@@ -75,6 +75,7 @@ func (s *WebsocketServer) initHTTPServer() {
 
 // ListenAndServe listens on the TCP network address s.confg.Addr
 func (s *WebsocketServer) ListenAndServe() error {
+	log.Println("http listening:", s.config.Addr)
 	return s.httpServer.ListenAndServe()
 }
 
