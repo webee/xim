@@ -17,5 +17,5 @@ func main() {
 
 	//setupServer()
 	startWebsocket()
-	InitSignal()
+	setupSignal()
 }

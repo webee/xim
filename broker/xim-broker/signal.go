@@ -7,8 +7,8 @@ import (
 	"syscall"
 )
 
-// InitSignal register signals handler.
-func InitSignal() {
+// setupSignal register signals handler and waiting for.
+func setupSignal() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	for {
