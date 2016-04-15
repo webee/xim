@@ -2,6 +2,7 @@ package netutils
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -28,4 +29,8 @@ func ParseNetAddr(str string) (netAddr *NetAddr, err error) {
 		LAddr:   str[idx+1:],
 	}
 	return
+}
+
+func (netAddr *NetAddr) String() string {
+	return fmt.Sprintf("%s@%s", netAddr.Network, netAddr.LAddr)
 }

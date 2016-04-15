@@ -1,4 +1,4 @@
-package rpcservice
+package rpcutils
 
 import (
 	"log"

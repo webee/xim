@@ -8,7 +8,7 @@ import (
 
 // UserBoard records the relations between users and connections.
 type UserBoard struct {
-	rwlock  sync.RWMutex
+	sync.RWMutex
 	mapping map[string]map[string]map[string]MsgBroker
 }
 
@@ -27,8 +27,8 @@ func (ub *UserBoard) Register(uid *UserIdentity, from string, broker MsgBroker) 
 		users map[string]map[string]MsgBroker
 		froms map[string]MsgBroker
 	)
-	ub.rwlock.Lock()
-	defer ub.rwlock.Unlock()
+	ub.Lock()
+	defer ub.Unlock()
 
 	if users, ok = ub.mapping[uid.org]; !ok {
 		users = make(map[string]map[string]MsgBroker)
@@ -60,8 +60,8 @@ func (ub *UserBoard) Unregister(uid *UserIdentity, from string) error {
 		users map[string]map[string]MsgBroker
 		froms map[string]MsgBroker
 	)
-	ub.rwlock.Lock()
-	defer ub.rwlock.Unlock()
+	ub.Lock()
+	defer ub.Unlock()
 
 	if users, ok = ub.mapping[uid.org]; ok {
 		if froms, ok = users[uid.user]; ok {
@@ -91,8 +91,8 @@ func (ub *UserBoard) GetUserBroker(uid *UserIdentity, from string) (MsgBroker, e
 		froms  map[string]MsgBroker
 		broker MsgBroker
 	)
-	ub.rwlock.RLock()
-	defer ub.rwlock.RUnlock()
+	ub.RLock()
+	defer ub.RUnlock()
 
 	if users, ok = ub.mapping[uid.org]; ok {
 		if froms, ok = users[uid.user]; ok {

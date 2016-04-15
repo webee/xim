@@ -91,7 +91,7 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 	var (
 		err      error
 		msgQueue = make(chan *proto.Msg, 10)
-		finish   = make(chan bool)
+		finish   = make(chan bool, 1)
 	)
 
 	log.Println("conn: ", c.conn.RemoteAddr())

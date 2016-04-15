@@ -7,5 +7,5 @@ import (
 
 // StartRPCServer serve rpc server at netAddr.
 func StartRPCServer(netAddr *netutils.NetAddr) {
-	rpcutils.RegisterAndStartRPCServer(netAddr.Network, netAddr.LAddr, new(RPCServer))
+	rpcutils.RegisterAndStartRPCServer(netAddr.Network, netAddr.LAddr, new(rpcutils.RPCServer))
 }
