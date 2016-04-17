@@ -12,7 +12,7 @@ import (
 // RPCClient represents rpc client.
 type RPCClient struct {
 	netAddr *netutils.NetAddr
-	client  *rpc.Client
+	Client  *rpc.Client
 	quit    chan bool
 }
 
@@ -23,7 +23,7 @@ func NewRPCClient(netAddr *netutils.NetAddr, retry bool) (client *RPCClient, err
 		quit:    make(chan bool, 1),
 	}
 	rpcClient, err := Connect(netAddr)
-	client.client = rpcClient
+	client.Client = rpcClient
 	if retry {
 		go client.RetryingReconnect()
 		return client, nil
@@ -49,7 +49,7 @@ func (cli *RPCClient) RetryingReconnect() {
 		if err := cli.Ping(); err != nil {
 			log.Printf("retry connecting %s.\n", netAddr)
 			if client, err := Connect(netAddr); err == nil {
-				cli.client = client
+				cli.Client = client
 			}
 		}
 		select {
@@ -63,21 +63,21 @@ func (cli *RPCClient) RetryingReconnect() {
 
 // Ping call service's ping method.
 func (cli *RPCClient) Ping() error {
-	if cli.client == nil {
+	if cli.Client == nil {
 		return errors.New("rpc client not initialized")
 	}
-	call := <-cli.client.Go("RPCServer.Ping", new(NoArgs), new(NoReply), nil).Done
+	call := <-cli.Client.Go("RPCServer.Ping", new(NoArgs), new(NoReply), nil).Done
 	return call.Error
 }
 
 // Time get server's time.
 func (cli *RPCClient) Time() (t time.Time, err error) {
-	if cli.client == nil {
+	if cli.Client == nil {
 		err = errors.New("rpc client not initialized")
 		return
 	}
 	reply := new(RPCServerTimeReply)
-	call := <-cli.client.Go("RPCServer.Time", new(NoArgs), reply, nil).Done
+	call := <-cli.Client.Go("RPCServer.Time", new(NoArgs), reply, nil).Done
 	err = call.Error
 	if err == nil {
 		t = reply.T
@@ -87,7 +87,7 @@ func (cli *RPCClient) Time() (t time.Time, err error) {
 
 // Close close rpc client.
 func (cli *RPCClient) Close() error {
-	err := cli.client.Close()
+	err := cli.Client.Close()
 	cli.quit <- true
 	return err
 }

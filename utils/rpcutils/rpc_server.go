@@ -9,6 +9,11 @@ import (
 type RPCServer struct {
 }
 
+// RPCServerTimeReply is the RPCServer.Time reply type.
+type RPCServerTimeReply struct {
+	T time.Time
+}
+
 // RPCServer methods.
 const (
 	RPCServerPing = "RPCServer.Ping"

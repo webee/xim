@@ -1,69 +1,86 @@
 package proto
 
-import "encoding/json"
-
+// msg types.
 const (
 	HelloMsg   = "hello"
 	WelcomeMsg = "welcome"
 	PingMsg    = "ping"
 	PongMsg    = "pong"
 	ByeMsg     = "bye"
-	MsgMsg     = "msg"
 )
 
-// BaseMsg is the base msg type.
-type Base struct {
+// Msg is the base user send msg.
+type Msg struct {
+	ID   int    `json:"id"`
 	Type string `json:"type"`
+}
+
+// MsgWithBytes is msg with full msg bytes.
+type MsgWithBytes struct {
+	Msg
+	Bytes []byte
+}
+
+// Reply is the base server reply msg.
+type Reply struct {
+	ReplyTo int    `json:"reply_to"`
+	Type    string `json:"type"`
 }
 
 // Hello is the auth msg.
 type Hello struct {
-	Base
+	Msg
 	Token string `json:"token"`
 }
 
 // Welcome is the success authentication msg.
 type Welcome struct {
-	Base
+	Reply
 }
 
 // Ping is the heartbeat msg.
 type Ping struct {
-	Base
+	Msg
 }
 
 // Pong is the heartbeat reply msg.
 type Pong struct {
-	Base
+	Reply
 }
 
 // Bye is the msg before close.
 type Bye struct {
-	Base
+	Msg
 }
 
-// Msg is the real message msg.
-type Msg struct {
-	Base
-	Msg json.RawMessage `json:"msg"`
+// ReplyBye is the reply msg for bye.
+type ReplyBye struct {
+	Reply
 }
 
-// MsgType return the base msg type.
-func (b *Base) MsgType() string {
-	return b.Type
+// ReplyError is the reply msg when error.
+type ReplyError struct {
+	Reply
+	Ok     bool   `json:"ok"`
+	Reason string `json:"reason"`
 }
 
 // NewWelcome create a welcome msg.
-func NewWelcome() *Welcome {
-	return &Welcome{Base{Type: HelloMsg}}
-}
-
-// NewBye create a bye msg.
-func NewBye() *Bye {
-	return &Bye{Base{Type: ByeMsg}}
+func NewWelcome(replyTo int) *Welcome {
+	return &Welcome{Reply{ReplyTo: replyTo, Type: WelcomeMsg}}
 }
 
 // NewPong create a pong msg.
-func NewPong() *Pong {
-	return &Pong{Base{Type: PongMsg}}
+func NewPong(replyTo int) *Pong {
+	return &Pong{Reply{ReplyTo: replyTo, Type: PongMsg}}
+}
+
+// NewReplyBye create a reply bye msg.
+func NewReplyBye(replyTo int) *ReplyBye {
+	return &ReplyBye{Reply{ReplyTo: replyTo, Type: ByeMsg}}
+}
+
+// NewReplyError create a reply error msg.
+func NewReplyError(replyTo int, t, reason string) *ReplyError {
+	return &ReplyError{Reply{ReplyTo: replyTo, Type: t}, false, reason}
 }
