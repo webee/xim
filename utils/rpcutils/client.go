@@ -37,8 +37,9 @@ func Connect(netAddr *netutils.NetAddr) (client *rpc.Client, err error) {
 	client, err = rpc.Dial(netAddr.Network, netAddr.LAddr)
 	if err != nil {
 		log.Printf("rpc.Dial(%s) error: %s.\n", netAddr, err)
+	} else {
+		log.Printf("rpc %s connected.\n", netAddr)
 	}
-	log.Printf("rpc %s connected.\n", netAddr)
 	return
 }
 

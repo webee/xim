@@ -11,6 +11,7 @@ func main() {
 	if args.debug {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
+	initDispatcherRPC()
 	startRPCService()
 	setupSignal()
 }

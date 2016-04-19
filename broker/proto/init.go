@@ -1,5 +1,7 @@
 package proto
 
+import "encoding/json"
+
 // msg types.
 const (
 	HelloMsg   = "hello"
@@ -7,12 +9,14 @@ const (
 	PingMsg    = "ping"
 	PongMsg    = "pong"
 	ByeMsg     = "bye"
+	ErrorReply = "error"
 )
 
 // Msg is the base user send msg.
 type Msg struct {
-	ID   int    `json:"id"`
-	Type string `json:"type"`
+	ID   int             `json:"id"`
+	Type string          `json:"type,omitempty"`
+	Msg  json.RawMessage `json:"msg,omitempty"`
 }
 
 // MsgWithBytes is msg with full msg bytes.
@@ -23,8 +27,10 @@ type MsgWithBytes struct {
 
 // Reply is the base server reply msg.
 type Reply struct {
-	ReplyTo int    `json:"reply_to"`
-	Type    string `json:"type"`
+	ReplyTo int             `json:"reply_to"`
+	Type    string          `json:"type,omitempty"`
+	Msg     json.RawMessage `json:"msg,omitempty"`
+	Err     string          `json:"err,omitempty"`
 }
 
 // Hello is the auth msg.
@@ -33,54 +39,27 @@ type Hello struct {
 	Token string `json:"token"`
 }
 
-// Welcome is the success authentication msg.
-type Welcome struct {
-	Reply
-}
-
-// Ping is the heartbeat msg.
-type Ping struct {
-	Msg
-}
-
-// Pong is the heartbeat reply msg.
-type Pong struct {
-	Reply
-}
-
-// Bye is the msg before close.
-type Bye struct {
-	Msg
-}
-
-// ReplyBye is the reply msg for bye.
-type ReplyBye struct {
-	Reply
-}
-
-// ReplyError is the reply msg when error.
-type ReplyError struct {
-	Reply
-	Ok     bool   `json:"ok"`
-	Reason string `json:"reason"`
+// NewReply create a reply msg.
+func NewReply(replyTo int, msgType string, msg json.RawMessage) *Reply {
+	return &Reply{ReplyTo: replyTo, Type: msgType, Msg: msg}
 }
 
 // NewWelcome create a welcome msg.
-func NewWelcome(replyTo int) *Welcome {
-	return &Welcome{Reply{ReplyTo: replyTo, Type: WelcomeMsg}}
+func NewWelcome(replyTo int) *Reply {
+	return NewReply(replyTo, WelcomeMsg, nil)
 }
 
 // NewPong create a pong msg.
-func NewPong(replyTo int) *Pong {
-	return &Pong{Reply{ReplyTo: replyTo, Type: PongMsg}}
+func NewPong(replyTo int) *Reply {
+	return NewReply(replyTo, PongMsg, nil)
 }
 
 // NewReplyBye create a reply bye msg.
-func NewReplyBye(replyTo int) *ReplyBye {
-	return &ReplyBye{Reply{ReplyTo: replyTo, Type: ByeMsg}}
+func NewReplyBye(replyTo int) *Reply {
+	return NewReply(replyTo, ByeMsg, nil)
 }
 
-// NewReplyError create a reply error msg.
-func NewReplyError(replyTo int, t, reason string) *ReplyError {
-	return &ReplyError{Reply{ReplyTo: replyTo, Type: t}, false, reason}
+// NewErrorReply create a error reply msg.
+func NewErrorReply(replyTo int, err string) *Reply {
+	return &Reply{ReplyTo: replyTo, Type: ErrorReply, Err: err}
 }

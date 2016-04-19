@@ -19,9 +19,9 @@ var (
 	defaultWebsocketServerConfig = WebsocketServerConfig{
 		Testing:          false,
 		Addr:             "localhost:2780",
-		AuthTimeout:      5 * time.Second,
-		HeartBeatTimeout: 12 * time.Second,
-		WriteTimeout:     5 * time.Second,
+		AuthTimeout:      50 * time.Second,
+		HeartBeatTimeout: 120 * time.Second,
+		WriteTimeout:     50 * time.Second,
 	}
 )
 

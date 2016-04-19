@@ -15,17 +15,21 @@ func RegisterAndStartRPCServer(network, laddr string, rcvrs ...interface{}) {
 }
 
 func rpcListen(network, laddr string) {
-	l, err := net.Listen(network, laddr)
-	if err != nil {
-		log.Fatalf("net.Listen(%q, %q) error(%v)\n", network, laddr, err)
-	}
-	// if process exit, then close the rpc bind
-	defer func() {
-		if err := l.Close(); err != nil {
-			log.Panicf("listener.Close() error(%v).\n", err)
+	for {
+		l, err := net.Listen(network, laddr)
+		if err != nil {
+			log.Fatalf("net.Listen(%q, %q) error(%v)\n", network, laddr, err)
 		}
-		log.Printf("listen %q %q close.\n", network, laddr)
-	}()
-	log.Printf("rpc listen %s@%s.\n", network, laddr)
-	rpc.Accept(l)
+		func() {
+			// if process exit, then close the rpc bind
+			defer func() {
+				if err := l.Close(); err != nil {
+					log.Panicf("listener.Close() error(%v).\n", err)
+				}
+				log.Printf("listen %q %q close.\n", network, laddr)
+			}()
+			log.Printf("rpc listen %s@%s.\n", network, laddr)
+			rpc.Accept(l)
+		}()
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"xim/broker/proto"
+	"xim/logic"
 
 	"github.com/bitly/go-simplejson"
 	"github.com/gorilla/websocket"
@@ -93,8 +94,8 @@ func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 	var (
 		err           error
-		brokerMsgChan = make(chan *proto.MsgWithBytes, 15)
-		logicMsgChan  = make(chan *proto.MsgWithBytes, 10)
+		brokerMsgChan = make(chan *proto.Msg, 15)
+		logicMsgChan  = make(chan *proto.Msg, 10)
 		logicFinish   = make(chan bool, 1)
 	)
 
@@ -151,7 +152,7 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 }
 
 // ProcessLogicMsg process logic messages.
-func (c *WsConn) ProcessLogicMsg(q <-chan *proto.MsgWithBytes, finish chan bool) {
+func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg, finish chan bool) {
 	for {
 		msg := <-q
 		if msg == nil {
@@ -160,14 +161,20 @@ func (c *WsConn) ProcessLogicMsg(q <-chan *proto.MsgWithBytes, finish chan bool)
 			return
 		}
 
-		log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type, string(msg.Bytes))
+		log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type, string(msg.Msg))
 
-		bytes, err := HandleLogicMsg("#1", "AAA", "webee", "#1", msg.Bytes)
+		user := logic.UserLocation{
+			Broker:   "broker.1",
+			Org:      "AAA",
+			User:     "webee",
+			Instance: "1",
+		}
+		replyMsg, err := HandleLogicMsg(user, msg.Type, msg.Msg)
 		// TODO handle send error.
 		if err != nil {
-			_ = c.conn.WriteJSON(proto.NewReplyError(msg.ID, msg.Type, "error"))
+			_ = c.WriteMsg(proto.NewErrorReply(msg.ID, err.Error()))
 		} else {
-			_ = c.conn.WriteMessage(websocket.TextMessage, bytes)
+			_ = c.WriteMsg(proto.NewReply(msg.ID, msg.Type, replyMsg))
 		}
 	}
 }
@@ -189,13 +196,19 @@ func (c *WsConn) authenticate() (err error) {
 }
 
 // ReadMsg read json message in a heartbeat duration.
-func (c *WsConn) ReadMsg() (msg *proto.MsgWithBytes, err error) {
+func (c *WsConn) ReadMsg() (msg *proto.Msg, err error) {
 	//jd, err = c.ReadJSONData(c.s.config.HeartBeatTimeout)
 	//msg.ID, err = jd.Get("id").Int()
 	//msg.Type, err = jd.Get("type").String()
-	msg = new(proto.MsgWithBytes)
-	bytes, err := c.ReadJSON(msg, c.s.config.HeartBeatTimeout)
-	msg.Bytes = bytes
+
+	// msg with bytes
+	/*
+		msg = new(proto.MsgWithBytes)
+		bytes, err := c.ReadJSON(msg, c.s.config.HeartBeatTimeout)
+		msg.Bytes = bytes
+	*/
+	msg = new(proto.Msg)
+	_, err = c.ReadJSON(msg, c.s.config.HeartBeatTimeout)
 	return
 }
 
@@ -214,9 +227,13 @@ func (c *WsConn) WriteMsg(v interface{}) (err error) {
 // WriteJSON write json message in a timeout duration.
 func (c *WsConn) WriteJSON(v interface{}, timeout time.Duration) error {
 	conn := c.conn
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
 	c.wLock.Lock()
 	conn.SetWriteDeadline(time.Now().Add(timeout))
-	err := conn.WriteJSON(v)
+	err = conn.WriteMessage(websocket.TextMessage, data)
 	conn.SetWriteDeadline(time.Time{})
 	c.wLock.Unlock()
 	if err != nil {
