@@ -43,7 +43,7 @@ func (l *RPCLogic) HandleMsg(args *RPCLogicHandleMsgArgs, reply *RPCLogicHandleM
 	case MsgMsgType:
 		reply.Msg, err = handleTextMsg(args.User, args.Msg)
 		if err != nil {
-			return errors.New(ErrEncodingMsg)
+			return errors.New(ErrHandlingMsg)
 		}
 	default:
 		return errors.New(ErrUnknownMsgType)
@@ -73,11 +73,12 @@ func handleTextMsg(user logic.UserLocation, msg json.RawMessage) (replyMsg json.
 	// check org.user permission for channel.
 
 	toSendMsg, _ := json.Marshal(&map[string]interface{}{
-		"channel": channel,
-		"txt":     txt,
+		"txt": txt,
 	})
-	log.Println("put", toSendMsg)
 	msgID, err = dispatcher.PutMsg(user, channel, toSendMsg)
+	if err != nil {
+		return
+	}
 	replyMsg, err = json.Marshal(&map[string]interface{}{
 		"txt": txt,
 		"id":  msgID,

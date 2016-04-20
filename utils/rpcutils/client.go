@@ -57,7 +57,7 @@ func (cli *RPCClient) RetryingReconnect() {
 		case <-cli.quit:
 			log.Printf("quit retry connecting %s.\n", netAddr)
 			return
-		case <-time.After(2 * time.Second):
+		case <-time.After(10 * time.Second):
 		}
 	}
 }

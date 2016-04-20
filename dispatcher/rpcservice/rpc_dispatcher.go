@@ -1,31 +1,28 @@
 package rpcservice
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
-	"math/rand"
+	"sync"
+	"time"
+	"xim/dispatcher/msgchan"
 	"xim/logic"
-
-	"gopkg.in/redsync.v1"
 )
 
 // RPCDispatcher represents the rpc dispatcher.
 type RPCDispatcher struct {
-	redsync *redsync.Redsync
 }
 
 // NewRPCDispatcher returns a new rpc.
-func NewRPCDispatcher(redsync *redsync.Redsync) *RPCDispatcher {
-	return &RPCDispatcher{
-		redsync: redsync,
-	}
+func NewRPCDispatcher() *RPCDispatcher {
+	return &RPCDispatcher{}
 }
 
 // RPCDispatcherPutMsgArgs is the msg args.
 type RPCDispatcherPutMsgArgs struct {
 	User    logic.UserLocation
 	Channel string
-	Msg     []byte
+	Msg     json.RawMessage
 }
 
 // RPCDispatcherPutMsgReply is the msg reply.
@@ -38,10 +35,37 @@ const (
 	RPCDispatcherPutMsg = "RPCDispatcher.PutMsg"
 )
 
+var (
+	rwmx     = new(sync.RWMutex)
+	channels = make(map[string]*msgchan.MsgChan)
+)
+
 // PutMsg put msg to channel.
 func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatcherPutMsgReply) error {
 	var err error
 	log.Println(RPCDispatcherPutMsg, "is called:", args.User, args.Channel, string(args.Msg))
-	reply.MsgID = fmt.Sprint(rand.Intn(100000))
+	msgChan := getMsgChan(args.Channel)
+	reply.MsgID, err = msgChan.Put(args.User, args.Msg)
 	return err
+}
+
+func getMsgChan(channel string) (msgChan *msgchan.MsgChan) {
+	rwmx.RLock()
+	msgChan, ok := channels[channel]
+	rwmx.RUnlock()
+	if !ok || msgChan.Closed() {
+		rwmx.Lock()
+		if msgChan, ok = channels[channel]; !ok || msgChan.Closed() {
+			msgChan = msgchan.NewMsgChan(channel, 10*time.Second)
+			channels[channel] = msgChan
+			msgChan.OnClose(func() {
+				rwmx.Lock()
+				defer rwmx.Unlock()
+				delete(channels, channel)
+				log.Printf("delete #%s from channels.", channel)
+			})
+		}
+		rwmx.Unlock()
+	}
+	return
 }
