@@ -6,9 +6,8 @@ import (
 )
 
 // StartRPCServer serve rpc server at netAddr.
-func StartRPCServer(netAddr *netutils.NetAddr) {
+func StartRPCServer(netAddr *netutils.NetAddr, rcvrs ...interface{}) {
 	rpcutils.RegisterAndStartRPCServer(netAddr.Network, netAddr.LAddr,
-		new(rpcutils.RPCServer),
-		new(RPCDispatcher),
+		append([]interface{}{new(rpcutils.RPCServer)}, rcvrs...)...,
 	)
 }

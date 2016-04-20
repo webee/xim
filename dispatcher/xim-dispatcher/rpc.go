@@ -2,8 +2,11 @@ package main
 
 import (
 	"log"
+	"xim/dispatcher"
 	"xim/dispatcher/rpcservice"
 	"xim/utils/netutils"
+
+	"gopkg.in/redsync.v1"
 )
 
 func startRPCService() {
@@ -12,5 +15,8 @@ func startRPCService() {
 		log.Fatalln(args.rpcNetAddr, err)
 	}
 
-	rpcservice.StartRPCServer(netAddr)
+	redisPool := dispatcher.NewRedisPool(args.redisServer, args.redisPassword)
+	rpcservice.StartRPCServer(netAddr,
+		rpcservice.NewRPCDispatcher(redsync.New([]redsync.Pool{redisPool})),
+	)
 }
