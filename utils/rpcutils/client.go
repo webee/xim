@@ -11,9 +11,11 @@ import (
 
 // RPCClient represents rpc client.
 type RPCClient struct {
-	netAddr *netutils.NetAddr
-	Client  *rpc.Client
-	quit    chan bool
+	netAddr   *netutils.NetAddr
+	Client    *rpc.Client
+	connected bool
+	quit      chan bool
+	retry     chan bool
 }
 
 // NewRPCClient creates a rpc client.
@@ -23,8 +25,12 @@ func NewRPCClient(netAddr *netutils.NetAddr, retry bool) (client *RPCClient, err
 		quit:    make(chan bool, 1),
 	}
 	rpcClient, err := Connect(netAddr)
-	client.Client = rpcClient
+	if err == nil {
+		client.Client = rpcClient
+		client.connected = true
+	}
 	if retry {
+		client.retry = make(chan bool, 1)
 		go client.RetryingReconnect()
 		return client, nil
 	}
@@ -43,21 +49,39 @@ func Connect(netAddr *netutils.NetAddr) (client *rpc.Client, err error) {
 	return
 }
 
+// Retry trigger retry connect.
+func (cli *RPCClient) Retry() {
+	if cli.retry != nil {
+		cli.retry <- true
+		cli.retry <- false
+	}
+}
+
 // RetryingReconnect retry reconnect rpc when crashed.
 func (cli *RPCClient) RetryingReconnect() {
 	netAddr := cli.netAddr
 	for {
 		if err := cli.Ping(); err != nil {
+			cli.connected = false
 			log.Printf("retry connecting %s.\n", netAddr)
 			if client, err := Connect(netAddr); err == nil {
 				cli.Client = client
+				cli.connected = true
 			}
 		}
-		select {
-		case <-cli.quit:
-			log.Printf("quit retry connecting %s.\n", netAddr)
-			return
-		case <-time.After(10 * time.Second):
+		waiting := true
+		for waiting {
+			select {
+			case <-cli.quit:
+				log.Printf("quit retry connecting %s.\n", netAddr)
+				return
+			case retry := <-cli.retry:
+				waiting = !retry
+				break
+			case <-time.After(5 * time.Second):
+				waiting = false
+				break
+			}
 		}
 	}
 }
@@ -84,6 +108,11 @@ func (cli *RPCClient) Time() (t time.Time, err error) {
 		t = reply.T
 	}
 	return
+}
+
+// Connected returns whether client is connected.
+func (cli *RPCClient) Connected() bool {
+	return cli.connected
 }
 
 // Close close rpc client.

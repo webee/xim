@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	// TODO, 根据channel使用致性hash选择固定的dispatcher
 	dispatcherRPCClient *rpcutils.RPCClient
 )
 
@@ -19,7 +20,7 @@ func InitDispatcherRPC(netAddr *netutils.NetAddr) {
 }
 
 // PutMsg push a msg to channel.
-func PutMsg(user logic.UserLocation, channel string, msg json.RawMessage) (msgID string, err error) {
+func PutMsg(user logic.UserLocation, channel string, msgType string, msg json.RawMessage) (msgID string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
@@ -28,6 +29,7 @@ func PutMsg(user logic.UserLocation, channel string, msg json.RawMessage) (msgID
 	args := &rpcservice.RPCDispatcherPutMsgArgs{
 		User:    user,
 		Channel: channel,
+		Type:    msgType,
 		Msg:     msg,
 	}
 	log.Println("put:", user, channel, string(msg))

@@ -1,4 +1,4 @@
-package broker
+package userboard
 
 import (
 	"errors"
@@ -30,13 +30,13 @@ func (ub *UserBoard) Register(uid *UserIdentity, from string, broker MsgBroker) 
 	ub.Lock()
 	defer ub.Unlock()
 
-	if users, ok = ub.mapping[uid.org]; !ok {
+	if users, ok = ub.mapping[uid.Org]; !ok {
 		users = make(map[string]map[string]MsgBroker)
-		ub.mapping[uid.org] = users
+		ub.mapping[uid.Org] = users
 	}
-	if froms, ok = users[uid.user]; !ok {
+	if froms, ok = users[uid.User]; !ok {
 		froms = make(map[string]MsgBroker)
-		users[uid.user] = froms
+		users[uid.User] = froms
 	}
 	if _, ok = froms[from]; !ok {
 		froms[from] = broker
@@ -63,18 +63,18 @@ func (ub *UserBoard) Unregister(uid *UserIdentity, from string) error {
 	ub.Lock()
 	defer ub.Unlock()
 
-	if users, ok = ub.mapping[uid.org]; ok {
-		if froms, ok = users[uid.user]; ok {
+	if users, ok = ub.mapping[uid.Org]; ok {
+		if froms, ok = users[uid.User]; ok {
 			if _, ok = froms[from]; ok {
 				delete(froms, from)
 			}
 			if len(froms) == 0 {
-				delete(users, uid.user)
+				delete(users, uid.User)
 			}
 		}
 		/*
 			if len(users) == 0 {
-				delete(ub.mapping, uid.org)
+				delete(ub.mapping, uid.Org)
 			}
 		*/
 	}
@@ -94,8 +94,8 @@ func (ub *UserBoard) GetUserBroker(uid *UserIdentity, from string) (MsgBroker, e
 	ub.RLock()
 	defer ub.RUnlock()
 
-	if users, ok = ub.mapping[uid.org]; ok {
-		if froms, ok = users[uid.user]; ok {
+	if users, ok = ub.mapping[uid.Org]; ok {
+		if froms, ok = users[uid.User]; ok {
 			if broker, ok = froms[from]; ok {
 				return broker, nil
 			}

@@ -9,6 +9,7 @@ type Args struct {
 	debug           bool
 	logicRPCNetAddr string
 	pprofAddr       string
+	rpcNetAddr      string
 }
 
 var (
@@ -21,4 +22,5 @@ func init() {
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
 	flag.StringVar(&args.logicRPCNetAddr, "logic-rpc-net-addr", "tcp@localhost:6780", "logic rpc network address to listen.")
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6060", "debug pprof http address.")
+	flag.StringVar(&args.rpcNetAddr, "rpc-net-addr", "tcp@localhost:5780", "rpc network address to listen.")
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"xim/broker/proto"
+	"xim/broker/userboard"
 	"xim/logic"
 
 	"github.com/bitly/go-simplejson"
@@ -20,7 +21,7 @@ type WebsocketServer struct {
 	config     *WebsocketServerConfig
 	upgrader   *websocket.Upgrader
 	httpServer *http.Server
-	userBoard  *UserBoard
+	userBoard  *userboard.UserBoard
 }
 
 // WsConn is a websocket connection.
@@ -28,12 +29,12 @@ type WsConn struct {
 	wLock sync.Mutex
 	s     *WebsocketServer
 	conn  *websocket.Conn
-	uid   *UserIdentity
+	uid   *userboard.UserIdentity
 	from  string
 }
 
 // NewWebsocketServer creates a new WebsocketServer.
-func NewWebsocketServer(userBoard *UserBoard, config *WebsocketServerConfig) (server *WebsocketServer) {
+func NewWebsocketServer(userBoard *userboard.UserBoard, config *WebsocketServerConfig) (server *WebsocketServer) {
 	server = &WebsocketServer{
 		config:    config,
 		userBoard: userBoard,
@@ -164,10 +165,10 @@ func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg, finish chan bool) {
 		log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type, string(msg.Msg))
 
 		user := logic.UserLocation{
-			Broker:   "broker.1",
-			Org:      "AAA",
-			User:     "webee",
-			Instance: "1",
+			Broker:   c.s.config.Broker,
+			Org:      c.uid.Org,
+			User:     c.uid.User,
+			Instance: c.from,
 		}
 		replyMsg, err := HandleLogicMsg(user, msg.Type, msg.Msg)
 		// TODO handle send error.
@@ -185,7 +186,7 @@ func (c *WsConn) authenticate() (err error) {
 		return
 	}
 	log.Println("token: ", hello.Token)
-	c.uid, err = VerifyAuthToken(hello.Token)
+	c.uid, err = userboard.VerifyAuthToken(hello.Token)
 	if err == nil {
 		log.Println(c.from, "auth ok.")
 		err = c.s.userBoard.Register(c.uid, c.from, c)

@@ -4,12 +4,12 @@ import (
 	"flag"
 	"runtime"
 
-	"xim/broker"
+	"xim/broker/userboard"
 	"xim/utils/pprofutils"
 )
 
 var (
-	userBoard = broker.NewUserBaord()
+	userBoard = userboard.NewUserBaord()
 )
 
 func main() {
@@ -21,6 +21,7 @@ func main() {
 	}
 	//setupServer()
 	initLogicRPC()
+	startRPCService()
 	startWebsocket()
 	setupSignal()
 }

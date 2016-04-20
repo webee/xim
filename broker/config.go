@@ -13,6 +13,7 @@ type WebsocketServerConfig struct {
 	AuthTimeout      time.Duration
 	HeartBeatTimeout time.Duration
 	WriteTimeout     time.Duration
+	Broker           string
 }
 
 var (

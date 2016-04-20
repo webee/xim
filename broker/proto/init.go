@@ -39,6 +39,16 @@ type Hello struct {
 	Token string `json:"token"`
 }
 
+// MsgMsg is msg msg.
+type MsgMsg struct {
+	Type    string          `json:"type"`
+	Channel string          `json:"channel"`
+	ID      string          `json:"id"`
+	LastID  string          `json:"last_id"`
+	User    string          `json:"user"`
+	Msg     json.RawMessage `json:"msg"`
+}
+
 // NewReply create a reply msg.
 func NewReply(replyTo int, msgType string, msg json.RawMessage) *Reply {
 	return &Reply{ReplyTo: replyTo, Type: msgType, Msg: msg}

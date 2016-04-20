@@ -75,7 +75,7 @@ func handleTextMsg(user logic.UserLocation, msg json.RawMessage) (replyMsg json.
 	toSendMsg, _ := json.Marshal(&map[string]interface{}{
 		"txt": txt,
 	})
-	msgID, err = dispatcher.PutMsg(user, channel, toSendMsg)
+	msgID, err = dispatcher.PutMsg(user, channel, MsgMsgType, toSendMsg)
 	if err != nil {
 		return
 	}

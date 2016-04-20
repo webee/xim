@@ -10,6 +10,7 @@ func startWebsocket() {
 		&broker.WebsocketServerConfig{
 			Testing: args.testing,
 			Addr:    args.addr,
+			Broker:  args.rpcNetAddr,
 		}))
 	go func() {
 		log.Fatal(wsServer.ListenAndServe())

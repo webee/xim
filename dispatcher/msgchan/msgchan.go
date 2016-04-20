@@ -11,9 +11,10 @@ import (
 )
 
 type queueMsg struct {
-	user logic.UserLocation
-	msg  interface{}
-	id   chan string
+	user    logic.UserLocation
+	msgType string
+	msg     interface{}
+	id      chan string
 }
 
 func (qm *queueMsg) String() string {
@@ -26,9 +27,10 @@ func (qm *queueMsg) String() string {
 }
 
 type chanMsg struct {
-	id   string
-	user logic.UserLocation
-	msg  interface{}
+	id      string
+	user    logic.UserLocation
+	msgType string
+	msg     interface{}
 }
 
 func (cm *chanMsg) String() string {
@@ -39,6 +41,9 @@ func (cm *chanMsg) String() string {
 		return fmt.Sprintf("%s: %v", cm.user, cm.msg)
 	}
 }
+
+// MsgHandler is the function to handle msg.
+type MsgHandler func(channel string, user logic.UserLocation, msgType, id, lastID string, msg interface{})
 
 // MsgChan is an abstract message channel.
 type MsgChan struct {
@@ -52,6 +57,8 @@ type MsgChan struct {
 	quit       chan bool
 	count      uint
 	idGen      *IDGenerator
+	lastID     string
+	msgHandler MsgHandler
 }
 
 // NewMsgChan creates and starts a msg chan.
@@ -64,6 +71,7 @@ func NewMsgChan(name string, expiration time.Duration) *MsgChan {
 		quit:       make(chan bool, 1),
 		idGen:      NewIDGenerator(),
 	}
+	// initial get last id.
 	log.Printf("#%s open.", name)
 	go msgChan.handleQueue()
 	go msgChan.handleChannel()
@@ -96,6 +104,11 @@ func (c *MsgChan) OnClose(f func()) {
 	c.onclose = f
 }
 
+// SetupMsgHandler setup msg handler.
+func (c *MsgChan) SetupMsgHandler(handler MsgHandler) {
+	c.msgHandler = handler
+}
+
 // Closed returns the channel close status.
 func (c *MsgChan) Closed() bool {
 	c.RLock()
@@ -104,7 +117,7 @@ func (c *MsgChan) Closed() bool {
 }
 
 // Put puts the msg to the msg channel and returns the msg id.
-func (c *MsgChan) Put(user logic.UserLocation, msg interface{}) (id string, err error) {
+func (c *MsgChan) Put(user logic.UserLocation, msgType string, msg interface{}) (id string, err error) {
 	if c.closed {
 		err = errors.New("channel closed")
 		return
@@ -117,7 +130,7 @@ func (c *MsgChan) Put(user logic.UserLocation, msg interface{}) (id string, err 
 		}
 	}()
 	// queuing.
-	qm := &queueMsg{user, msg, make(chan string, 1)}
+	qm := &queueMsg{user, msgType, msg, make(chan string, 1)}
 	select {
 	case c.q <- qm:
 	case <-time.After(1 * time.Second):
@@ -150,7 +163,7 @@ func (c *MsgChan) handleQueue() {
 			id := c.idGen.ID()
 			qm.id <- id
 			log.Println("queue:", qm)
-			cm := &chanMsg{id, qm.user, qm.msg}
+			cm := &chanMsg{id, qm.user, qm.msgType, qm.msg}
 			c.ch <- cm
 		case <-time.After(c.expiration):
 			go c.Close()
@@ -170,5 +183,9 @@ func (c *MsgChan) handleChannel() {
 		c.count++
 		log.Println("channel:", cm)
 		// dispatch msg.
+		if c.msgHandler != nil {
+			c.msgHandler(c.name, cm.user, cm.msgType, cm.id, c.lastID, cm.msg)
+		}
+		c.lastID = cm.id
 	}
 }
