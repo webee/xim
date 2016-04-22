@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"fmt"
 	"log"
 	"xim/broker/proto"
 	"xim/broker/rpcservice"
@@ -41,7 +42,10 @@ func PushMsg(user logic.UserLocation, msg proto.MsgMsg) (err error) {
 	log.Println("push:", user, msg)
 	reply := new(rpcutils.NoReply)
 	client := getBrokerRPCClient(user.Broker)
-	err = client.Client.Call(rpcservice.RPCBrokerPushMsg, args, reply)
-	log.Println("push result:", err)
+	for i := 1; i < 3; i++ {
+		args.User.Instance = fmt.Sprintf("%d", i)
+		err = client.Client.Call(rpcservice.RPCBrokerPushMsg, args, reply)
+	}
+	log.Println("push err:", err)
 	return err
 }

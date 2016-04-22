@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 	"xim/dispatcher/msgchan"
 	"xim/logic"
 )
@@ -47,15 +46,12 @@ func dispatchMsg(m interface{}) error {
 	return nil
 }
 
-func newDispatcherMsgChan(name string, expire time.Duration) *msgchan.MsgChannel {
+func newDispatcherMsgChan(name string) *msgchan.MsgChannel {
 	c := msgchan.NewMsgChannel(fmt.Sprintf("%s.channel", name), 100,
 		new(msgChanTransformer).transform,
-		msgchan.NewMsgChannelHandlerDownStream(fmt.Sprintf("%s.dispatcher", name), dispatchMsg),
-		24*time.Hour)
+		msgchan.NewMsgChannelHandlerDownStream(fmt.Sprintf("%s.dispatcher", name), dispatchMsg))
 
-	return msgchan.NewMsgChannel(fmt.Sprintf("%s.queue", name), 10,
-		genQueueMsgTransformer(), c,
-		expire)
+	return msgchan.NewMsgChannel(fmt.Sprintf("%s.queue", name), 10, genQueueMsgTransformer(), c)
 }
 
 type queueMsg struct {

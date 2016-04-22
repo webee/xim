@@ -5,35 +5,47 @@ import (
 	"sync"
 	"time"
 	"xim/dispatcher/msgchan"
+
+	"github.com/webee/ttlcache"
 )
 
-type channelCache struct {
+type msgChannelCache struct {
 	sync.RWMutex
-	channels map[string]*msgchan.MsgChannel
+	cache *ttlcache.Cache
 }
 
 var (
-	channels = &channelCache{
-		channels: make(map[string]*msgchan.MsgChannel, 1000),
-	}
+	channelCache = newMsgChannelCache()
 )
 
-func (c *channelCache) getMsgChan(channel string) (msgChan *msgchan.MsgChannel) {
-	c.RLock()
-	msgChan, ok := c.channels[channel]
-	c.RUnlock()
-	if !ok || msgChan.Closed() {
-		c.Lock()
-		if msgChan, ok = c.channels[channel]; !ok || msgChan.Closed() {
-			msgChan = newDispatcherMsgChan(channel, 10*time.Second).OnClose(func() {
-				c.Lock()
-				defer c.Unlock()
-				delete(c.channels, channel)
-				log.Printf("delete #%s from channels.", channel)
-			})
-			c.channels[channel] = msgChan
-		}
-		c.Unlock()
+func newMsgChannelCache() *msgChannelCache {
+	c := &msgChannelCache{
+		cache: ttlcache.NewCache(),
+	}
+
+	c.cache.SetTTL(10 * time.Second)
+	c.cache.SetCheckExpirationCallback(func(key string, value interface{}) bool {
+		msgChan := value.(*msgchan.MsgChannel)
+		msgChan.Close()
+		return true
+	})
+	c.cache.SetExpirationCallback(func(key string, value interface{}) {
+		log.Printf("#%s MsgChannel expired.", key)
+	})
+	return c
+}
+
+func (c *msgChannelCache) getMsgChan(channel string) (msgChan *msgchan.MsgChannel) {
+	item, exists := c.cache.Get(channel)
+	if exists && !item.(*msgchan.MsgChannel).Closed() {
+		return item.(*msgchan.MsgChannel)
+	}
+
+	c.Lock()
+	defer c.Unlock()
+	if item, exists = c.cache.Get(channel); !exists || item.(*msgchan.MsgChannel).Closed() {
+		msgChan = newDispatcherMsgChan(channel)
+		c.cache.Set(channel, msgChan)
 	}
 	return
 }

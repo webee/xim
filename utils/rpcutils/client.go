@@ -117,7 +117,7 @@ func (cli *RPCClient) Connected() bool {
 
 // Close close rpc client.
 func (cli *RPCClient) Close() error {
-	err := cli.Client.Close()
 	cli.quit <- true
+	err := cli.Client.Close()
 	return err
 }

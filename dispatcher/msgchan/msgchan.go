@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log"
 	"sync"
-	"time"
 )
 
 // MsgChannelTransformer is the transformer channel msg.
@@ -26,11 +25,9 @@ type MsgChannel struct {
 	in          chan interface{}
 	transformer MsgChannelTransformer
 	next        MsgChannelDownStream
-	expire      time.Duration
-	putTimeout  time.Duration
 	closed      bool
 	onclose     func()
-	quit        chan bool
+	done        chan struct{}
 }
 
 // NewMsgChannelHandlerDownStream creates a msg channel down stream by a handler.
@@ -42,15 +39,13 @@ func NewMsgChannelHandlerDownStream(name string, msgChannelHandler MsgChannelHan
 }
 
 // NewMsgChannel creates and starts a msg chan.
-func NewMsgChannel(name string, size int, handler MsgChannelTransformer, next MsgChannelDownStream, expire time.Duration) *MsgChannel {
+func NewMsgChannel(name string, size int, handler MsgChannelTransformer, next MsgChannelDownStream) *MsgChannel {
 	msgChan := &MsgChannel{
 		name:        name,
 		in:          make(chan interface{}, size),
 		transformer: handler,
 		next:        next,
-		quit:        make(chan bool, 1),
-		expire:      expire,
-		putTimeout:  5 * time.Second,
+		done:        make(chan struct{}, 1),
 	}
 	go msgChan.open()
 
@@ -63,7 +58,7 @@ func (c *MsgChannel) Close() {
 	defer c.Unlock()
 	if !c.closed {
 		close(c.in)
-		<-c.quit
+		<-c.done
 		c.next.Close()
 		c.closed = true
 		log.Printf("[%s] closed.", c.name)
@@ -75,24 +70,14 @@ func (c *MsgChannel) Close() {
 
 // Put puts the msg in.
 func (c *MsgChannel) Put(qm interface{}) (err error) {
+	c.RLock()
+	defer c.RUnlock()
 	if c.closed {
 		err = errors.New("channel closed")
 		return
 	}
 
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println(r)
-			err = errors.New("channel closed")
-		}
-	}()
-
-	select {
-	case c.in <- qm:
-	case <-time.After(c.putTimeout):
-		err = errors.New("put timeout")
-		return
-	}
+	c.in <- qm
 	return
 }
 
@@ -101,21 +86,20 @@ func (c *MsgChannel) open() {
 	log.Printf("[%s] start.", c.name)
 	defer func() {
 		log.Printf("[%s] stop.", c.name)
-		c.quit <- true
+		close(c.done)
 	}()
 	for {
-		select {
-		case mIn, more := <-c.in:
-			if !more {
-				return
-			}
-			if err := c.next.Put(c.transformer(mIn)); err == nil {
-			} else {
-				log.Println(err)
-			}
-		case <-time.After(c.expire):
-			go c.Close()
-			continue
+		mIn, more := <-c.in
+		if !more {
+			return
+		}
+		mOut := mIn
+		if c.transformer != nil {
+			mOut = c.transformer(mIn)
+		}
+		if err := c.next.Put(mOut); err == nil {
+		} else {
+			log.Println(err)
 		}
 	}
 }
@@ -123,11 +107,6 @@ func (c *MsgChannel) open() {
 // OnClose set on close action.
 func (c *MsgChannel) OnClose(f func()) *MsgChannel {
 	c.onclose = f
-	return c
-}
-
-func (c *MsgChannel) setPutTimeout(t time.Duration) *MsgChannel {
-	c.putTimeout = t
 	return c
 }
 

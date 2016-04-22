@@ -9,41 +9,41 @@ import (
 // UserBoard records the relations between users and connections.
 type UserBoard struct {
 	sync.RWMutex
-	mapping map[string]map[string]map[string]MsgBroker
+	mapping map[string]map[string]map[string]UserConn
 }
 
 // NewUserBaord creates a user board.
 func NewUserBaord() *UserBoard {
 	return &UserBoard{
-		mapping: make(map[string]map[string]map[string]MsgBroker),
+		mapping: make(map[string]map[string]map[string]UserConn),
 	}
 }
 
 // Register a user.
-func (ub *UserBoard) Register(uid *UserIdentity, from string, broker MsgBroker) error {
+func (ub *UserBoard) Register(uid *UserIdentity, instance string, broker UserConn) error {
 	var (
-		err   error
-		ok    bool
-		users map[string]map[string]MsgBroker
-		froms map[string]MsgBroker
+		err       error
+		ok        bool
+		users     map[string]map[string]UserConn
+		instances map[string]UserConn
 	)
 	ub.Lock()
 	defer ub.Unlock()
 
 	if users, ok = ub.mapping[uid.Org]; !ok {
-		users = make(map[string]map[string]MsgBroker)
+		users = make(map[string]map[string]UserConn)
 		ub.mapping[uid.Org] = users
 	}
-	if froms, ok = users[uid.User]; !ok {
-		froms = make(map[string]MsgBroker)
-		users[uid.User] = froms
+	if instances, ok = users[uid.User]; !ok {
+		instances = make(map[string]UserConn)
+		users[uid.User] = instances
 	}
-	if _, ok = froms[from]; !ok {
-		froms[from] = broker
+	if _, ok = instances[instance]; !ok {
+		instances[instance] = broker
 	}
-	log.Println(uid, from, "registered.")
+	log.Println(uid, instance, "registered.")
 	// first touch.
-	err = ub.Touch(uid, from)
+	err = ub.Touch(uid, instance)
 	return err
 }
 
@@ -57,8 +57,8 @@ func (ub *UserBoard) Touch(uid *UserIdentity, from string) error {
 func (ub *UserBoard) Unregister(uid *UserIdentity, from string) error {
 	var (
 		ok    bool
-		users map[string]map[string]MsgBroker
-		froms map[string]MsgBroker
+		users map[string]map[string]UserConn
+		froms map[string]UserConn
 	)
 	ub.Lock()
 	defer ub.Unlock()
@@ -83,13 +83,13 @@ func (ub *UserBoard) Unregister(uid *UserIdentity, from string) error {
 	return nil
 }
 
-// GetUserBroker find the user's broker.
-func (ub *UserBoard) GetUserBroker(uid *UserIdentity, from string) (MsgBroker, error) {
+// GetUserConn find the user's connection.
+func (ub *UserBoard) GetUserConn(uid *UserIdentity, from string) (UserConn, error) {
 	var (
 		ok     bool
-		users  map[string]map[string]MsgBroker
-		froms  map[string]MsgBroker
-		broker MsgBroker
+		users  map[string]map[string]UserConn
+		froms  map[string]UserConn
+		broker UserConn
 	)
 	ub.RLock()
 	defer ub.RUnlock()

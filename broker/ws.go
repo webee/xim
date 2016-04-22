@@ -2,6 +2,7 @@ package broker
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,6 +15,11 @@ import (
 
 	"github.com/bitly/go-simplejson"
 	"github.com/gorilla/websocket"
+	"github.com/youtube/vitess/go/pools"
+)
+
+var (
+	idPool = pools.NewIDPool()
 )
 
 // WebsocketServer handles websocket connections.
@@ -26,11 +32,15 @@ type WebsocketServer struct {
 
 // WsConn is a websocket connection.
 type WsConn struct {
-	wLock sync.Mutex
-	s     *WebsocketServer
-	conn  *websocket.Conn
-	uid   *userboard.UserIdentity
-	from  string
+	wLock    sync.Mutex
+	s        *WebsocketServer
+	conn     *websocket.Conn
+	uid      *userboard.UserIdentity
+	user     *logic.UserLocation
+	from     string
+	instance uint32
+	msgbox   chan interface{}
+	done     chan struct{}
 }
 
 // NewWebsocketServer creates a new WebsocketServer.
@@ -47,9 +57,12 @@ func NewWebsocketServer(userBoard *userboard.UserBoard, config *WebsocketServerC
 // NewWsConn creates a WsConn.
 func NewWsConn(s *WebsocketServer, conn *websocket.Conn) *WsConn {
 	return &WsConn{
-		s:    s,
-		conn: conn,
-		from: conn.RemoteAddr().String(),
+		s:        s,
+		conn:     conn,
+		from:     conn.RemoteAddr().String(),
+		instance: idPool.Get(),
+		msgbox:   make(chan interface{}, 5),
+		done:     make(chan struct{}, 1),
 	}
 }
 
@@ -94,11 +107,14 @@ func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 	var (
-		err           error
-		brokerMsgChan = make(chan *proto.Msg, 15)
-		logicMsgChan  = make(chan *proto.Msg, 10)
-		logicFinish   = make(chan bool, 1)
+		err          error
+		logicMsgChan = make(chan *proto.Msg, 10)
 	)
+	defer func() {
+		close(logicMsgChan)
+		<-c.done
+		c.Close()
+	}()
 
 	log.Println("conn: ", c.conn.RemoteAddr())
 	// authentication
@@ -106,36 +122,16 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 		log.Println(err)
 		return
 	}
-	// unregister before finish.
-	defer c.s.userBoard.Unregister(c.uid, c.from)
-
-	// read msgs.
-	go func() {
-		for {
-			msg, err := c.ReadMsg()
-			if err != nil {
-				log.Println(err)
-				brokerMsgChan <- nil
-				return
-			}
-			log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type)
-			brokerMsgChan <- msg
-		}
-	}()
-	go c.ProcessLogicMsg(logicMsgChan, logicFinish)
-	defer func() {
-		_ = <-logicFinish
-		c.Close()
-	}()
-	defer func() {
-		logicMsgChan <- nil
-	}()
+	go c.ProcessLogicMsg(logicMsgChan)
 
 	for {
-		msg := <-brokerMsgChan
-		if msg == nil {
-			return
+		// read msgs.
+		msg, err := c.ReadMsg()
+		if err != nil {
+			log.Println(err)
+			break
 		}
+		log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type)
 		switch msg.Type {
 		case proto.PingMsg:
 			// reseting user identity timeout.
@@ -153,29 +149,33 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 }
 
 // ProcessLogicMsg process logic messages.
-func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg, finish chan bool) {
+func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg) {
+	defer func() {
+		log.Println(c.conn.RemoteAddr(), ":", "OVER.")
+		close(c.done)
+	}()
+
 	for {
-		msg := <-q
-		if msg == nil {
-			log.Println(c.conn.RemoteAddr(), ":", "OVER.")
-			finish <- true
-			return
-		}
+		select {
+		case msg, ok := <-c.msgbox:
+			// push
+			if ok {
+				c.WriteMsg(msg)
+			}
+		case msg, ok := <-q:
+			// send
+			if !ok {
+				return
+			}
+			log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type, string(msg.Msg))
 
-		log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type, string(msg.Msg))
-
-		user := logic.UserLocation{
-			Broker:   c.s.config.Broker,
-			Org:      c.uid.Org,
-			User:     c.uid.User,
-			Instance: c.from,
-		}
-		replyMsg, err := HandleLogicMsg(user, msg.Type, msg.Msg)
-		// TODO handle send error.
-		if err != nil {
-			_ = c.WriteMsg(proto.NewErrorReply(msg.ID, err.Error()))
-		} else {
-			_ = c.WriteMsg(proto.NewReply(msg.ID, msg.Type, replyMsg))
+			replyMsg, err := HandleLogicMsg(c.user, msg.Type, msg.Msg)
+			// TODO handle send error.
+			if err != nil {
+				_ = c.WriteMsg(proto.NewErrorReply(msg.ID, err.Error()))
+			} else {
+				_ = c.WriteMsg(proto.NewReply(msg.ID, msg.Type, replyMsg))
+			}
 		}
 	}
 }
@@ -189,7 +189,13 @@ func (c *WsConn) authenticate() (err error) {
 	c.uid, err = userboard.VerifyAuthToken(hello.Token)
 	if err == nil {
 		log.Println(c.from, "auth ok.")
-		err = c.s.userBoard.Register(c.uid, c.from, c)
+		c.user = &logic.UserLocation{
+			Broker:   c.s.config.Broker,
+			Org:      c.uid.Org,
+			User:     c.uid.User,
+			Instance: fmt.Sprintf("%d", c.instance),
+		}
+		err = c.s.userBoard.Register(c.uid, c.user.Instance, c)
 	}
 	err = c.WriteMsg(proto.NewWelcome(hello.ID))
 
@@ -217,6 +223,16 @@ func (c *WsConn) ReadMsg() (msg *proto.Msg, err error) {
 func (c *WsConn) ReadHello() (hello proto.Hello, err error) {
 	_, err = c.ReadJSON(&hello, c.s.config.AuthTimeout)
 	return
+}
+
+// PushMsg write json message in a write timeout duration.
+func (c *WsConn) PushMsg(v interface{}) (err error) {
+	select {
+	case <-c.done:
+		return errors.New("connection closed")
+	case c.msgbox <- v:
+		return nil
+	}
 }
 
 // WriteMsg write json message in a write timeout duration.
@@ -270,5 +286,7 @@ func (c *WsConn) ReadJSONData(timeout time.Duration) (jd *simplejson.Json, err e
 
 // Close closes the underlying websocket connection.
 func (c *WsConn) Close() error {
+	// unregister before finish.
+	c.s.userBoard.Unregister(c.uid, c.from)
 	return c.conn.Close()
 }

@@ -41,7 +41,7 @@ var ()
 func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatcherPutMsgReply) error {
 	var err error
 	log.Println(RPCDispatcherPutMsg, "is called:", args.User, args.Channel, args.Type, string(args.Msg))
-	msgChan := channels.getMsgChan(args.Channel)
+	msgChan := channelCache.getMsgChan(args.Channel)
 	qm := &queueMsg{
 		user:    args.User,
 		channel: args.Channel,
@@ -86,4 +86,11 @@ func doDispatchMsg(channel string, user logic.UserLocation, msgType, id, lastID 
 		Msg:     msg.(json.RawMessage),
 	}
 	broker.PushMsg(user, toSendMsg)
+}
+
+func getChannelOnlineUserInstances(channel string) []logic.UserLocation {
+	return []logic.UserLocation{
+		logic.UserLocation{},
+		logic.UserLocation{},
+	}
 }

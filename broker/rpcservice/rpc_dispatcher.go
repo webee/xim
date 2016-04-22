@@ -33,8 +33,9 @@ const (
 func (r *RPCBroker) PushMsg(args *RPCBrokerPushMsgArgs, reply *rpcutils.NoReply) error {
 	log.Println("GET PUSH:", args.User, args.Msg)
 	uid := userboard.NewUserIdentify(args.User.Org, args.User.User)
-	msgBroker, err := r.userBoard.GetUserBroker(uid, args.User.Instance)
-	log.Println("msg broker:", msgBroker, err)
-	msgBroker.WriteMsg(&args.Msg)
-	return nil
+	userConn, err := r.userBoard.GetUserConn(uid, args.User.Instance)
+	if err != nil {
+		return err
+	}
+	return userConn.PushMsg(&args.Msg)
 }

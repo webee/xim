@@ -1,6 +1,6 @@
 package userboard
 
-// MsgBroker represents a broker(ws/tcp).
-type MsgBroker interface {
-	WriteMsg(v interface{}) (err error)
+// UserConn represents a user connection(ws/tcp).
+type UserConn interface {
+	PushMsg(v interface{}) (err error)
 }

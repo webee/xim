@@ -11,5 +11,5 @@ type UserLocation struct {
 }
 
 func (u UserLocation) String() string {
-	return fmt.Sprintf("%s:%s#%s@%s", u.Org, u.User, u.Instance, u.Broker)
+	return fmt.Sprintf("%s:%s#%s>%s", u.Org, u.User, u.Instance, u.Broker)
 }

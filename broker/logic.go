@@ -18,9 +18,9 @@ func InitLogicRPC(netAddr *netutils.NetAddr) {
 }
 
 // HandleLogicMsg handle logic msg.
-func HandleLogicMsg(user logic.UserLocation, msgType string, msg json.RawMessage) (json.RawMessage, error) {
+func HandleLogicMsg(user *logic.UserLocation, msgType string, msg json.RawMessage) (json.RawMessage, error) {
 	args := &rpcservice.RPCLogicHandleMsgArgs{
-		User: user,
+		User: *user,
 		Type: msgType,
 		Msg:  msg,
 	}
