@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"xim/broker/proto"
+	"xim/dispatcher/broker"
 	"xim/dispatcher/msgchan"
 	"xim/logic"
 )
@@ -89,4 +91,19 @@ func (cm *chanMsg) String() string {
 
 func (cm *toDispatchMsg) String() string {
 	return fmt.Sprintf("%s: %s[%s<-%s]", cm.user, string(cm.msg), cm.lastID, cm.id)
+}
+
+func pushMsg(m interface{}) error {
+	pm := m.(*toPushMsg)
+	return broker.PushMsg(pm.user, pm.msg)
+}
+
+func newUserMsgChan(name string) *msgchan.MsgChannel {
+	return msgchan.NewMsgChannel(fmt.Sprintf("user.%s.msgchan", name), 10, nil,
+		msgchan.NewMsgChannelHandlerDownStream(fmt.Sprintf("user.%s.pusher", name), pushMsg))
+}
+
+type toPushMsg struct {
+	user logic.UserLocation
+	msg  proto.MsgMsg
 }

@@ -99,7 +99,7 @@ func (c *MsgChannel) open() {
 		}
 		if err := c.next.Put(mOut); err == nil {
 		} else {
-			log.Println(err)
+			log.Println("put downstream error:", err)
 		}
 	}
 }

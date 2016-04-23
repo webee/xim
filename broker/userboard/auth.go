@@ -16,9 +16,10 @@ func NewUserIdentify(org, user string) *UserIdentity {
 
 // VerifyAuthToken verify user token.
 func VerifyAuthToken(token string) (uid *UserIdentity, err error) {
+	// TODO
 	uid = new(UserIdentity)
 	uid.Org = "test"
-	uid.User = "webee"
+	uid.User = token
 	return uid, nil
 }
 

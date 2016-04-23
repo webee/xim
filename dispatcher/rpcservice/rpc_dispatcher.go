@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"xim/broker/proto"
-	"xim/dispatcher/broker"
 	"xim/logic"
 )
 
@@ -35,8 +34,6 @@ const (
 	RPCDispatcherPutMsg = "RPCDispatcher.PutMsg"
 )
 
-var ()
-
 // PutMsg put msg to channel.
 func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatcherPutMsgReply) error {
 	var err error
@@ -57,27 +54,7 @@ func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatch
 
 func doDispatchMsg(channel string, user logic.UserLocation, msgType, id, lastID string, msg interface{}) {
 	log.Printf("dispatch msg: #%s, %s, [%s<-%s, %s]\n", channel, user, lastID, id, msg)
-	/*
-		type: msg
-		channel: xxx
-		user: "webee"
-		id: 1461145447.1
-		last_id: 1461145446.2
-		msg: "xxxx"
-	*/
-	/*
-		1. getChannelOnlineUserInstances.
-		2. for each user instance, dispatch the msg.
-
-		msg:
-			org: "AAA"
-			user: "webee"
-			instance: "#1"
-			msg: {
-			// ref upper.
-			}
-	*/
-	toSendMsg := proto.MsgMsg{
+	protoMsg := proto.MsgMsg{
 		Type:    msgType,
 		Channel: channel,
 		User:    user.User,
@@ -85,12 +62,33 @@ func doDispatchMsg(channel string, user logic.UserLocation, msgType, id, lastID 
 		LastID:  lastID,
 		Msg:     msg.(json.RawMessage),
 	}
-	broker.PushMsg(user, toSendMsg)
+	for _, user := range getChannelOnlineUserInstances(channel) {
+		toPutMsg := &toPushMsg{
+			user: user,
+			msg:  protoMsg,
+		}
+		userMsgChan := userChannelCache.getMsgChan(user.String())
+		userMsgChan.Put(toPutMsg)
+	}
 }
 
 func getChannelOnlineUserInstances(channel string) []logic.UserLocation {
+	/*
+		1. get channel users.
+		2. filter get the online user instances.
+	*/
 	return []logic.UserLocation{
-		logic.UserLocation{},
-		logic.UserLocation{},
+		logic.UserLocation{
+			Broker:   "tcp@localhost:5780",
+			Org:      "test",
+			User:     "webee",
+			Instance: "1",
+		},
+		logic.UserLocation{
+			Broker:   "tcp@localhost:5780",
+			Org:      "test",
+			User:     "xiaoee",
+			Instance: "2",
+		},
 	}
 }

@@ -24,5 +24,5 @@ func (g *IDGenerator) ID() string {
 		g.count = 0
 	}
 	g.count++
-	return fmt.Sprintf("%d.%d", g.ts, g.count)
+	return fmt.Sprintf("%d.%06d", g.ts, g.count)
 }

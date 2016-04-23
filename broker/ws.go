@@ -287,6 +287,7 @@ func (c *WsConn) ReadJSONData(timeout time.Duration) (jd *simplejson.Json, err e
 // Close closes the underlying websocket connection.
 func (c *WsConn) Close() error {
 	// unregister before finish.
-	c.s.userBoard.Unregister(c.uid, c.from)
+	c.s.userBoard.Unregister(c.uid, c.user.Instance)
+	idPool.Put(c.instance)
 	return c.conn.Close()
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/rpc"
+	"sync"
 	"time"
 
 	"xim/utils/netutils"
@@ -11,10 +12,11 @@ import (
 
 // RPCClient represents rpc client.
 type RPCClient struct {
+	sync.RWMutex
 	netAddr   *netutils.NetAddr
 	Client    *rpc.Client
 	connected bool
-	quit      chan bool
+	quit      chan struct{}
 	retry     chan bool
 }
 
@@ -22,7 +24,7 @@ type RPCClient struct {
 func NewRPCClient(netAddr *netutils.NetAddr, retry bool) (client *RPCClient, err error) {
 	client = &RPCClient{
 		netAddr: netAddr,
-		quit:    make(chan bool, 1),
+		quit:    make(chan struct{}, 1),
 	}
 	rpcClient, err := Connect(netAddr)
 	if err == nil {
@@ -31,7 +33,7 @@ func NewRPCClient(netAddr *netutils.NetAddr, retry bool) (client *RPCClient, err
 	}
 	if retry {
 		client.retry = make(chan bool, 1)
-		go client.RetryingReconnect()
+		go client.retryingReconnect()
 		return client, nil
 	}
 
@@ -51,24 +53,42 @@ func Connect(netAddr *netutils.NetAddr) (client *rpc.Client, err error) {
 
 // Retry trigger retry connect.
 func (cli *RPCClient) Retry() {
+	cli.Lock()
+	defer cli.Unlock()
 	if cli.retry != nil {
 		cli.retry <- true
 		cli.retry <- false
 	}
 }
 
-// RetryingReconnect retry reconnect rpc when crashed.
-func (cli *RPCClient) RetryingReconnect() {
+// Reconnect reconnect the client.
+func (cli *RPCClient) Reconnect() {
+	cli.RLock()
+	if err := cli.Ping(); err != nil {
+		log.Printf("rpc ping error: %s.\n", err)
+	} else {
+		cli.RUnlock()
+		return
+	}
+	cli.RUnlock()
+
+	cli.Lock()
+	if cli.Client != nil {
+		cli.Client.Close()
+	}
+	cli.connected = false
+	log.Printf("retry connecting %s.\n", cli.netAddr)
+	if client, err := Connect(cli.netAddr); err == nil {
+		cli.Client = client
+		cli.connected = true
+	}
+	cli.Unlock()
+}
+
+func (cli *RPCClient) retryingReconnect() {
 	netAddr := cli.netAddr
 	for {
-		if err := cli.Ping(); err != nil {
-			cli.connected = false
-			log.Printf("retry connecting %s.\n", netAddr)
-			if client, err := Connect(netAddr); err == nil {
-				cli.Client = client
-				cli.connected = true
-			}
-		}
+		cli.Reconnect()
 		waiting := true
 		for waiting {
 			select {
@@ -117,7 +137,6 @@ func (cli *RPCClient) Connected() bool {
 
 // Close close rpc client.
 func (cli *RPCClient) Close() error {
-	cli.quit <- true
-	err := cli.Client.Close()
-	return err
+	close(cli.quit)
+	return cli.Client.Close()
 }

@@ -2,32 +2,37 @@ package rpcservice
 
 import (
 	"log"
-	"sync"
 	"time"
 	"xim/dispatcher/msgchan"
+	"xim/utils/syncutils"
 
 	"github.com/webee/ttlcache"
 )
 
 type msgChannelCache struct {
-	sync.RWMutex
+	ko    *syncutils.KeyOnce
 	cache *ttlcache.Cache
+	new   func(key string) *msgchan.MsgChannel
 }
 
 var (
-	channelCache = newMsgChannelCache()
+	channelCache     = newMsgChannelCache(15*time.Second, newDispatcherMsgChan)
+	userChannelCache = newMsgChannelCache(8*time.Second, newUserMsgChan)
 )
 
-func newMsgChannelCache() *msgChannelCache {
+func newMsgChannelCache(ttl time.Duration, new func(key string) *msgchan.MsgChannel) *msgChannelCache {
 	c := &msgChannelCache{
+		ko:    syncutils.NewKeyOnce("msg.channel.cache", 1*time.Hour),
 		cache: ttlcache.NewCache(),
+		new:   new,
 	}
 
-	c.cache.SetTTL(10 * time.Second)
+	c.cache.SetTTL(ttl)
 	c.cache.SetCheckExpirationCallback(func(key string, value interface{}) bool {
 		msgChan := value.(*msgchan.MsgChannel)
+		c.ko.UndoOnKey(key)
 		msgChan.Close()
-		return true
+		return msgChan.Closed()
 	})
 	c.cache.SetExpirationCallback(func(key string, value interface{}) {
 		log.Printf("#%s MsgChannel expired.", key)
@@ -35,17 +40,12 @@ func newMsgChannelCache() *msgChannelCache {
 	return c
 }
 
-func (c *msgChannelCache) getMsgChan(channel string) (msgChan *msgchan.MsgChannel) {
-	item, exists := c.cache.Get(channel)
-	if exists && !item.(*msgchan.MsgChannel).Closed() {
-		return item.(*msgchan.MsgChannel)
-	}
-
-	c.Lock()
-	defer c.Unlock()
-	if item, exists = c.cache.Get(channel); !exists || item.(*msgchan.MsgChannel).Closed() {
-		msgChan = newDispatcherMsgChan(channel)
+func (c *msgChannelCache) getMsgChan(channel string) *msgchan.MsgChannel {
+	c.ko.DoOnKey(channel, func() {
+		msgChan := c.new(channel)
 		c.cache.Set(channel, msgChan)
-	}
-	return
+	})
+
+	item, _ := c.cache.Get(channel)
+	return item.(*msgchan.MsgChannel)
 }

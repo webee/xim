@@ -54,7 +54,7 @@ func (ub *UserBoard) Touch(uid *UserIdentity, from string) error {
 }
 
 // Unregister a user.
-func (ub *UserBoard) Unregister(uid *UserIdentity, from string) error {
+func (ub *UserBoard) Unregister(uid *UserIdentity, instance string) error {
 	var (
 		ok    bool
 		users map[string]map[string]UserConn
@@ -65,8 +65,8 @@ func (ub *UserBoard) Unregister(uid *UserIdentity, from string) error {
 
 	if users, ok = ub.mapping[uid.Org]; ok {
 		if froms, ok = users[uid.User]; ok {
-			if _, ok = froms[from]; ok {
-				delete(froms, from)
+			if _, ok = froms[instance]; ok {
+				delete(froms, instance)
 			}
 			if len(froms) == 0 {
 				delete(users, uid.User)
@@ -78,7 +78,7 @@ func (ub *UserBoard) Unregister(uid *UserIdentity, from string) error {
 			}
 		*/
 	}
-	log.Println(uid, from, "unregistered.")
+	log.Println(uid, instance, "unregistered.")
 	// delete from redis.
 	return nil
 }
