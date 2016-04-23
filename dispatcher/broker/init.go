@@ -28,6 +28,13 @@ func PushMsg(user logic.UserLocation, msg proto.MsgMsg) (err error) {
 	defer clientPool.Put(id)
 
 	err = client.Client.Call(rpcservice.RPCBrokerPushMsg, args, reply)
-	log.Println("push err:", err)
+	if err != nil {
+		log.Println("push err:", err)
+		client.Reconnect()
+		err = client.Client.Call(rpcservice.RPCBrokerPushMsg, args, reply)
+		if err != nil {
+			log.Println("retry push err:", err)
+		}
+	}
 	return err
 }

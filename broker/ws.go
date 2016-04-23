@@ -143,7 +143,7 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 			// ignore
 		default:
 			// handle by logic
-			logicMsgChan <- msg
+			logicMsgChan <- &msg
 		}
 	}
 }
@@ -167,26 +167,37 @@ func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg) {
 			if !ok {
 				return
 			}
-			log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type, string(msg.Msg))
+			log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type, msg.Msg)
 
-			replyMsg, err := HandleLogicMsg(c.user, msg.Type, msg.Msg)
+			replyMsg, err := HandleLogicMsg(c.user, msg.Type, msg.Channel, msg.Msg)
 			// TODO handle send error.
 			if err != nil {
 				_ = c.WriteMsg(proto.NewErrorReply(msg.ID, err.Error()))
 			} else {
-				_ = c.WriteMsg(proto.NewReply(msg.ID, msg.Type, replyMsg))
+				_ = c.WriteMsg(proto.NewResponse(msg.ID, replyMsg))
 			}
 		}
 	}
 }
 
 func (c *WsConn) authenticate() (err error) {
-	hello, err := c.ReadHello()
+	msg := proto.Msg{}
+	_, err = c.ReadJSON(&msg, c.s.config.AuthTimeout)
 	if err != nil {
 		return
 	}
-	log.Println("token: ", hello.Token)
-	c.uid, err = userboard.VerifyAuthToken(hello.Token)
+	if msg.Type != proto.HelloMsg {
+		return errors.New("need hello msg")
+	}
+	jd := simplejson.New()
+	jd.SetPath(nil, msg.Msg)
+	if err != nil {
+		return errors.New("bad hello msg")
+	}
+
+	token := jd.Get("token").MustString()
+	log.Println("token: ", token)
+	c.uid, err = userboard.VerifyAuthToken(token)
 	if err == nil {
 		log.Println(c.from, "auth ok.")
 		c.user = &logic.UserLocation{
@@ -197,13 +208,13 @@ func (c *WsConn) authenticate() (err error) {
 		}
 		err = c.s.userBoard.Register(c.uid, c.user.Instance, c)
 	}
-	err = c.WriteMsg(proto.NewWelcome(hello.ID))
+	err = c.WriteMsg(proto.NewWelcome(msg.ID))
 
 	return
 }
 
 // ReadMsg read json message in a heartbeat duration.
-func (c *WsConn) ReadMsg() (msg *proto.Msg, err error) {
+func (c *WsConn) ReadMsg() (msg proto.Msg, err error) {
 	//jd, err = c.ReadJSONData(c.s.config.HeartBeatTimeout)
 	//msg.ID, err = jd.Get("id").Int()
 	//msg.Type, err = jd.Get("type").String()
@@ -214,14 +225,13 @@ func (c *WsConn) ReadMsg() (msg *proto.Msg, err error) {
 		bytes, err := c.ReadJSON(msg, c.s.config.HeartBeatTimeout)
 		msg.Bytes = bytes
 	*/
-	msg = new(proto.Msg)
-	_, err = c.ReadJSON(msg, c.s.config.HeartBeatTimeout)
+	_, err = c.ReadJSON(&msg, c.s.config.HeartBeatTimeout)
 	return
 }
 
 // ReadHello read the hello message in a auth timeout duration.
-func (c *WsConn) ReadHello() (hello proto.Hello, err error) {
-	_, err = c.ReadJSON(&hello, c.s.config.AuthTimeout)
+func (c *WsConn) ReadHello() (msg proto.Msg, err error) {
+	_, err = c.ReadJSON(&msg, c.s.config.AuthTimeout)
 	return
 }
 

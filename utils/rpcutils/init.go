@@ -1,10 +1,16 @@
 package rpcutils
 
 import (
+	"encoding/gob"
 	"log"
 	"net"
 	"net/rpc"
 )
+
+func init() {
+	gob.Register(map[string]interface{}{})
+	gob.Register([]interface{}{})
+}
 
 // RegisterAndStartRPCServer register services and start listen.
 func RegisterAndStartRPCServer(network, laddr string, rcvrs ...interface{}) {

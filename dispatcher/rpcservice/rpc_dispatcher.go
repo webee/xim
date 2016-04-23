@@ -1,7 +1,6 @@
 package rpcservice
 
 import (
-	"encoding/json"
 	"log"
 	"xim/broker/proto"
 	"xim/logic"
@@ -20,8 +19,7 @@ func NewRPCDispatcher() *RPCDispatcher {
 type RPCDispatcherPutMsgArgs struct {
 	User    logic.UserLocation
 	Channel string
-	Type    string
-	Msg     json.RawMessage
+	Msg     interface{}
 }
 
 // RPCDispatcherPutMsgReply is the msg reply.
@@ -37,12 +35,11 @@ const (
 // PutMsg put msg to channel.
 func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatcherPutMsgReply) error {
 	var err error
-	log.Println(RPCDispatcherPutMsg, "is called:", args.User, args.Channel, args.Type, string(args.Msg))
+	log.Println(RPCDispatcherPutMsg, "is called:", args.User, args.Channel, args.Msg)
 	msgChan := channelCache.getMsgChan(args.Channel)
 	qm := &queueMsg{
 		user:    args.User,
 		channel: args.Channel,
-		msgType: args.Type,
 		msg:     args.Msg,
 		id:      make(chan string, 1),
 	}
@@ -52,15 +49,14 @@ func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatch
 	return err
 }
 
-func doDispatchMsg(channel string, user logic.UserLocation, msgType, id, lastID string, msg interface{}) {
+func doDispatchMsg(channel string, user logic.UserLocation, id, lastID string, msg interface{}) {
 	log.Printf("dispatch msg: #%s, %s, [%s<-%s, %s]\n", channel, user, lastID, id, msg)
 	protoMsg := proto.MsgMsg{
-		Type:    msgType,
 		Channel: channel,
 		User:    user.User,
 		ID:      id,
 		LastID:  lastID,
-		Msg:     msg.(json.RawMessage),
+		Msg:     msg,
 	}
 	for _, user := range getChannelOnlineUserInstances(channel) {
 		toPutMsg := &toPushMsg{

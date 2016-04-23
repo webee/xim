@@ -1,7 +1,6 @@
 package broker
 
 import (
-	"encoding/json"
 	"xim/logic"
 	"xim/logic/rpcservice"
 	"xim/utils/netutils"
@@ -18,11 +17,12 @@ func InitLogicRPC(netAddr *netutils.NetAddr) {
 }
 
 // HandleLogicMsg handle logic msg.
-func HandleLogicMsg(user *logic.UserLocation, msgType string, msg json.RawMessage) (json.RawMessage, error) {
+func HandleLogicMsg(user *logic.UserLocation, msgType string, channel string, msg interface{}) (interface{}, error) {
 	args := &rpcservice.RPCLogicHandleMsgArgs{
-		User: *user,
-		Type: msgType,
-		Msg:  msg,
+		User:    *user,
+		Type:    msgType,
+		Channel: channel,
+		Msg:     msg,
 	}
 	reply := new(rpcservice.RPCLogicHandleMsgReply)
 	err := logicRPCClient.Client.Call(rpcservice.RPCLogicHandleMsg, args, reply)

@@ -1,7 +1,5 @@
 package proto
 
-import "encoding/json"
-
 // msg types.
 const (
 	HelloMsg   = "hello"
@@ -9,14 +7,16 @@ const (
 	PingMsg    = "ping"
 	PongMsg    = "pong"
 	ByeMsg     = "bye"
+	RespReply  = "resp"
 	ErrorReply = "error"
 )
 
 // Msg is the base user send msg.
 type Msg struct {
-	ID   int             `json:"id"`
-	Type string          `json:"type,omitempty"`
-	Msg  json.RawMessage `json:"msg,omitempty"`
+	ID      int         `json:"id"`
+	Type    string      `json:"type,omitempty"`
+	Channel string      `json:"channel,omitempty"`
+	Msg     interface{} `json:"msg,omitempty"`
 }
 
 // MsgWithBytes is msg with full msg bytes.
@@ -27,30 +27,23 @@ type MsgWithBytes struct {
 
 // Reply is the base server reply msg.
 type Reply struct {
-	ReplyTo int             `json:"reply_to"`
-	Type    string          `json:"type,omitempty"`
-	Msg     json.RawMessage `json:"msg,omitempty"`
-	Err     string          `json:"err,omitempty"`
-}
-
-// Hello is the auth msg.
-type Hello struct {
-	Msg
-	Token string `json:"token"`
+	ReplyTo int         `json:"reply_to"`
+	Type    string      `json:"type,omitempty"`
+	Msg     interface{} `json:"msg,omitempty"`
+	Err     string      `json:"err,omitempty"`
 }
 
 // MsgMsg is msg msg.
 type MsgMsg struct {
-	Type    string          `json:"type"`
-	Channel string          `json:"channel"`
-	ID      string          `json:"id"`
-	LastID  string          `json:"last_id"`
-	User    string          `json:"user"`
-	Msg     json.RawMessage `json:"msg"`
+	Channel string      `json:"channel"`
+	ID      string      `json:"id"`
+	LastID  string      `json:"last_id"`
+	User    string      `json:"user"`
+	Msg     interface{} `json:"msg"`
 }
 
 // NewReply create a reply msg.
-func NewReply(replyTo int, msgType string, msg json.RawMessage) *Reply {
+func NewReply(replyTo int, msgType string, msg interface{}) *Reply {
 	return &Reply{ReplyTo: replyTo, Type: msgType, Msg: msg}
 }
 
@@ -67,6 +60,11 @@ func NewPong(replyTo int) *Reply {
 // NewReplyBye create a reply bye msg.
 func NewReplyBye(replyTo int) *Reply {
 	return NewReply(replyTo, ByeMsg, nil)
+}
+
+// NewResponse create a response msg.
+func NewResponse(replyTo int, msg interface{}) *Reply {
+	return NewReply(replyTo, RespReply, msg)
 }
 
 // NewErrorReply create a error reply msg.

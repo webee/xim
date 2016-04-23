@@ -1,7 +1,6 @@
 package dispatcher
 
 import (
-	"encoding/json"
 	"log"
 	"xim/dispatcher/rpcservice"
 	"xim/logic"
@@ -20,7 +19,7 @@ func InitDispatcherRPC(netAddr *netutils.NetAddr) {
 }
 
 // PutMsg push a msg to channel.
-func PutMsg(user logic.UserLocation, channel string, msgType string, msg json.RawMessage) (msgID string, err error) {
+func PutMsg(user logic.UserLocation, channel string, msg interface{}) (msgID string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
@@ -29,10 +28,9 @@ func PutMsg(user logic.UserLocation, channel string, msgType string, msg json.Ra
 	args := &rpcservice.RPCDispatcherPutMsgArgs{
 		User:    user,
 		Channel: channel,
-		Type:    msgType,
 		Msg:     msg,
 	}
-	log.Println("put:", user, channel, string(msg))
+	log.Println("put:", user, channel, msg)
 	reply := new(rpcservice.RPCDispatcherPutMsgReply)
 	err = dispatcherRPCClient.Client.Call(rpcservice.RPCDispatcherPutMsg, args, reply)
 	return reply.MsgID, err

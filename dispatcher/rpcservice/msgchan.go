@@ -1,7 +1,6 @@
 package rpcservice
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"xim/broker/proto"
@@ -16,7 +15,7 @@ func genQueueMsgTransformer() msgchan.MsgChannelTransformer {
 		qm := m.(*queueMsg)
 		id := idGen.ID()
 		qm.id <- id
-		return &chanMsg{id, qm.channel, qm.user, qm.msgType, qm.msg}
+		return &chanMsg{id, qm.channel, qm.user, qm.msg}
 	}
 }
 
@@ -37,14 +36,13 @@ func (t *msgChanTransformer) transform(m interface{}) interface{} {
 		user:    cm.user,
 		id:      cm.id,
 		lastID:  lastID,
-		msgType: cm.msgType,
 		msg:     cm.msg,
 	}
 }
 
 func dispatchMsg(m interface{}) error {
 	dm := m.(*toDispatchMsg)
-	doDispatchMsg(dm.channel, dm.user, dm.msgType, dm.id, dm.lastID, dm.msg)
+	doDispatchMsg(dm.channel, dm.user, dm.id, dm.lastID, dm.msg)
 	return nil
 }
 
@@ -59,8 +57,7 @@ func newDispatcherMsgChan(name string) *msgchan.MsgChannel {
 type queueMsg struct {
 	user    logic.UserLocation
 	channel string
-	msgType string
-	msg     json.RawMessage
+	msg     interface{}
 	id      chan string
 }
 
@@ -68,8 +65,7 @@ type chanMsg struct {
 	id      string
 	channel string
 	user    logic.UserLocation
-	msgType string
-	msg     json.RawMessage
+	msg     interface{}
 }
 
 type toDispatchMsg struct {
@@ -77,20 +73,19 @@ type toDispatchMsg struct {
 	user    logic.UserLocation
 	id      string
 	lastID  string
-	msgType string
-	msg     json.RawMessage
+	msg     interface{}
 }
 
 func (qm *queueMsg) String() string {
-	return fmt.Sprintf("%s: %s", qm.user, string(qm.msg))
+	return fmt.Sprintf("%s: %s", qm.user, qm.msg)
 }
 
 func (cm *chanMsg) String() string {
-	return fmt.Sprintf("%s: %s[%s]", cm.user, string(cm.msg), cm.id)
+	return fmt.Sprintf("%s: %s[%s]", cm.user, cm.msg, cm.id)
 }
 
 func (cm *toDispatchMsg) String() string {
-	return fmt.Sprintf("%s: %s[%s<-%s]", cm.user, string(cm.msg), cm.lastID, cm.id)
+	return fmt.Sprintf("%s: %s[%s<-%s]", cm.user, cm.msg, cm.lastID, cm.id)
 }
 
 func pushMsg(m interface{}) error {
