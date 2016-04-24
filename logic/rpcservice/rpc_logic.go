@@ -27,7 +27,7 @@ type RPCLogicHandleMsgReply struct {
 
 // RPCServer methods.
 const (
-	MsgMsgType        = "msg"
+	PutMsgType        = "put"
 	RPCLogicHandleMsg = "RPCLogic.HandleMsg"
 )
 
@@ -35,7 +35,7 @@ const (
 func (l *RPCLogic) HandleMsg(args *RPCLogicHandleMsgArgs, reply *RPCLogicHandleMsgReply) (err error) {
 	log.Println(RPCLogicHandleMsg, "is called:", args.User, args.Type, args.Msg)
 	switch args.Type {
-	case MsgMsgType:
+	case PutMsgType:
 		reply.Msg, err = handleMsgMsg(args.User, args.Channel, args.Msg)
 	default:
 		return errors.New(ErrUnknownMsgType)
