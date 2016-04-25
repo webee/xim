@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 	"xim/broker/proto"
+	"xim/broker/userboard"
 	"xim/dispatcher/broker"
 	"xim/dispatcher/msgchan"
-	"xim/logic"
 )
 
 func genQueueMsgTransformer() msgchan.MsgChannelTransformer {
@@ -55,7 +55,7 @@ func newDispatcherMsgChan(name string) *msgchan.MsgChannel {
 }
 
 type queueMsg struct {
-	user    logic.UserLocation
+	user    userboard.UserLocation
 	channel string
 	msg     interface{}
 	id      chan string
@@ -64,13 +64,13 @@ type queueMsg struct {
 type chanMsg struct {
 	id      string
 	channel string
-	user    logic.UserLocation
+	user    userboard.UserLocation
 	msg     interface{}
 }
 
 type toDispatchMsg struct {
 	channel string
-	user    logic.UserLocation
+	user    userboard.UserLocation
 	id      string
 	lastID  string
 	msg     interface{}
@@ -99,6 +99,6 @@ func newUserMsgChan(name string) *msgchan.MsgChannel {
 }
 
 type toPushMsg struct {
-	user logic.UserLocation
+	user userboard.UserLocation
 	msg  proto.MsgMsg
 }

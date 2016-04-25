@@ -2,9 +2,21 @@ package userboard
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 )
+
+// UserLocation represents a user connection location.
+type UserLocation struct {
+	UserIdentity
+	Broker   string
+	Instance string
+}
+
+func (u UserLocation) String() string {
+	return fmt.Sprintf("%s:%s>%s#%s", u.Org, u.User, u.Broker, u.Instance)
+}
 
 // UserBoard records the relations between users and connections.
 type UserBoard struct {
@@ -20,7 +32,7 @@ func NewUserBaord() *UserBoard {
 }
 
 // Register a user.
-func (ub *UserBoard) Register(uid *UserIdentity, instance string, broker UserConn) error {
+func (ub *UserBoard) Register(user *UserLocation, broker UserConn) error {
 	var (
 		err       error
 		ok        bool
@@ -29,6 +41,9 @@ func (ub *UserBoard) Register(uid *UserIdentity, instance string, broker UserCon
 	)
 	ub.Lock()
 	defer ub.Unlock()
+
+	uid := &user.UserIdentity
+	instance := user.Instance
 
 	if users, ok = ub.mapping[uid.Org]; !ok {
 		users = make(map[string]map[string]UserConn)
@@ -43,32 +58,36 @@ func (ub *UserBoard) Register(uid *UserIdentity, instance string, broker UserCon
 	}
 	log.Println(uid, instance, "registered.")
 	// first touch.
-	err = ub.Touch(uid, instance)
+	err = ub.Touch(user)
 	return err
 }
 
 // Touch a user.
-func (ub *UserBoard) Touch(uid *UserIdentity, from string) error {
+func (ub *UserBoard) Touch(user *UserLocation) error {
+	// TODO
 	// reseting redis timeout.
+	log.Println("touch:", user)
 	return nil
 }
 
 // Unregister a user.
-func (ub *UserBoard) Unregister(uid *UserIdentity, instance string) error {
+func (ub *UserBoard) Unregister(user *UserLocation) error {
 	var (
-		ok    bool
-		users map[string]map[string]UserConn
-		froms map[string]UserConn
+		ok        bool
+		users     map[string]map[string]UserConn
+		instances map[string]UserConn
 	)
 	ub.Lock()
 	defer ub.Unlock()
+	uid := &user.UserIdentity
+	instance := user.Instance
 
 	if users, ok = ub.mapping[uid.Org]; ok {
-		if froms, ok = users[uid.User]; ok {
-			if _, ok = froms[instance]; ok {
-				delete(froms, instance)
+		if instances, ok = users[uid.User]; ok {
+			if _, ok = instances[instance]; ok {
+				delete(instances, instance)
 			}
-			if len(froms) == 0 {
+			if len(instances) == 0 {
 				delete(users, uid.User)
 			}
 		}
@@ -84,19 +103,21 @@ func (ub *UserBoard) Unregister(uid *UserIdentity, instance string) error {
 }
 
 // GetUserConn find the user's connection.
-func (ub *UserBoard) GetUserConn(uid *UserIdentity, from string) (UserConn, error) {
+func (ub *UserBoard) GetUserConn(user *UserLocation) (UserConn, error) {
 	var (
-		ok     bool
-		users  map[string]map[string]UserConn
-		froms  map[string]UserConn
-		broker UserConn
+		ok        bool
+		users     map[string]map[string]UserConn
+		instances map[string]UserConn
+		broker    UserConn
 	)
 	ub.RLock()
 	defer ub.RUnlock()
+	uid := &user.UserIdentity
+	instance := user.Instance
 
 	if users, ok = ub.mapping[uid.Org]; ok {
-		if froms, ok = users[uid.User]; ok {
-			if broker, ok = froms[from]; ok {
+		if instances, ok = users[uid.User]; ok {
+			if broker, ok = instances[instance]; ok {
 				return broker, nil
 			}
 		}

@@ -16,7 +16,7 @@ func NewUserIdentify(org, user string) *UserIdentity {
 
 // VerifyAuthToken verify user token.
 func VerifyAuthToken(token string) (uid *UserIdentity, err error) {
-	// TODO
+	// TODO http request auth service.
 	uid = new(UserIdentity)
 	uid.Org = "test"
 	uid.User = token

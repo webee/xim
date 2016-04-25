@@ -11,7 +11,6 @@ import (
 
 	"xim/broker/proto"
 	"xim/broker/userboard"
-	"xim/logic"
 
 	"github.com/bitly/go-simplejson"
 	"github.com/gorilla/websocket"
@@ -35,8 +34,7 @@ type WsConn struct {
 	wLock    sync.Mutex
 	s        *WebsocketServer
 	conn     *websocket.Conn
-	uid      *userboard.UserIdentity
-	user     *logic.UserLocation
+	user     *userboard.UserLocation
 	from     string
 	instance uint32
 	msgbox   chan interface{}
@@ -108,13 +106,9 @@ func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 	var (
 		err          error
-		logicMsgChan = make(chan *proto.Msg, 10)
+		logicMsgChan chan *proto.Msg
 	)
-	defer func() {
-		close(logicMsgChan)
-		<-c.done
-		c.Close()
-	}()
+	defer c.Close()
 
 	log.Println("conn: ", c.conn.RemoteAddr())
 	// authentication
@@ -122,7 +116,12 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 		log.Println(err)
 		return
 	}
+	logicMsgChan = make(chan *proto.Msg, 10)
 	go c.ProcessLogicMsg(logicMsgChan)
+	defer func() {
+		close(logicMsgChan)
+		<-c.done
+	}()
 
 	for {
 		// read msgs.
@@ -135,6 +134,7 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 		switch msg.Type {
 		case proto.PingMsg:
 			// reseting user identity timeout.
+			c.s.userBoard.Touch(c.user)
 			c.WriteMsg(proto.NewPong(msg.ID))
 		case proto.ByeMsg:
 			c.WriteMsg(proto.NewReplyBye(msg.ID))
@@ -182,8 +182,7 @@ func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg) {
 
 func (c *WsConn) authenticate() (err error) {
 	msg := proto.Msg{}
-	_, err = c.ReadJSON(&msg, c.s.config.AuthTimeout)
-	if err != nil {
+	if _, err = c.ReadJSON(&msg, c.s.config.AuthTimeout); err != nil {
 		return
 	}
 	if msg.Type != proto.HelloMsg {
@@ -191,25 +190,23 @@ func (c *WsConn) authenticate() (err error) {
 	}
 	jd := simplejson.New()
 	jd.SetPath(nil, msg.Msg)
-	if err != nil {
-		return errors.New("bad hello msg")
-	}
 
 	token := jd.Get("token").MustString()
 	log.Println("token: ", token)
-	c.uid, err = userboard.VerifyAuthToken(token)
-	if err == nil {
+	if uid, err := userboard.VerifyAuthToken(token); err == nil {
 		log.Println(c.from, "auth ok.")
-		c.user = &logic.UserLocation{
-			Broker:   c.s.config.Broker,
-			Org:      c.uid.Org,
-			User:     c.uid.User,
-			Instance: fmt.Sprintf("%d", c.instance),
+		c.user = &userboard.UserLocation{
+			UserIdentity: *uid,
+			Broker:       c.s.config.Broker,
+			Instance:     fmt.Sprintf("%d", c.instance),
 		}
-		err = c.s.userBoard.Register(c.uid, c.user.Instance, c)
+		if err = c.s.userBoard.Register(c.user, c); err != nil {
+			return err
+		}
+		if err = c.WriteMsg(proto.NewWelcome(msg.ID)); err != nil {
+			return err
+		}
 	}
-	err = c.WriteMsg(proto.NewWelcome(msg.ID))
-
 	return
 }
 
@@ -297,7 +294,9 @@ func (c *WsConn) ReadJSONData(timeout time.Duration) (jd *simplejson.Json, err e
 // Close closes the underlying websocket connection.
 func (c *WsConn) Close() error {
 	// unregister before finish.
-	c.s.userBoard.Unregister(c.uid, c.user.Instance)
+	if c.user != nil {
+		c.s.userBoard.Unregister(c.user)
+	}
 	idPool.Put(c.instance)
 	return c.conn.Close()
 }

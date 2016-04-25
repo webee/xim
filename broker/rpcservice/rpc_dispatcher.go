@@ -4,7 +4,6 @@ import (
 	"log"
 	"xim/broker/proto"
 	"xim/broker/userboard"
-	"xim/logic"
 	"xim/utils/rpcutils"
 )
 
@@ -20,7 +19,7 @@ func NewRPCBroker(userBoard *userboard.UserBoard) *RPCBroker {
 
 // RPCBrokerPushMsgArgs is the msg args.
 type RPCBrokerPushMsgArgs struct {
-	User logic.UserLocation
+	User userboard.UserLocation
 	Msg  proto.MsgMsg
 }
 
@@ -32,8 +31,7 @@ const (
 // PushMsg push msg to broker.
 func (r *RPCBroker) PushMsg(args *RPCBrokerPushMsgArgs, reply *rpcutils.NoReply) error {
 	log.Println("GET PUSH:", args.User, args.Msg)
-	uid := userboard.NewUserIdentify(args.User.Org, args.User.User)
-	userConn, err := r.userBoard.GetUserConn(uid, args.User.Instance)
+	userConn, err := r.userBoard.GetUserConn(&args.User)
 	if err != nil {
 		return err
 	}

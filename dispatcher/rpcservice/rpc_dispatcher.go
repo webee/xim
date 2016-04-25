@@ -3,7 +3,7 @@ package rpcservice
 import (
 	"log"
 	"xim/broker/proto"
-	"xim/logic"
+	"xim/broker/userboard"
 )
 
 // RPCDispatcher represents the rpc dispatcher.
@@ -17,7 +17,7 @@ func NewRPCDispatcher() *RPCDispatcher {
 
 // RPCDispatcherPutMsgArgs is the msg args.
 type RPCDispatcherPutMsgArgs struct {
-	User    logic.UserLocation
+	User    userboard.UserLocation
 	Channel string
 	Msg     interface{}
 }
@@ -49,7 +49,7 @@ func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatch
 	return err
 }
 
-func doDispatchMsg(channel string, user logic.UserLocation, id, lastID string, msg interface{}) {
+func doDispatchMsg(channel string, user userboard.UserLocation, id, lastID string, msg interface{}) {
 	log.Printf("dispatch msg: #%s, %s, [%s<-%s, %s]\n", channel, user, lastID, id, msg)
 	protoMsg := proto.MsgMsg{
 		Channel: channel,
@@ -68,22 +68,26 @@ func doDispatchMsg(channel string, user logic.UserLocation, id, lastID string, m
 	}
 }
 
-func getChannelOnlineUserInstances(channel string) []logic.UserLocation {
+func getChannelOnlineUserInstances(channel string) []userboard.UserLocation {
 	/*
 		1. get channel users.
 		2. filter get the online user instances.
 	*/
-	return []logic.UserLocation{
-		logic.UserLocation{
+	return []userboard.UserLocation{
+		userboard.UserLocation{
+			UserIdentity: userboard.UserIdentity{
+				Org:  "test",
+				User: "webee",
+			},
 			Broker:   "tcp@localhost:5780",
-			Org:      "test",
-			User:     "webee",
 			Instance: "1",
 		},
-		logic.UserLocation{
+		userboard.UserLocation{
+			UserIdentity: userboard.UserIdentity{
+				Org:  "test",
+				User: "xiaoee",
+			},
 			Broker:   "tcp@localhost:5780",
-			Org:      "test",
-			User:     "xiaoee",
 			Instance: "2",
 		},
 	}

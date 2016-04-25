@@ -4,12 +4,12 @@ import (
 	"log"
 	"xim/broker/proto"
 	"xim/broker/rpcservice"
-	"xim/logic"
+	"xim/broker/userboard"
 	"xim/utils/rpcutils"
 )
 
 // PushMsg push a msg to broker.
-func PushMsg(user logic.UserLocation, msg proto.MsgMsg) (err error) {
+func PushMsg(user userboard.UserLocation, msg proto.MsgMsg) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)

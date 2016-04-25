@@ -2,8 +2,8 @@ package dispatcher
 
 import (
 	"log"
+	"xim/broker/userboard"
 	"xim/dispatcher/rpcservice"
-	"xim/logic"
 	"xim/utils/netutils"
 	"xim/utils/rpcutils"
 )
@@ -19,7 +19,7 @@ func InitDispatcherRPC(netAddr *netutils.NetAddr) {
 }
 
 // PutMsg push a msg to channel.
-func PutMsg(user logic.UserLocation, channel string, msg interface{}) (msgID string, err error) {
+func PutMsg(user userboard.UserLocation, channel string, msg interface{}) (msgID string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
