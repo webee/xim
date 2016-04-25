@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 )
 
@@ -15,7 +16,18 @@ type UserLocation struct {
 }
 
 func (u UserLocation) String() string {
-	return fmt.Sprintf("%s:%s>%s#%s", u.Org, u.User, u.Broker, u.Instance)
+	return fmt.Sprintf("%s>%s#%s", u.UserIdentity, u.Broker, u.Instance)
+}
+
+// ParseUserLocation parse a user location from a string.
+func ParseUserLocation(s string) *UserLocation {
+	parts := strings.Split(s, ">")
+	parts2 := strings.Split(parts[1], "#")
+	return &UserLocation{
+		UserIdentity: *ParseUserIdentify(parts[0]),
+		Broker:       parts2[0],
+		Instance:     parts2[1],
+	}
 }
 
 // UserBoard records the relations between users and connections.
@@ -32,9 +44,8 @@ func NewUserBaord() *UserBoard {
 }
 
 // Register a user.
-func (ub *UserBoard) Register(user *UserLocation, broker UserConn) error {
+func (ub *UserBoard) Register(user *UserLocation, conn UserConn) error {
 	var (
-		err       error
 		ok        bool
 		users     map[string]map[string]UserConn
 		instances map[string]UserConn
@@ -53,21 +64,10 @@ func (ub *UserBoard) Register(user *UserLocation, broker UserConn) error {
 		instances = make(map[string]UserConn)
 		users[uid.User] = instances
 	}
-	if _, ok = instances[instance]; !ok {
-		instances[instance] = broker
-	}
+	instances[instance] = conn
 	log.Println(uid, instance, "registered.")
 	// first touch.
-	err = ub.Touch(user)
-	return err
-}
-
-// Touch a user.
-func (ub *UserBoard) Touch(user *UserLocation) error {
-	// TODO
-	// reseting redis timeout.
-	log.Println("touch:", user)
-	return nil
+	return UserOnline(user)
 }
 
 // Unregister a user.
@@ -98,8 +98,7 @@ func (ub *UserBoard) Unregister(user *UserLocation) error {
 		*/
 	}
 	log.Println(uid, instance, "unregistered.")
-	// delete from redis.
-	return nil
+	return UserOffline(user)
 }
 
 // GetUserConn find the user's connection.

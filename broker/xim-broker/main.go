@@ -20,6 +20,7 @@ func main() {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
 	//setupServer()
+	initUserboard()
 	initLogicRPC()
 	startRPCService()
 	startWebsocket()

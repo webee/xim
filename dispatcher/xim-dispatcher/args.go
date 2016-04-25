@@ -10,6 +10,7 @@ type Args struct {
 	pprofAddr     string
 	redisServer   string
 	redisPassword string
+	redisNetAddr  string
 }
 
 var (
@@ -23,4 +24,5 @@ func init() {
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6062", "debug pprof http address.")
 	flag.StringVar(&args.redisServer, "redis-server", ":6379", "redis server.")
 	flag.StringVar(&args.redisPassword, "redis-password", "", "redis password.")
+	flag.StringVar(&args.redisNetAddr, "redis-net-addr", "tcp@localhost:6379", "redis network address.")
 }

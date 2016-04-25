@@ -134,7 +134,7 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 		switch msg.Type {
 		case proto.PingMsg:
 			// reseting user identity timeout.
-			c.s.userBoard.Touch(c.user)
+			c.s.userBoard.Register(c.user, c)
 			c.WriteMsg(proto.NewPong(msg.ID))
 		case proto.ByeMsg:
 			c.WriteMsg(proto.NewReplyBye(msg.ID))
@@ -188,10 +188,8 @@ func (c *WsConn) authenticate() (err error) {
 	if msg.Type != proto.HelloMsg {
 		return errors.New("need hello msg")
 	}
-	jd := simplejson.New()
-	jd.SetPath(nil, msg.Msg)
 
-	token := jd.Get("token").MustString()
+	token := msg.Token
 	log.Println("token: ", token)
 	if uid, err := userboard.VerifyAuthToken(token); err == nil {
 		log.Println(c.from, "auth ok.")

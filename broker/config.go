@@ -17,7 +17,7 @@ type WebsocketServerConfig struct {
 }
 
 var (
-	defaultWebsocketServerConfig = WebsocketServerConfig{
+	defaultWebsocketServerConfig = &WebsocketServerConfig{
 		Testing:          false,
 		Addr:             "localhost:2780",
 		AuthTimeout:      50 * time.Second,
@@ -29,6 +29,6 @@ var (
 // NewWebsocketServerConfig merge config to default config.
 func NewWebsocketServerConfig(config *WebsocketServerConfig) *WebsocketServerConfig {
 	var finalConfig = defaultWebsocketServerConfig
-	mergo.MergeWithOverwrite(&finalConfig, config)
-	return &finalConfig
+	mergo.MergeWithOverwrite(finalConfig, config)
+	return finalConfig
 }

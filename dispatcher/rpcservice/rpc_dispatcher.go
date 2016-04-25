@@ -60,7 +60,7 @@ func doDispatchMsg(channel string, user userboard.UserLocation, id, lastID strin
 	}
 	for _, user := range getChannelOnlineUserInstances(channel) {
 		toPutMsg := &toPushMsg{
-			user: user,
+			user: *user,
 			msg:  protoMsg,
 		}
 		userMsgChan := userChannelCache.getMsgChan(user.String())
@@ -68,27 +68,30 @@ func doDispatchMsg(channel string, user userboard.UserLocation, id, lastID strin
 	}
 }
 
-func getChannelOnlineUserInstances(channel string) []userboard.UserLocation {
+func getChannelOnlineUserInstances(channel string) []*userboard.UserLocation {
 	/*
 		1. get channel users.
 		2. filter get the online user instances.
 	*/
-	return []userboard.UserLocation{
-		userboard.UserLocation{
-			UserIdentity: userboard.UserIdentity{
-				Org:  "test",
-				User: "webee",
-			},
-			Broker:   "tcp@localhost:5780",
-			Instance: "1",
+	uids := []*userboard.UserIdentity{
+		&userboard.UserIdentity{
+			Org:  "test",
+			User: "webee",
 		},
-		userboard.UserLocation{
-			UserIdentity: userboard.UserIdentity{
-				Org:  "test",
-				User: "xiaoee",
-			},
-			Broker:   "tcp@localhost:5780",
-			Instance: "2",
+		&userboard.UserIdentity{
+			Org:  "test",
+			User: "xiaoee",
 		},
 	}
+	if len(uids) == 0 {
+		return []*userboard.UserLocation{}
+	}
+
+	users, err := userboard.GetOnlineUsers(uids...)
+	if err != nil {
+		log.Printf("get online users error: channel->%s, %s\n", channel, err)
+		return []*userboard.UserLocation{}
+	}
+
+	return users
 }

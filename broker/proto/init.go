@@ -15,6 +15,7 @@ const (
 type Msg struct {
 	ID      int         `json:"id"`
 	Type    string      `json:"type,omitempty"`
+	Token   string      `json:"token,omitempty"`
 	Channel string      `json:"channel,omitempty"`
 	Msg     interface{} `json:"msg,omitempty"`
 }
