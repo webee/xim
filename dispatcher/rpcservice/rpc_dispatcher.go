@@ -4,6 +4,7 @@ import (
 	"log"
 	"xim/broker/proto"
 	"xim/broker/userboard"
+	"xim/utils/rpcutils"
 )
 
 // RPCDispatcher represents the rpc dispatcher.
@@ -19,6 +20,7 @@ func NewRPCDispatcher() *RPCDispatcher {
 type RPCDispatcherPutMsgArgs struct {
 	User    userboard.UserLocation
 	Channel string
+	Kind    string
 	Msg     interface{}
 }
 
@@ -29,7 +31,8 @@ type RPCDispatcherPutMsgReply struct {
 
 // RPCServer methods.
 const (
-	RPCDispatcherPutMsg = "RPCDispatcher.PutMsg"
+	RPCDispatcherPutMsg       = "RPCDispatcher.PutMsg"
+	RPCDispatcherPutStatusMsg = "RPCDispatcher.PutStatusMsg"
 )
 
 // PutMsg put msg to channel.
@@ -49,21 +52,51 @@ func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatch
 	return err
 }
 
-func doDispatchMsg(channel string, user userboard.UserLocation, id, lastID string, msg interface{}) {
+// PutStatusMsg put status msg to channel.
+func (r *RPCDispatcher) PutStatusMsg(args *RPCDispatcherPutMsgArgs, reply *rpcutils.NoReply) error {
+	log.Println(RPCDispatcherPutStatusMsg, "is called:", args.User, args.Channel, args.Msg)
+
+	doDispatchStatusMsg(args.Channel, &args.User, args.Msg)
+	return nil
+}
+
+func doDispatchMsg(channel string, user *userboard.UserLocation, id, lastID string, msg interface{}) {
 	log.Printf("dispatch msg: #%s, %s, [%s<-%s, %s]\n", channel, user, lastID, id, msg)
-	protoMsg := proto.MsgMsg{
+	protoMsg := &proto.ChannelMsg{
+		Type:    proto.MsgMsg,
 		Channel: channel,
 		User:    user.User,
 		ID:      id,
 		LastID:  lastID,
 		Msg:     msg,
 	}
-	for _, user := range getChannelOnlineUserInstances(channel) {
-		toPutMsg := &toPushMsg{
-			user: *user,
-			msg:  protoMsg,
+	putMsg(channel, user, protoMsg)
+}
+
+func doDispatchStatusMsg(channel string, user *userboard.UserLocation, msg interface{}) {
+	log.Printf("dispatch status msg: #%s, %s, %s\n", channel, user, msg)
+	protoMsg := &proto.ChannelMsg{
+		Type:    proto.MsgMsg,
+		Channel: channel,
+		User:    user.User,
+		Kind:    proto.PutStatusMsg,
+		Msg:     msg,
+	}
+
+	putMsg(channel, user, protoMsg)
+}
+
+func putMsg(channel string, user *userboard.UserLocation, protoMsg *proto.ChannelMsg) {
+	for _, u := range getChannelOnlineUserInstances(channel) {
+		if *u == *user {
+			continue
 		}
-		userMsgChan := userChannelCache.getMsgChan(user.String())
+
+		toPutMsg := &toPushMsg{
+			user: *u,
+			msg:  *protoMsg,
+		}
+		userMsgChan := userChannelCache.getMsgChan(u.String())
 		userMsgChan.Put(toPutMsg)
 	}
 }

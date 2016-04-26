@@ -17,11 +17,12 @@ func InitLogicRPC(netAddr *netutils.NetAddr) {
 }
 
 // HandleLogicMsg handle logic msg.
-func HandleLogicMsg(user *userboard.UserLocation, msgType string, channel string, msg interface{}) (interface{}, error) {
+func HandleLogicMsg(user *userboard.UserLocation, msgType string, channel string, msgKind string, msg interface{}) (interface{}, error) {
 	args := &rpcservice.RPCLogicHandleMsgArgs{
 		User:    *user,
 		Type:    msgType,
 		Channel: channel,
+		Kind:    msgKind,
 		Msg:     msg,
 	}
 	reply := new(rpcservice.RPCLogicHandleMsgReply)

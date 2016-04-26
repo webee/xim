@@ -123,6 +123,7 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 		<-c.done
 	}()
 
+	t := time.Now()
 	for {
 		// read msgs.
 		msg, err := c.ReadMsg()
@@ -130,12 +131,18 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 			log.Println(err)
 			break
 		}
+		if time.Now().Sub(t) > c.s.config.HeartBeatTimeout {
+			// ping timeout.
+			return
+		}
+
 		log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type)
 		switch msg.Type {
 		case proto.PingMsg:
 			// reseting user identity timeout.
 			c.s.userBoard.Register(c.user, c)
-			c.WriteMsg(proto.NewPong(msg.ID))
+			t = time.Now()
+			c.WriteMsg(proto.NewPong(msg.ID, msg.Msg))
 		case proto.ByeMsg:
 			c.WriteMsg(proto.NewReplyBye(msg.ID))
 			return
@@ -169,11 +176,11 @@ func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg) {
 			}
 			log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type, msg.Msg)
 
-			replyMsg, err := HandleLogicMsg(c.user, msg.Type, msg.Channel, msg.Msg)
+			replyMsg, err := HandleLogicMsg(c.user, msg.Type, msg.Channel, msg.Kind, msg.Msg)
 			// TODO handle send error.
 			if err != nil {
 				_ = c.WriteMsg(proto.NewErrorReply(msg.ID, err.Error()))
-			} else {
+			} else if replyMsg != nil {
 				_ = c.WriteMsg(proto.NewResponse(msg.ID, replyMsg))
 			}
 		}
@@ -224,12 +231,6 @@ func (c *WsConn) ReadMsg() (msg proto.Msg, err error) {
 	return
 }
 
-// ReadHello read the hello message in a auth timeout duration.
-func (c *WsConn) ReadHello() (msg proto.Msg, err error) {
-	_, err = c.ReadJSON(&msg, c.s.config.AuthTimeout)
-	return
-}
-
 // PushMsg write json message in a write timeout duration.
 func (c *WsConn) PushMsg(v interface{}) (err error) {
 	select {
@@ -269,6 +270,10 @@ func (c *WsConn) ReadJSON(v interface{}, timeout time.Duration) (bytes []byte, e
 	conn := c.conn
 	conn.SetReadDeadline(time.Now().Add(timeout))
 	_, bytes, err = conn.ReadMessage()
+	if len(bytes) > 16*1024 {
+		err = errors.New("msg too large")
+		return
+	}
 	conn.SetReadDeadline(time.Time{})
 	if err != nil {
 		return

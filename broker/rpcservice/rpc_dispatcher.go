@@ -20,7 +20,7 @@ func NewRPCBroker(userBoard *userboard.UserBoard) *RPCBroker {
 // RPCBrokerPushMsgArgs is the msg args.
 type RPCBrokerPushMsgArgs struct {
 	User userboard.UserLocation
-	Msg  proto.MsgMsg
+	Msg  proto.ChannelMsg
 }
 
 // RPCServer methods.

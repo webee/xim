@@ -2,13 +2,16 @@ package proto
 
 // msg types.
 const (
-	HelloMsg   = "hello"
-	WelcomeMsg = "welcome"
-	PingMsg    = "ping"
-	PongMsg    = "pong"
-	ByeMsg     = "bye"
-	RespReply  = "resp"
-	ErrorReply = "error"
+	HelloMsg     = "hello"
+	WelcomeMsg   = "welcome"
+	PingMsg      = "ping"
+	PongMsg      = "pong"
+	ByeMsg       = "bye"
+	RespReply    = "resp"
+	ErrorReply   = "error"
+	PutMsg       = "put"
+	PutStatusMsg = "status"
+	MsgMsg       = "msg"
 )
 
 // Msg is the base user send msg.
@@ -17,6 +20,7 @@ type Msg struct {
 	Type    string      `json:"type,omitempty"`
 	Token   string      `json:"token,omitempty"`
 	Channel string      `json:"channel,omitempty"`
+	Kind    string      `json:"kind,omitempty"`
 	Msg     interface{} `json:"msg,omitempty"`
 }
 
@@ -34,12 +38,14 @@ type Reply struct {
 	Err     string      `json:"err,omitempty"`
 }
 
-// MsgMsg is msg msg.
-type MsgMsg struct {
-	Channel string      `json:"channel"`
-	ID      string      `json:"id"`
-	LastID  string      `json:"last_id"`
+// ChannelMsg is channel event msg.
+type ChannelMsg struct {
+	Type    string      `json:"type,omitempty"`
+	ID      string      `json:"id,omitempty"`
+	LastID  string      `json:"last_id,omitempty"`
 	User    string      `json:"user"`
+	Channel string      `json:"channel"`
+	Kind    string      `json:"kind,omitempty"`
 	Msg     interface{} `json:"msg"`
 }
 
@@ -54,8 +60,8 @@ func NewWelcome(replyTo int) *Reply {
 }
 
 // NewPong create a pong msg.
-func NewPong(replyTo int) *Reply {
-	return NewReply(replyTo, PongMsg, nil)
+func NewPong(replyTo int, msg interface{}) *Reply {
+	return NewReply(replyTo, PongMsg, msg)
 }
 
 // NewReplyBye create a reply bye msg.
