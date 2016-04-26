@@ -67,6 +67,7 @@ func handleMsgMsg(user userboard.UserLocation, channel, kind string, msg interfa
 		// channel status msg, eg. user typing.
 		err := dispatcher.PutStatusMsg(user, channel, msg)
 		return nil, err
+	default:
+		return nil, errors.New(ErrUnknownPutMsgKind)
 	}
-	return
 }
