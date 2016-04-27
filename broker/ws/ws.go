@@ -1,18 +1,16 @@
-package broker
+package ws
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 	"time"
 
+	"xim/broker"
 	"xim/broker/proto"
 	"xim/broker/userboard"
 
-	"github.com/bitly/go-simplejson"
 	"github.com/gorilla/websocket"
 	"github.com/youtube/vitess/go/pools"
 )
@@ -29,18 +27,6 @@ type WebsocketServer struct {
 	userBoard  *userboard.UserBoard
 }
 
-// WsConn is a websocket connection.
-type WsConn struct {
-	wLock    sync.Mutex
-	s        *WebsocketServer
-	conn     *websocket.Conn
-	user     *userboard.UserLocation
-	from     string
-	instance uint32
-	msgbox   chan interface{}
-	done     chan struct{}
-}
-
 // NewWebsocketServer creates a new WebsocketServer.
 func NewWebsocketServer(userBoard *userboard.UserBoard, config *WebsocketServerConfig) (server *WebsocketServer) {
 	server = &WebsocketServer{
@@ -50,18 +36,6 @@ func NewWebsocketServer(userBoard *userboard.UserBoard, config *WebsocketServerC
 	server.initUpgrader()
 	server.initHTTPServer()
 	return server
-}
-
-// NewWsConn creates a WsConn.
-func NewWsConn(s *WebsocketServer, conn *websocket.Conn) *WsConn {
-	return &WsConn{
-		s:        s,
-		conn:     conn,
-		from:     conn.RemoteAddr().String(),
-		instance: idPool.Get(),
-		msgbox:   make(chan interface{}, 5),
-		done:     make(chan struct{}, 1),
-	}
 }
 
 func (s *WebsocketServer) initUpgrader() {
@@ -83,8 +57,8 @@ func (s *WebsocketServer) initHTTPServer() {
 	s.httpServer = &http.Server{
 		Handler:      httpServeMux,
 		Addr:         s.config.Addr,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  s.config.HTTPReadTimeout,
+		WriteTimeout: s.config.HTTPWriteTimeout,
 	}
 }
 
@@ -100,10 +74,10 @@ func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	s.handleWebsocket(NewWsConn(s, conn))
+	s.handleWebsocket(newWsConn(s, conn))
 }
 
-func (s *WebsocketServer) handleWebsocket(c *WsConn) {
+func (s *WebsocketServer) handleWebsocket(c *wsConn) {
 	var (
 		err          error
 		logicMsgChan chan *proto.Msg
@@ -112,12 +86,12 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 
 	log.Println("conn: ", c.conn.RemoteAddr())
 	// authentication
-	if err = c.authenticate(); err != nil {
+	if err = authenticate(c); err != nil {
 		log.Println(err)
 		return
 	}
 	logicMsgChan = make(chan *proto.Msg, 10)
-	go c.ProcessLogicMsg(logicMsgChan)
+	go ProcessLogicMsg(c, logicMsgChan)
 	defer func() {
 		close(logicMsgChan)
 		<-c.done
@@ -131,7 +105,7 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 			log.Println(err)
 			break
 		}
-		if time.Now().Sub(t) > c.s.config.HeartBeatTimeout {
+		if time.Now().Sub(t) > c.s.config.HeartbeatTimeout {
 			// ping timeout.
 			return
 		}
@@ -156,7 +130,7 @@ func (s *WebsocketServer) handleWebsocket(c *WsConn) {
 }
 
 // ProcessLogicMsg process logic messages.
-func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg) {
+func ProcessLogicMsg(c *wsConn, q <-chan *proto.Msg) {
 	defer func() {
 		log.Println(c.conn.RemoteAddr(), ":", "OVER.")
 		close(c.done)
@@ -176,7 +150,7 @@ func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg) {
 			}
 			log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type, msg.Msg)
 
-			replyMsg, err := HandleLogicMsg(c.user, msg.Type, msg.Channel, msg.Kind, msg.Msg)
+			replyMsg, err := broker.HandleLogicMsg(c.user, msg.Type, msg.Channel, msg.Kind, msg.Msg)
 			// TODO handle send error.
 			if err != nil {
 				_ = c.WriteMsg(proto.NewErrorReply(msg.ID, err.Error()))
@@ -187,7 +161,7 @@ func (c *WsConn) ProcessLogicMsg(q <-chan *proto.Msg) {
 	}
 }
 
-func (c *WsConn) authenticate() (err error) {
+func authenticate(c *wsConn) (err error) {
 	msg := proto.Msg{}
 	if _, err = c.ReadJSON(&msg, c.s.config.AuthTimeout); err != nil {
 		return
@@ -213,93 +187,4 @@ func (c *WsConn) authenticate() (err error) {
 		}
 	}
 	return
-}
-
-// ReadMsg read json message in a heartbeat duration.
-func (c *WsConn) ReadMsg() (msg proto.Msg, err error) {
-	//jd, err = c.ReadJSONData(c.s.config.HeartBeatTimeout)
-	//msg.ID, err = jd.Get("id").Int()
-	//msg.Type, err = jd.Get("type").String()
-
-	// msg with bytes
-	/*
-		msg = new(proto.MsgWithBytes)
-		bytes, err := c.ReadJSON(msg, c.s.config.HeartBeatTimeout)
-		msg.Bytes = bytes
-	*/
-	_, err = c.ReadJSON(&msg, c.s.config.HeartBeatTimeout)
-	return
-}
-
-// PushMsg write json message in a write timeout duration.
-func (c *WsConn) PushMsg(v interface{}) (err error) {
-	select {
-	case <-c.done:
-		return errors.New("connection closed")
-	case c.msgbox <- v:
-		return nil
-	}
-}
-
-// WriteMsg write json message in a write timeout duration.
-func (c *WsConn) WriteMsg(v interface{}) (err error) {
-	err = c.WriteJSON(v, c.s.config.WriteTimeout)
-	return
-}
-
-// WriteJSON write json message in a timeout duration.
-func (c *WsConn) WriteJSON(v interface{}, timeout time.Duration) error {
-	conn := c.conn
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-	c.wLock.Lock()
-	conn.SetWriteDeadline(time.Now().Add(timeout))
-	err = conn.WriteMessage(websocket.TextMessage, data)
-	conn.SetWriteDeadline(time.Time{})
-	c.wLock.Unlock()
-	if err != nil {
-		log.Println(err)
-	}
-	return err
-}
-
-// ReadJSON read json message in a timeout duration.
-func (c *WsConn) ReadJSON(v interface{}, timeout time.Duration) (bytes []byte, err error) {
-	conn := c.conn
-	conn.SetReadDeadline(time.Now().Add(timeout))
-	_, bytes, err = conn.ReadMessage()
-	if len(bytes) > 16*1024 {
-		err = errors.New("msg too large")
-		return
-	}
-	conn.SetReadDeadline(time.Time{})
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(bytes, v)
-	return
-}
-
-// ReadJSONData read json message in a timeout duration.
-func (c *WsConn) ReadJSONData(timeout time.Duration) (jd *simplejson.Json, err error) {
-	conn := c.conn
-	conn.SetReadDeadline(time.Now().Add(timeout))
-	_, r, err := conn.NextReader()
-	conn.SetReadDeadline(time.Time{})
-	if err != nil {
-		return
-	}
-	return simplejson.NewFromReader(r)
-}
-
-// Close closes the underlying websocket connection.
-func (c *WsConn) Close() error {
-	// unregister before finish.
-	if c.user != nil {
-		c.s.userBoard.Unregister(c.user)
-	}
-	idPool.Put(c.instance)
-	return c.conn.Close()
 }

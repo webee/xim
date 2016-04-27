@@ -33,6 +33,7 @@ type MsgWithBytes struct {
 // Reply is the base server reply msg.
 type Reply struct {
 	ReplyTo int         `json:"reply_to"`
+	Ok      interface{} `json:"ok,omitempty"`
 	Type    string      `json:"type,omitempty"`
 	Msg     interface{} `json:"msg,omitempty"`
 	Err     string      `json:"err,omitempty"`
@@ -71,10 +72,10 @@ func NewReplyBye(replyTo int) *Reply {
 
 // NewResponse create a response msg.
 func NewResponse(replyTo int, msg interface{}) *Reply {
-	return NewReply(replyTo, RespReply, msg)
+	return &Reply{ReplyTo: replyTo, Ok: true, Type: RespReply, Msg: msg}
 }
 
 // NewErrorReply create a error reply msg.
 func NewErrorReply(replyTo int, err string) *Reply {
-	return &Reply{ReplyTo: replyTo, Type: ErrorReply, Err: err}
+	return &Reply{ReplyTo: replyTo, Ok: false, Type: ErrorReply, Err: err}
 }

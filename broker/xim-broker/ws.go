@@ -2,15 +2,20 @@ package main
 
 import (
 	"log"
-	"xim/broker"
+	"xim/broker/ws"
 )
 
 func startWebsocket() {
-	wsServer := broker.NewWebsocketServer(userBoard, broker.NewWebsocketServerConfig(
-		&broker.WebsocketServerConfig{
-			Testing: args.testing,
-			Addr:    args.addr,
-			Broker:  args.rpcNetAddr,
+	wsServer := ws.NewWebsocketServer(userBoard, ws.NewWebsocketServerConfig(
+		&ws.WebsocketServerConfig{
+			Testing:          args.testing,
+			Addr:             args.addr,
+			Broker:           args.rpcNetAddr,
+			HTTPReadTimeout:  args.httpReadTimeout,
+			HTTPWriteTimeout: args.httpWriteTimeout,
+			AuthTimeout:      args.connAuthTimeout,
+			HeartbeatTimeout: args.connHeartbeatTimeout,
+			WriteTimeout:     args.connWriteTimeout,
 		}))
 	go func() {
 		log.Fatal(wsServer.ListenAndServe())

@@ -1,4 +1,4 @@
-package broker
+package ws
 
 import (
 	"time"
@@ -10,8 +10,10 @@ import (
 type WebsocketServerConfig struct {
 	Testing          bool
 	Addr             string
+	HTTPReadTimeout  time.Duration
+	HTTPWriteTimeout time.Duration
 	AuthTimeout      time.Duration
-	HeartBeatTimeout time.Duration
+	HeartbeatTimeout time.Duration
 	WriteTimeout     time.Duration
 	Broker           string
 }
@@ -20,9 +22,11 @@ var (
 	defaultWebsocketServerConfig = &WebsocketServerConfig{
 		Testing:          false,
 		Addr:             "localhost:2780",
-		AuthTimeout:      50 * time.Second,
-		HeartBeatTimeout: 120 * time.Second,
-		WriteTimeout:     50 * time.Second,
+		HTTPReadTimeout:  7 * time.Second,
+		HTTPWriteTimeout: 7 * time.Second,
+		AuthTimeout:      7 * time.Second,
+		HeartbeatTimeout: 12 * time.Second,
+		WriteTimeout:     7 * time.Second,
 	}
 )
 
