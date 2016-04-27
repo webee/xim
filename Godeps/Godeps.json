@@ -1,0 +1,114 @@
+{
+	"ImportPath": "xim",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v62",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/bitly/go-simplejson",
+			"Comment": "v0.5.0",
+			"Rev": "aabad6e819789e569bd6aabf444c935aa9ba1e44"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/internal",
+			"Rev": "8873b2f1995f59d4bcdd2b0dc9858e2cb9bf0c13"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Rev": "8873b2f1995f59d4bcdd2b0dc9858e2cb9bf0c13"
+		},
+		{
+			"ImportPath": "github.com/golang/glog",
+			"Rev": "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
+		},
+		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Rev": "e2e3d8414d0fbae04004f151979f4e27c6747fe7"
+		},
+		{
+			"ImportPath": "github.com/imdario/mergo",
+			"Comment": "0.2.2-2-gea01514",
+			"Rev": "ea0151498788f6fab6365eae24f29f41c0ac0acc"
+		},
+		{
+			"ImportPath": "github.com/webee/ttlcache",
+			"Comment": "1.0.1-5-g1e620d0",
+			"Rev": "1e620d05755a61b370757c07a39532bc01c0f596"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/acl",
+			"Comment": "v2.0.0-beta.2-15-g24dd44e",
+			"Rev": "24dd44e08b535368f86a6c2d656c1ce7a8760c78"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/cache",
+			"Comment": "v2.0.0-beta.2-15-g24dd44e",
+			"Rev": "24dd44e08b535368f86a6c2d656c1ce7a8760c78"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/pools",
+			"Comment": "v2.0.0-beta.2-15-g24dd44e",
+			"Rev": "24dd44e08b535368f86a6c2d656c1ce7a8760c78"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/sync2",
+			"Comment": "v2.0.0-beta.2-15-g24dd44e",
+			"Rev": "24dd44e08b535368f86a6c2d656c1ce7a8760c78"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "e45385e9b226f570b1f086bf287b25d3d4117776"
+		},
+		{
+			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
+			"Rev": "db14e161995a5177acef654cb0dd785e8ee8bc22"
+		},
+		{
+			"ImportPath": "gopkg.in/go-redis/cache.v3",
+			"Comment": "v1.0.1-4-g313857c",
+			"Rev": "313857ce218310c8135af1c3f9762cd6dd50df4d"
+		},
+		{
+			"ImportPath": "gopkg.in/go-redis/cache.v3/lrucache",
+			"Comment": "v1.0.1-4-g313857c",
+			"Rev": "313857ce218310c8135af1c3f9762cd6dd50df4d"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v3",
+			"Comment": "v3.6.1",
+			"Rev": "b3514029955f38f2a1120b5c3ad59f241d9eecca"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v3/internal/consistenthash",
+			"Comment": "v3.6.1",
+			"Rev": "b3514029955f38f2a1120b5c3ad59f241d9eecca"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v3/internal/hashtag",
+			"Comment": "v3.6.1",
+			"Rev": "b3514029955f38f2a1120b5c3ad59f241d9eecca"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v3/internal/pool",
+			"Comment": "v3.6.1",
+			"Rev": "b3514029955f38f2a1120b5c3ad59f241d9eecca"
+		},
+		{
+			"ImportPath": "gopkg.in/redsync.v1",
+			"Comment": "v1",
+			"Rev": "4b60e6587a6eea7bd3bdd414788dce502572bcb2"
+		},
+		{
+			"ImportPath": "gopkg.in/vmihailenco/msgpack.v2",
+			"Comment": "v2.4.11",
+			"Rev": "775d4b0cf44d799d42a1f6fded02252340f4e33d"
+		},
+		{
+			"ImportPath": "gopkg.in/vmihailenco/msgpack.v2/codes",
+			"Comment": "v2.4.11",
+			"Rev": "775d4b0cf44d799d42a1f6fded02252340f4e33d"
+		}
+	]
+}
