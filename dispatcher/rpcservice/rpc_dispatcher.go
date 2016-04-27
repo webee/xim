@@ -108,11 +108,11 @@ func getChannelOnlineUserInstances(channel string) []*userboard.UserLocation {
 	*/
 	uids := []*userboard.UserIdentity{
 		&userboard.UserIdentity{
-			Org:  "test",
+			App:  "test",
 			User: "webee",
 		},
 		&userboard.UserIdentity{
-			Org:  "test",
+			App:  "test",
 			User: "xiaoee",
 		},
 	}

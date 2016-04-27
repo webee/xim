@@ -13,6 +13,7 @@ var (
 
 // InitLogicRPC connect to logic rpc.
 func InitLogicRPC(netAddr *netutils.NetAddr) {
+	// TODO use connection pool.
 	logicRPCClient, _ = rpcutils.NewRPCClient(netAddr, true)
 }
 

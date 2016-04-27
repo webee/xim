@@ -7,19 +7,19 @@ import (
 
 // UserIdentity is a user instance.
 type UserIdentity struct {
-	Org  string
+	App  string
 	User string
 }
 
 func (uid UserIdentity) String() string {
-	return fmt.Sprintf("%s:%s", uid.Org, uid.User)
+	return fmt.Sprintf("%s:%s", uid.App, uid.User)
 }
 
 // ParseUserIdentify parse a user identity from a string.
 func ParseUserIdentify(s string) *UserIdentity {
 	parts := strings.Split(s, ":")
 	return &UserIdentity{
-		Org:  parts[0],
+		App:  parts[0],
 		User: parts[1],
 	}
 }
@@ -28,7 +28,7 @@ func ParseUserIdentify(s string) *UserIdentity {
 func VerifyAuthToken(token string) (uid *UserIdentity, err error) {
 	// TODO http request auth service.
 	uid = &UserIdentity{
-		Org:  "test",
+		App:  "test",
 		User: token,
 	}
 	return uid, nil
@@ -36,7 +36,7 @@ func VerifyAuthToken(token string) (uid *UserIdentity, err error) {
 
 // IsValid checks if user identity is valid.
 func (uid *UserIdentity) IsValid() bool {
-	return uid != nil && uid.Org != "" && uid.User != ""
+	return uid != nil && uid.App != "" && uid.User != ""
 }
 
 // ResetTimeout reset user identity timeout.

@@ -56,9 +56,9 @@ func (ub *UserBoard) Register(user *UserLocation, conn UserConn) error {
 	uid := &user.UserIdentity
 	instance := user.Instance
 
-	if users, ok = ub.mapping[uid.Org]; !ok {
+	if users, ok = ub.mapping[uid.App]; !ok {
 		users = make(map[string]map[string]UserConn)
-		ub.mapping[uid.Org] = users
+		ub.mapping[uid.App] = users
 	}
 	if instances, ok = users[uid.User]; !ok {
 		instances = make(map[string]UserConn)
@@ -82,7 +82,7 @@ func (ub *UserBoard) Unregister(user *UserLocation) error {
 	uid := &user.UserIdentity
 	instance := user.Instance
 
-	if users, ok = ub.mapping[uid.Org]; ok {
+	if users, ok = ub.mapping[uid.App]; ok {
 		if instances, ok = users[uid.User]; ok {
 			if _, ok = instances[instance]; ok {
 				delete(instances, instance)
@@ -93,7 +93,7 @@ func (ub *UserBoard) Unregister(user *UserLocation) error {
 		}
 		/*
 			if len(users) == 0 {
-				delete(ub.mapping, uid.Org)
+				delete(ub.mapping, uid.App)
 			}
 		*/
 	}
@@ -114,7 +114,7 @@ func (ub *UserBoard) GetUserConn(user *UserLocation) (UserConn, error) {
 	uid := &user.UserIdentity
 	instance := user.Instance
 
-	if users, ok = ub.mapping[uid.Org]; ok {
+	if users, ok = ub.mapping[uid.App]; ok {
 		if instances, ok = users[uid.User]; ok {
 			if broker, ok = instances[instance]; ok {
 				return broker, nil
