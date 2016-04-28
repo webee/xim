@@ -1,4 +1,7 @@
 null/
 xim-broker
+!xim-broker/
 xim-logic
+!xim-logic/
 xim-dispatcher
+!xim-dispatcher/
