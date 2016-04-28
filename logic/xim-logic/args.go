@@ -4,6 +4,7 @@ import "flag"
 
 // Args is app's arguments.
 type Args struct {
+	addr                 string
 	rpcNetAddr           string
 	dispatcherRPCNetAddr string
 	testing              bool
@@ -16,6 +17,7 @@ var (
 )
 
 func init() {
+	flag.StringVar(&args.addr, "addr", "localhost:6880", "address to serv.")
 	flag.StringVar(&args.rpcNetAddr, "rpc-net-addr", "tcp@localhost:6780", "rpc network address to listen.")
 	flag.StringVar(&args.dispatcherRPCNetAddr, "dispatcher-rpc-net-addr", "tcp@localhost:7780", "dispatcher rpc network address to listen.")
 	flag.BoolVar(&args.testing, "testing", false, "whether to serv a testing page.")

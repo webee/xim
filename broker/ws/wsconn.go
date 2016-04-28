@@ -16,24 +16,23 @@ import (
 
 // WsConn is a websocket connection.
 type wsConn struct {
-	wLock    sync.Mutex
-	s        *WebsocketServer
-	conn     *websocket.Conn
-	user     *userboard.UserLocation
-	from     string
-	instance uint32
-	msgbox   chan interface{}
-	done     chan struct{}
+	wLock  sync.Mutex
+	s      *WebsocketServer
+	conn   *websocket.Conn
+	user   *userboard.UserLocation
+	from   string
+	msgbox chan interface{}
+	done   chan struct{}
 }
 
-func newWsConn(s *WebsocketServer, conn *websocket.Conn) *wsConn {
+func newWsConn(s *WebsocketServer, user *userboard.UserLocation, conn *websocket.Conn) *wsConn {
 	return &wsConn{
-		s:        s,
-		conn:     conn,
-		from:     conn.RemoteAddr().String(),
-		instance: idPool.Get(),
-		msgbox:   make(chan interface{}, 5),
-		done:     make(chan struct{}, 1),
+		s:      s,
+		user:   user,
+		conn:   conn,
+		from:   conn.RemoteAddr().String(),
+		msgbox: make(chan interface{}, 5),
+		done:   make(chan struct{}, 1),
 	}
 }
 
@@ -122,6 +121,5 @@ func (c *wsConn) Close() error {
 	if c.user != nil {
 		c.s.userBoard.Unregister(c.user)
 	}
-	idPool.Put(c.instance)
 	return c.conn.Close()
 }

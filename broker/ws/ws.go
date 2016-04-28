@@ -1,7 +1,6 @@
 package ws
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -69,12 +68,29 @@ func (s *WebsocketServer) ListenAndServe() error {
 }
 
 func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	app := r.Header.Get("Xim-App")
+	token := r.Header.Get("Xim-Auth-Token")
+	uid, err := userboard.VerifyAuthToken(app, token)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	instance := idPool.Get()
+	defer idPool.Put(instance)
+
+	user := &userboard.UserLocation{
+		UserIdentity: uid,
+		Broker:       s.config.Broker,
+		Instance:     fmt.Sprintf("%d", instance),
+	}
+
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	s.handleWebsocket(newWsConn(s, conn))
+	s.handleWebsocket(newWsConn(s, user, conn))
 }
 
 func (s *WebsocketServer) handleWebsocket(c *wsConn) {
@@ -86,7 +102,7 @@ func (s *WebsocketServer) handleWebsocket(c *wsConn) {
 
 	log.Println("conn: ", c.conn.RemoteAddr())
 	// authentication
-	if err = authenticate(c); err != nil {
+	if err = registerUser(c); err != nil {
 		log.Println(err)
 		return
 	}
@@ -161,30 +177,12 @@ func ProcessLogicMsg(c *wsConn, q <-chan *proto.Msg) {
 	}
 }
 
-func authenticate(c *wsConn) (err error) {
-	msg := proto.Msg{}
-	if _, err = c.ReadJSON(&msg, c.s.config.AuthTimeout); err != nil {
-		return
+func registerUser(c *wsConn) (err error) {
+	if err = c.s.userBoard.Register(c.user, c); err != nil {
+		return err
 	}
-	if msg.Type != proto.HelloMsg {
-		return errors.New("need hello msg")
-	}
-
-	token := msg.Token
-	log.Println("token: ", token)
-	if uid, err := userboard.VerifyAuthToken(token); err == nil {
-		log.Println(c.from, "auth ok.")
-		c.user = &userboard.UserLocation{
-			UserIdentity: *uid,
-			Broker:       c.s.config.Broker,
-			Instance:     fmt.Sprintf("%d", c.instance),
-		}
-		if err = c.s.userBoard.Register(c.user, c); err != nil {
-			return err
-		}
-		if err = c.WriteMsg(proto.NewWelcome(msg.ID)); err != nil {
-			return err
-		}
+	if err = c.WriteMsg(proto.NewHello()); err != nil {
+		return err
 	}
 	return
 }

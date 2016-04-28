@@ -3,7 +3,6 @@ package proto
 // msg types.
 const (
 	HelloMsg     = "hello"
-	WelcomeMsg   = "welcome"
 	PingMsg      = "ping"
 	PongMsg      = "pong"
 	ByeMsg       = "bye"
@@ -32,7 +31,7 @@ type MsgWithBytes struct {
 
 // Reply is the base server reply msg.
 type Reply struct {
-	ReplyTo int         `json:"reply_to"`
+	ReplyTo interface{} `json:"reply_to,omitempty"`
 	Ok      interface{} `json:"ok,omitempty"`
 	Type    string      `json:"type,omitempty"`
 	Msg     interface{} `json:"msg,omitempty"`
@@ -51,13 +50,13 @@ type ChannelMsg struct {
 }
 
 // NewReply create a reply msg.
-func NewReply(replyTo int, msgType string, msg interface{}) *Reply {
+func NewReply(replyTo interface{}, msgType string, msg interface{}) *Reply {
 	return &Reply{ReplyTo: replyTo, Type: msgType, Msg: msg}
 }
 
-// NewWelcome create a welcome msg.
-func NewWelcome(replyTo int) *Reply {
-	return NewReply(replyTo, WelcomeMsg, nil)
+// NewHello create a hello msg.
+func NewHello() *Reply {
+	return NewReply(nil, HelloMsg, nil)
 }
 
 // NewPong create a pong msg.

@@ -12,7 +12,6 @@ type WebsocketServerConfig struct {
 	Addr             string
 	HTTPReadTimeout  time.Duration
 	HTTPWriteTimeout time.Duration
-	AuthTimeout      time.Duration
 	HeartbeatTimeout time.Duration
 	WriteTimeout     time.Duration
 	Broker           string
@@ -24,7 +23,6 @@ var (
 		Addr:             "localhost:2780",
 		HTTPReadTimeout:  7 * time.Second,
 		HTTPWriteTimeout: 7 * time.Second,
-		AuthTimeout:      7 * time.Second,
 		HeartbeatTimeout: 12 * time.Second,
 		WriteTimeout:     7 * time.Second,
 	}

@@ -1,3 +1,4 @@
-broker/xim-broker/xim-broker
-logic/xim-logic/xim-logic
-dispatcher/xim-dispatcher/xim-dispatcher
+null/
+xim-broker
+xim-logic
+xim-dispatcher

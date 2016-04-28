@@ -27,10 +27,27 @@ type RPCLogicHandleMsgReply struct {
 	Msg interface{}
 }
 
+// RPCLogicVerifyUserTokenArgs is the msg args.
+type RPCLogicVerifyUserTokenArgs struct {
+	App   string
+	Token string
+}
+
+// RPCLogicVerifyUserTokenReply is the msg reply.
+type RPCLogicVerifyUserTokenReply struct {
+	uid userboard.UserIdentity
+}
+
 // RPCServer methods.
 const (
-	RPCLogicHandleMsg = "RPCLogic.HandleMsg"
+	RPCLogicHandleMsg       = "RPCLogic.HandleMsg"
+	RPCLogicVerifyUserToken = "RPCLogic.VerifyUserToken"
 )
+
+// VerifyUserToken verify app user token.
+func (l *RPCLogic) VerifyUserToken(args *RPCLogicVerifyUserTokenArgs, reply *RPCLogicVerifyUserTokenReply) (err error) {
+	return err
+}
 
 // HandleMsg handle user send msg.
 func (l *RPCLogic) HandleMsg(args *RPCLogicHandleMsgArgs, reply *RPCLogicHandleMsgReply) (err error) {

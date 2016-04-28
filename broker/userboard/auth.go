@@ -1,6 +1,7 @@
 package userboard
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -25,10 +26,14 @@ func ParseUserIdentify(s string) *UserIdentity {
 }
 
 // VerifyAuthToken verify user token.
-func VerifyAuthToken(token string) (uid *UserIdentity, err error) {
+func VerifyAuthToken(app, token string) (uid UserIdentity, err error) {
+	if app != "test" {
+		err = errors.New("bad token")
+		return
+	}
 	// TODO http request auth service.
-	uid = &UserIdentity{
-		App:  "test",
+	uid = UserIdentity{
+		App:  app,
 		User: token,
 	}
 	return uid, nil

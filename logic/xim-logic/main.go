@@ -13,6 +13,7 @@ func main() {
 	if args.debug {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
+	initDB()
 	initDispatcherRPC()
 	startRPCService()
 	setupSignal()

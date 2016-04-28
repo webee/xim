@@ -13,7 +13,6 @@ func startWebsocket() {
 			Broker:           args.rpcNetAddr,
 			HTTPReadTimeout:  args.httpReadTimeout,
 			HTTPWriteTimeout: args.httpWriteTimeout,
-			AuthTimeout:      args.connAuthTimeout,
 			HeartbeatTimeout: args.connHeartbeatTimeout,
 			WriteTimeout:     args.connWriteTimeout,
 		}))
