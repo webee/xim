@@ -32,6 +32,7 @@ func appAuth(app, password string) (*db.App, bool) {
 	return ximApp, genPassword(password) == ximApp.Password.String
 }
 
+// appNewToken use app and password to get an app api access token.
 func appNewToken(c echo.Context) error {
 	app := c.Request().Header().Get("Xim-App")
 	password := c.Request().Header().Get("Xim-App-Password")
@@ -60,16 +61,28 @@ func appNewToken(c echo.Context) error {
 	})
 }
 
-func newUserToken(c echo.Context) error {
+// newUserToken is an app api to generate a user access token.
+func newUserToken(c echo.Context) (err error) {
 	appToken := c.Get("app").(*jwt.Token)
 	app := appToken.Claims["app"].(string)
 	user := c.QueryParam("user")
+	expire := c.QueryParam("expire")
 
 	if user == "" {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"ok":  false,
 			"err": "bad user",
 		})
+	}
+	exp := 10 * time.Minute
+	if expire != "" {
+		exp, err = time.ParseDuration(expire)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"ok":  false,
+				"err": "bad expire",
+			})
+		}
 	}
 
 	// Create token
@@ -78,7 +91,7 @@ func newUserToken(c echo.Context) error {
 	// Set claims
 	token.Claims["app"] = app
 	token.Claims["user"] = user
-	token.Claims["exp"] = time.Now().Add(10 * time.Minute).Unix()
+	token.Claims["exp"] = time.Now().Add(exp).Unix()
 
 	// Generate encoded token and send it as response.
 	t, err := token.SignedString(userKey)

@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"os"
+	"path"
 	"time"
 )
 
@@ -19,6 +21,7 @@ type Args struct {
 	httpWriteTimeout     time.Duration
 	connHeartbeatTimeout time.Duration
 	connWriteTimeout     time.Duration
+	userKeyPath          string
 }
 
 var (
@@ -26,6 +29,7 @@ var (
 )
 
 func init() {
+	env := os.Getenv("XIM_ENV")
 	flag.StringVar(&args.addr, "addr", "localhost:2880", "address to serv.")
 	flag.BoolVar(&args.testing, "testing", false, "whether to serv a testing page.")
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
@@ -38,4 +42,5 @@ func init() {
 	flag.DurationVar(&args.httpWriteTimeout, "http-write-timeout", 7*time.Second, "http write timeout.")
 	flag.DurationVar(&args.connHeartbeatTimeout, "conn-heartbeat-timeout", 12*time.Second, "connection heartbeat timeout.")
 	flag.DurationVar(&args.connWriteTimeout, "conn-write-timeout", 7*time.Second, "connection write timeout.")
+	flag.StringVar(&args.userKeyPath, "user-key-path", path.Join("conf", env, "xim/user_key.txt"), "user key file path.")
 }

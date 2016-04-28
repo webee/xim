@@ -6,12 +6,15 @@ import "github.com/imdario/mergo"
 type Config struct {
 	RedisNetAddr string
 	UserTimeout  int
+	UserKeyPath  string
+	Debug        bool
 }
 
 var (
 	defaultConfig = &Config{
 		RedisNetAddr: "tcp@localhost:6379",
 		UserTimeout:  12,
+		Debug:        false,
 	}
 	config *Config
 )

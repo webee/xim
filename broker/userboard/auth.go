@@ -1,9 +1,10 @@
 package userboard
 
 import (
-	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 // UserIdentity is a user instance.
@@ -26,15 +27,21 @@ func ParseUserIdentify(s string) *UserIdentity {
 }
 
 // VerifyAuthToken verify user token.
-func VerifyAuthToken(app, token string) (uid UserIdentity, err error) {
-	if app != "test" {
-		err = errors.New("bad token")
-		return
+func VerifyAuthToken(auth string) (uid *UserIdentity, err error) {
+	token, err := jwt.Parse(auth, func(token *jwt.Token) (interface{}, error) {
+		// Check the signing method
+		if token.Method.Alg() != "HS256" {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Method.Alg())
+		}
+		return userKey, nil
+
+	})
+	if err != nil || !token.Valid {
+		return nil, err
 	}
-	// TODO http request auth service.
-	uid = UserIdentity{
-		App:  app,
-		User: token,
+	uid = &UserIdentity{
+		App:  token.Claims["app"].(string),
+		User: token.Claims["user"].(string),
 	}
 	return uid, nil
 }

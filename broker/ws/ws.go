@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"xim/broker"
@@ -68,9 +69,13 @@ func (s *WebsocketServer) ListenAndServe() error {
 }
 
 func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	app := r.Header.Get("Xim-App")
-	token := r.Header.Get("Xim-Auth-Token")
-	uid, err := userboard.VerifyAuthToken(app, token)
+	bearerAuth := r.Header.Get("Authorization")
+	parts := strings.SplitN(bearerAuth, " ", 2)
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		http.Error(w, "invalid jwt authorization header="+bearerAuth, http.StatusBadRequest)
+		return
+	}
+	uid, err := userboard.VerifyAuthToken(parts[1])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -80,7 +85,7 @@ func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer idPool.Put(instance)
 
 	user := &userboard.UserLocation{
-		UserIdentity: uid,
+		UserIdentity: *uid,
 		Broker:       s.config.Broker,
 		Instance:     fmt.Sprintf("%d", instance),
 	}
@@ -122,12 +127,17 @@ func (s *WebsocketServer) handleWebsocket(c *wsConn) {
 			break
 		}
 		if time.Now().Sub(t) > c.s.config.HeartbeatTimeout {
+			log.Println("heartbeat timeout.")
 			// ping timeout.
 			return
 		}
 
 		log.Println(c.conn.RemoteAddr(), ":", msg.ID, msg.Type)
 		switch msg.Type {
+		case "":
+			c.s.userBoard.Register(c.user, c)
+			t = time.Now()
+			c.WriteMsg(map[string]string{})
 		case proto.PingMsg:
 			// reseting user identity timeout.
 			c.s.userBoard.Register(c.user, c)

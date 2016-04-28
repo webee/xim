@@ -91,14 +91,24 @@ func (c *wsConn) ReadJSON(v interface{}, timeout time.Duration) (bytes []byte, e
 	conn := c.conn
 	conn.SetReadDeadline(time.Now().Add(timeout))
 	_, bytes, err = conn.ReadMessage()
-	if len(bytes) > 16*1024 {
-		err = errors.New("msg too large")
-		return
-	}
 	conn.SetReadDeadline(time.Time{})
 	if err != nil {
 		return
 	}
+	if len(bytes) > 16*1024 {
+		err = errors.New("msg too large")
+		return
+	}
+	/*
+		if len(bytes) == 1 {
+			if bytes, err = json.Marshal(map[string]string{
+				"type": string(bytes),
+			}); err != nil {
+				return
+			}
+		}
+	*/
+
 	err = json.Unmarshal(bytes, v)
 	return
 }

@@ -6,5 +6,7 @@ func initUserboard() {
 	userboard.InitUserboard(&userboard.Config{
 		RedisNetAddr: args.redisNetAddr,
 		UserTimeout:  args.userTimeout,
+		UserKeyPath:  args.userKeyPath,
+		Debug:        args.debug,
 	})
 }
