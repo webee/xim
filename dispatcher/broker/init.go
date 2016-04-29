@@ -3,7 +3,7 @@ package broker
 import (
 	"log"
 	"xim/broker/proto"
-	"xim/broker/rpcservice"
+	"xim/broker/rpcservice/types"
 	"xim/broker/userds"
 	"xim/utils/rpcutils"
 )
@@ -15,7 +15,7 @@ func PushMsg(user userds.UserLocation, msg proto.ChannelMsg) (err error) {
 			err = r.(error)
 		}
 	}()
-	args := &rpcservice.RPCBrokerPushMsgArgs{
+	args := &types.RPCBrokerPushMsgArgs{
 		User: user,
 		Msg:  msg,
 	}
@@ -27,11 +27,11 @@ func PushMsg(user userds.UserLocation, msg proto.ChannelMsg) (err error) {
 	id, client, _ := clientPool.Get()
 	defer clientPool.Put(id)
 
-	err = client.Client.Call(rpcservice.RPCBrokerPushMsg, args, reply)
+	err = client.Client.Call(types.RPCBrokerPushMsg, args, reply)
 	if err != nil {
 		log.Println("push err:", err)
 		client.Reconnect()
-		err = client.Client.Call(rpcservice.RPCBrokerPushMsg, args, reply)
+		err = client.Client.Call(types.RPCBrokerPushMsg, args, reply)
 		if err != nil {
 			log.Println("retry push err:", err)
 		}

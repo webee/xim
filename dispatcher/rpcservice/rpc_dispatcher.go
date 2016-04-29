@@ -5,6 +5,7 @@ import (
 	"xim/broker/proto"
 	"xim/broker/userdb"
 	"xim/broker/userds"
+	"xim/dispatcher/rpcservice/types"
 	"xim/utils/rpcutils"
 )
 
@@ -17,29 +18,10 @@ func NewRPCDispatcher() *RPCDispatcher {
 	return &RPCDispatcher{}
 }
 
-// RPCDispatcherPutMsgArgs is the msg args.
-type RPCDispatcherPutMsgArgs struct {
-	User    userds.UserLocation
-	Channel string
-	Kind    string
-	Msg     interface{}
-}
-
-// RPCDispatcherPutMsgReply is the msg reply.
-type RPCDispatcherPutMsgReply struct {
-	MsgID string
-}
-
-// RPCServer methods.
-const (
-	RPCDispatcherPutMsg       = "RPCDispatcher.PutMsg"
-	RPCDispatcherPutStatusMsg = "RPCDispatcher.PutStatusMsg"
-)
-
 // PutMsg put msg to channel.
-func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatcherPutMsgReply) error {
+func (r *RPCDispatcher) PutMsg(args *types.RPCDispatcherPutMsgArgs, reply *types.RPCDispatcherPutMsgReply) error {
 	var err error
-	log.Println(RPCDispatcherPutMsg, "is called:", args.User, args.Channel, args.Msg)
+	log.Println(types.RPCDispatcherPutMsg, "is called:", args.User, args.Channel, args.Msg)
 	msgChan := channelCache.getMsgChan(args.Channel)
 	qm := &queueMsg{
 		user:    args.User,
@@ -54,8 +36,8 @@ func (r *RPCDispatcher) PutMsg(args *RPCDispatcherPutMsgArgs, reply *RPCDispatch
 }
 
 // PutStatusMsg put status msg to channel.
-func (r *RPCDispatcher) PutStatusMsg(args *RPCDispatcherPutMsgArgs, reply *rpcutils.NoReply) error {
-	log.Println(RPCDispatcherPutStatusMsg, "is called:", args.User, args.Channel, args.Msg)
+func (r *RPCDispatcher) PutStatusMsg(args *types.RPCDispatcherPutMsgArgs, reply *rpcutils.NoReply) error {
+	log.Println(types.RPCDispatcherPutStatusMsg, "is called:", args.User, args.Channel, args.Msg)
 
 	doDispatchStatusMsg(args.Channel, &args.User, args.Msg)
 	return nil

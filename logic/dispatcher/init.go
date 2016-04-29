@@ -3,7 +3,7 @@ package dispatcher
 import (
 	"log"
 	"xim/broker/userds"
-	"xim/dispatcher/rpcservice"
+	"xim/dispatcher/rpcservice/types"
 	"xim/utils/netutils"
 	"xim/utils/rpcutils"
 )
@@ -26,14 +26,14 @@ func PutMsg(user userds.UserLocation, channel string, msg interface{}) (msgID st
 			err = r.(error)
 		}
 	}()
-	args := &rpcservice.RPCDispatcherPutMsgArgs{
+	args := &types.RPCDispatcherPutMsgArgs{
 		User:    user,
 		Channel: channel,
 		Msg:     msg,
 	}
 	log.Println("put:", user, channel, msg)
-	reply := new(rpcservice.RPCDispatcherPutMsgReply)
-	err = dispatcherRPCClient.Client.Call(rpcservice.RPCDispatcherPutMsg, args, reply)
+	reply := new(types.RPCDispatcherPutMsgReply)
+	err = dispatcherRPCClient.Client.Call(types.RPCDispatcherPutMsg, args, reply)
 	return reply.MsgID, err
 }
 
@@ -44,13 +44,13 @@ func PutStatusMsg(user userds.UserLocation, channel string, msg interface{}) (er
 			err = r.(error)
 		}
 	}()
-	args := &rpcservice.RPCDispatcherPutMsgArgs{
+	args := &types.RPCDispatcherPutMsgArgs{
 		User:    user,
 		Channel: channel,
 		Msg:     msg,
 	}
 	log.Println("put:", user, channel, msg)
 	reply := new(rpcutils.NoReply)
-	err = dispatcherRPCClient.Client.Call(rpcservice.RPCDispatcherPutStatusMsg, args, reply)
+	err = dispatcherRPCClient.Client.Call(types.RPCDispatcherPutStatusMsg, args, reply)
 	return err
 }

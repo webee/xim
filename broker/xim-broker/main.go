@@ -19,7 +19,6 @@ func main() {
 	if args.debug {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
-	//setupServer()
 	initUserboard()
 	initLogicRPC()
 	startRPCService()

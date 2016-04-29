@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -69,14 +70,31 @@ func (s *WebsocketServer) ListenAndServe() error {
 	return s.httpServer.ListenAndServe()
 }
 
-func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func getAuthTokenFromRequest(r *http.Request) (token string, err error) {
 	bearerAuth := r.Header.Get("Authorization")
-	parts := strings.SplitN(bearerAuth, " ", 2)
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		http.Error(w, "invalid jwt authorization header="+bearerAuth, http.StatusBadRequest)
+	if bearerAuth != "" {
+		parts := strings.SplitN(bearerAuth, " ", 2)
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			return "", errors.New("invalid jwt authorization header=" + bearerAuth)
+		}
+		token = parts[1]
+	} else {
+		token = r.FormValue("token")
+	}
+	if token == "" {
+		err = errors.New("need authorization token")
+	}
+	return
+}
+
+func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	authToken, err := getAuthTokenFromRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	uid, err := userboard.VerifyAuthToken(parts[1])
+
+	uid, err := userboard.VerifyAuthToken(authToken)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)

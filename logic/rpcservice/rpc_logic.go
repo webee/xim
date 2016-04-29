@@ -7,34 +7,16 @@ import (
 	"xim/broker/proto"
 	"xim/broker/userds"
 	"xim/logic/dispatcher"
+	"xim/logic/rpcservice/types"
 )
 
 // RPCLogic represents the rpc logic.
 type RPCLogic struct {
 }
 
-// RPCLogicHandleMsgArgs is the msg args.
-type RPCLogicHandleMsgArgs struct {
-	User    userds.UserLocation
-	Type    string
-	Channel string
-	Kind    string
-	Msg     interface{}
-}
-
-// RPCLogicHandleMsgReply is the msg reply.
-type RPCLogicHandleMsgReply struct {
-	Msg interface{}
-}
-
-// RPCServer methods.
-const (
-	RPCLogicHandleMsg = "RPCLogic.HandleMsg"
-)
-
 // HandleMsg handle user send msg.
-func (l *RPCLogic) HandleMsg(args *RPCLogicHandleMsgArgs, reply *RPCLogicHandleMsgReply) (err error) {
-	log.Println(RPCLogicHandleMsg, "is called:", args.User, args.Type, args.Msg)
+func (l *RPCLogic) HandleMsg(args *types.RPCLogicHandleMsgArgs, reply *types.RPCLogicHandleMsgReply) (err error) {
+	log.Println(types.RPCLogicHandleMsg, "is called:", args.User, args.Type, args.Msg)
 	switch args.Type {
 	case proto.PutMsg:
 		reply.Msg, err = handleMsgMsg(args.User, args.Channel, args.Kind, args.Msg)
