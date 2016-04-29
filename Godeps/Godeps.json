@@ -12,6 +12,11 @@
 			"Rev": "aabad6e819789e569bd6aabf444c935aa9ba1e44"
 		},
 		{
+			"ImportPath": "github.com/dgrijalva/jwt-go",
+			"Comment": "v2.5.0",
+			"Rev": "b446e078d613dc395bf50b08884acbeafb19ce50"
+		},
+		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
 			"Rev": "8873b2f1995f59d4bcdd2b0dc9858e2cb9bf0c13"
 		},
@@ -31,6 +36,69 @@
 			"ImportPath": "github.com/imdario/mergo",
 			"Comment": "0.2.2-2-gea01514",
 			"Rev": "ea0151498788f6fab6365eae24f29f41c0ac0acc"
+		},
+		{
+			"ImportPath": "github.com/jmoiron/sqlx",
+			"Comment": "sqlx-v1.1-61-g398dd58",
+			"Rev": "398dd5876282499cdfd4cb8ea0f31a672abe9495"
+		},
+		{
+			"ImportPath": "github.com/jmoiron/sqlx/reflectx",
+			"Comment": "sqlx-v1.1-61-g398dd58",
+			"Rev": "398dd5876282499cdfd4cb8ea0f31a672abe9495"
+		},
+		{
+			"ImportPath": "github.com/labstack/echo",
+			"Comment": "v2.0.0-beta.2-71-gfb8690d",
+			"Rev": "fb8690d42bcb3a44f35c3483dc90e778e385a823"
+		},
+		{
+			"ImportPath": "github.com/labstack/echo/engine",
+			"Comment": "v2.0.0-beta.2-71-gfb8690d",
+			"Rev": "fb8690d42bcb3a44f35c3483dc90e778e385a823"
+		},
+		{
+			"ImportPath": "github.com/labstack/echo/engine/standard",
+			"Comment": "v2.0.0-beta.2-71-gfb8690d",
+			"Rev": "fb8690d42bcb3a44f35c3483dc90e778e385a823"
+		},
+		{
+			"ImportPath": "github.com/labstack/echo/middleware",
+			"Comment": "v2.0.0-beta.2-71-gfb8690d",
+			"Rev": "fb8690d42bcb3a44f35c3483dc90e778e385a823"
+		},
+		{
+			"ImportPath": "github.com/labstack/gommon/color",
+			"Comment": "v0.0.3-50-g4fae226",
+			"Rev": "4fae226dd67b1100622ab213e798e5ee4c5d4230"
+		},
+		{
+			"ImportPath": "github.com/labstack/gommon/log",
+			"Comment": "v0.0.3-50-g4fae226",
+			"Rev": "4fae226dd67b1100622ab213e798e5ee4c5d4230"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-86-gdd3290b",
+			"Rev": "dd3290b2f71a8b30bee8e4e75a337a825263d26f"
+		},
+		{
+			"ImportPath": "github.com/lib/pq/oid",
+			"Comment": "go1.0-cutoff-86-gdd3290b",
+			"Rev": "dd3290b2f71a8b30bee8e4e75a337a825263d26f"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-colorable",
+			"Comment": "v0.0.1",
+			"Rev": "bc69d6cebca8dd5675346a34a1c545b67dc74d5e"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-isatty",
+			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
+		},
+		{
+			"ImportPath": "github.com/valyala/fasttemplate",
+			"Rev": "3b874956e03f1636d171bda64b130f9135f42cff"
 		},
 		{
 			"ImportPath": "github.com/webee/ttlcache",
@@ -58,8 +126,20 @@
 			"Rev": "24dd44e08b535368f86a6c2d656c1ce7a8760c78"
 		},
 		{
+			"ImportPath": "golang.org/x/crypto/pbkdf2",
+			"Rev": "285fb2ed20d1dc450fc743a1b3ff7c36bef372b9"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/scrypt",
+			"Rev": "285fb2ed20d1dc450fc743a1b3ff7c36bef372b9"
+		},
+		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "e45385e9b226f570b1f086bf287b25d3d4117776"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "c8bc69bc2db9c57ccf979550bc69655df5039a8a"
 		},
 		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
