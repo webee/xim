@@ -4,6 +4,7 @@ import (
 	"log"
 	"xim/broker/proto"
 	"xim/broker/userboard"
+	"xim/broker/userds"
 	"xim/utils/rpcutils"
 )
 
@@ -19,7 +20,7 @@ func NewRPCBroker(userBoard *userboard.UserBoard) *RPCBroker {
 
 // RPCBrokerPushMsgArgs is the msg args.
 type RPCBrokerPushMsgArgs struct {
-	User userboard.UserLocation
+	User userds.UserLocation
 	Msg  proto.ChannelMsg
 }
 

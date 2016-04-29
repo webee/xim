@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 	"xim/broker/proto"
-	"xim/broker/userboard"
+	"xim/broker/userds"
 
 	"github.com/bitly/go-simplejson"
 
@@ -19,13 +19,13 @@ type wsConn struct {
 	wLock  sync.Mutex
 	s      *WebsocketServer
 	conn   *websocket.Conn
-	user   *userboard.UserLocation
+	user   *userds.UserLocation
 	from   string
 	msgbox chan interface{}
 	done   chan struct{}
 }
 
-func newWsConn(s *WebsocketServer, user *userboard.UserLocation, conn *websocket.Conn) *wsConn {
+func newWsConn(s *WebsocketServer, user *userds.UserLocation, conn *websocket.Conn) *wsConn {
 	return &wsConn{
 		s:      s,
 		user:   user,

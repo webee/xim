@@ -1,9 +1,10 @@
 package main
 
-import "xim/broker/userboard"
+import "xim/broker/userdb"
 
 func initUserboard() {
-	userboard.InitUserboard(&userboard.Config{
+	userdb.InitUserDB(&userdb.Config{
 		RedisNetAddr: args.redisNetAddr,
+		Debug:        args.debug,
 	})
 }

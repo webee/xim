@@ -2,33 +2,11 @@ package userboard
 
 import (
 	"errors"
-	"fmt"
 	"log"
-	"strings"
 	"sync"
+	"xim/broker/userdb"
+	"xim/broker/userds"
 )
-
-// UserLocation represents a user connection location.
-type UserLocation struct {
-	UserIdentity
-	Broker   string
-	Instance string
-}
-
-func (u UserLocation) String() string {
-	return fmt.Sprintf("%s>%s#%s", u.UserIdentity, u.Broker, u.Instance)
-}
-
-// ParseUserLocation parse a user location from a string.
-func ParseUserLocation(s string) *UserLocation {
-	parts := strings.Split(s, ">")
-	parts2 := strings.Split(parts[1], "#")
-	return &UserLocation{
-		UserIdentity: *ParseUserIdentify(parts[0]),
-		Broker:       parts2[0],
-		Instance:     parts2[1],
-	}
-}
 
 // UserBoard records the relations between users and connections.
 type UserBoard struct {
@@ -44,7 +22,7 @@ func NewUserBaord() *UserBoard {
 }
 
 // Register a user.
-func (ub *UserBoard) Register(user *UserLocation, conn UserConn) error {
+func (ub *UserBoard) Register(user *userds.UserLocation, conn UserConn) error {
 	var (
 		ok        bool
 		users     map[string]map[string]UserConn
@@ -67,11 +45,11 @@ func (ub *UserBoard) Register(user *UserLocation, conn UserConn) error {
 	instances[instance] = conn
 	log.Println(uid, instance, "registered.")
 	// first touch.
-	return UserOnline(user)
+	return userdb.UserOnline(user)
 }
 
 // Unregister a user.
-func (ub *UserBoard) Unregister(user *UserLocation) error {
+func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
 	var (
 		ok        bool
 		users     map[string]map[string]UserConn
@@ -98,11 +76,11 @@ func (ub *UserBoard) Unregister(user *UserLocation) error {
 		*/
 	}
 	log.Println(uid, instance, "unregistered.")
-	return UserOffline(user)
+	return userdb.UserOffline(user)
 }
 
 // GetUserConn find the user's connection.
-func (ub *UserBoard) GetUserConn(user *UserLocation) (UserConn, error) {
+func (ub *UserBoard) GetUserConn(user *userds.UserLocation) (UserConn, error) {
 	var (
 		ok        bool
 		users     map[string]map[string]UserConn

@@ -10,6 +10,7 @@ import (
 	"xim/broker"
 	"xim/broker/proto"
 	"xim/broker/userboard"
+	"xim/broker/userds"
 
 	"github.com/gorilla/websocket"
 	"github.com/youtube/vitess/go/pools"
@@ -84,7 +85,7 @@ func (s *WebsocketServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	instance := idPool.Get()
 	defer idPool.Put(instance)
 
-	user := &userboard.UserLocation{
+	user := &userds.UserLocation{
 		UserIdentity: *uid,
 		Broker:       s.config.Broker,
 		Instance:     fmt.Sprintf("%d", instance),

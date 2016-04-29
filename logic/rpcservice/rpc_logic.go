@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"xim/broker/proto"
-	"xim/broker/userboard"
+	"xim/broker/userds"
 	"xim/logic/dispatcher"
 )
 
@@ -15,7 +15,7 @@ type RPCLogic struct {
 
 // RPCLogicHandleMsgArgs is the msg args.
 type RPCLogicHandleMsgArgs struct {
-	User    userboard.UserLocation
+	User    userds.UserLocation
 	Type    string
 	Channel string
 	Kind    string
@@ -44,7 +44,7 @@ func (l *RPCLogic) HandleMsg(args *RPCLogicHandleMsgArgs, reply *RPCLogicHandleM
 	return err
 }
 
-func handleMsgMsg(user userboard.UserLocation, channel, kind string, msg interface{}) (replyMsg interface{}, err error) {
+func handleMsgMsg(user userds.UserLocation, channel, kind string, msg interface{}) (replyMsg interface{}, err error) {
 	// TODO
 	// check org.user permission for channel.
 	// errors.New(ErrPermDenied)

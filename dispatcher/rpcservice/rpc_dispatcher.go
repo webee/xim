@@ -3,7 +3,8 @@ package rpcservice
 import (
 	"log"
 	"xim/broker/proto"
-	"xim/broker/userboard"
+	"xim/broker/userdb"
+	"xim/broker/userds"
 	"xim/utils/rpcutils"
 )
 
@@ -18,7 +19,7 @@ func NewRPCDispatcher() *RPCDispatcher {
 
 // RPCDispatcherPutMsgArgs is the msg args.
 type RPCDispatcherPutMsgArgs struct {
-	User    userboard.UserLocation
+	User    userds.UserLocation
 	Channel string
 	Kind    string
 	Msg     interface{}
@@ -60,7 +61,7 @@ func (r *RPCDispatcher) PutStatusMsg(args *RPCDispatcherPutMsgArgs, reply *rpcut
 	return nil
 }
 
-func doDispatchMsg(channel string, user *userboard.UserLocation, id, lastID string, msg interface{}) {
+func doDispatchMsg(channel string, user *userds.UserLocation, id, lastID string, msg interface{}) {
 	log.Printf("dispatch msg: #%s, %s, [%s<-%s, %s]\n", channel, user, lastID, id, msg)
 	protoMsg := &proto.ChannelMsg{
 		Type:    proto.MsgMsg,
@@ -73,7 +74,7 @@ func doDispatchMsg(channel string, user *userboard.UserLocation, id, lastID stri
 	putMsg(channel, user, protoMsg)
 }
 
-func doDispatchStatusMsg(channel string, user *userboard.UserLocation, msg interface{}) {
+func doDispatchStatusMsg(channel string, user *userds.UserLocation, msg interface{}) {
 	log.Printf("dispatch status msg: #%s, %s, %s\n", channel, user, msg)
 	protoMsg := &proto.ChannelMsg{
 		Type:    proto.MsgMsg,
@@ -86,7 +87,7 @@ func doDispatchStatusMsg(channel string, user *userboard.UserLocation, msg inter
 	putMsg(channel, user, protoMsg)
 }
 
-func putMsg(channel string, user *userboard.UserLocation, protoMsg *proto.ChannelMsg) {
+func putMsg(channel string, user *userds.UserLocation, protoMsg *proto.ChannelMsg) {
 	for _, u := range getChannelOnlineUserInstances(channel) {
 		if *u == *user {
 			continue
@@ -101,29 +102,29 @@ func putMsg(channel string, user *userboard.UserLocation, protoMsg *proto.Channe
 	}
 }
 
-func getChannelOnlineUserInstances(channel string) []*userboard.UserLocation {
+func getChannelOnlineUserInstances(channel string) []*userds.UserLocation {
 	/*
 		1. get channel users.
 		2. filter get the online user instances.
 	*/
-	uids := []*userboard.UserIdentity{
-		&userboard.UserIdentity{
-			App:  "test",
+	uids := []*userds.UserIdentity{
+		&userds.UserIdentity{
+			App:  "TEST",
 			User: "webee",
 		},
-		&userboard.UserIdentity{
-			App:  "test",
+		&userds.UserIdentity{
+			App:  "TEST",
 			User: "xiaoee",
 		},
 	}
 	if len(uids) == 0 {
-		return []*userboard.UserLocation{}
+		return []*userds.UserLocation{}
 	}
 
-	users, err := userboard.GetOnlineUsers(uids...)
+	users, err := userdb.GetOnlineUsers(uids...)
 	if err != nil {
 		log.Printf("get online users error: channel->%s, %s\n", channel, err)
-		return []*userboard.UserLocation{}
+		return []*userds.UserLocation{}
 	}
 
 	return users

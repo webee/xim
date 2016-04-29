@@ -1,16 +1,19 @@
-package userboard
+package userdb
 
 import "github.com/imdario/mergo"
 
 // Config is the configs for userboard.
 type Config struct {
-	UserKeyPath string
-	Debug       bool
+	RedisNetAddr string
+	UserTimeout  int
+	Debug        bool
 }
 
 var (
 	defaultConfig = &Config{
-		Debug: false,
+		RedisNetAddr: "tcp@localhost:6379",
+		UserTimeout:  12,
+		Debug:        false,
 	}
 	config *Config
 )
