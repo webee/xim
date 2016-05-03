@@ -9,7 +9,6 @@ func startHTTPApiServer() {
 		&httpapi.ServerConfig{
 			Debug:       args.debug,
 			Addr:        args.addr,
-			SaltPath:    args.saltPath,
 			AppKeyPath:  args.appKeyPath,
 			UserKeyPath: args.userKeyPath,
 		})

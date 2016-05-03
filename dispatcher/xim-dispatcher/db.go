@@ -1,7 +1,7 @@
 package main
 
 import (
-	"xim/logic/db"
+	"xim/dispatcher/db"
 )
 
 func initDB() {

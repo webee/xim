@@ -13,12 +13,8 @@ var (
 
 func setupKeys(config *ServerConfig) {
 	var err error
-	saltPath := config.SaltPath
 	appKeyPath := config.AppKeyPath
 	userKeyPath := config.UserKeyPath
-	if salt, err = ioutil.ReadFile(saltPath); err != nil {
-		log.Fatalln(err)
-	}
 
 	if appKey, err = ioutil.ReadFile(appKeyPath); err != nil {
 		log.Fatalln(err)

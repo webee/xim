@@ -4,13 +4,15 @@ import "flag"
 
 // Args is app's arguments.
 type Args struct {
-	rpcNetAddr    string
-	testing       bool
-	debug         bool
-	pprofAddr     string
-	redisServer   string
-	redisPassword string
-	redisNetAddr  string
+	rpcNetAddr       string
+	testing          bool
+	debug            bool
+	pprofAddr        string
+	redisServer      string
+	redisPassword    string
+	redisNetAddr     string
+	dbDriverName     string
+	dbDatasourceName string
 }
 
 var (
@@ -25,4 +27,6 @@ func init() {
 	flag.StringVar(&args.redisServer, "redis-server", ":6379", "redis server.")
 	flag.StringVar(&args.redisPassword, "redis-password", "", "redis password.")
 	flag.StringVar(&args.redisNetAddr, "redis-net-addr", "tcp@localhost:6379", "redis network address.")
+	flag.StringVar(&args.dbDriverName, "db-driver-name", "postgres", "database driver name.")
+	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", "postgres://xim:xim1234@localhost:5432/xim?sslmode=disable", "database datasoure name.")
 }

@@ -5,6 +5,7 @@ import (
 	"xim/broker/proto"
 	"xim/broker/userdb"
 	"xim/broker/userds"
+	"xim/dispatcher/db"
 	"xim/dispatcher/rpcservice/types"
 	"xim/utils/rpcutils"
 )
@@ -70,7 +71,7 @@ func doDispatchStatusMsg(channel string, user *userds.UserLocation, msg interfac
 }
 
 func putMsg(channel string, user *userds.UserLocation, protoMsg *proto.ChannelMsg) {
-	for _, u := range getChannelOnlineUserInstances(channel) {
+	for _, u := range getChannelOnlineUserInstances(user.App, channel) {
 		if *u == *user {
 			continue
 		}
@@ -84,21 +85,8 @@ func putMsg(channel string, user *userds.UserLocation, protoMsg *proto.ChannelMs
 	}
 }
 
-func getChannelOnlineUserInstances(channel string) []*userds.UserLocation {
-	/*
-		1. get channel users.
-		2. filter get the online user instances.
-	*/
-	uids := []*userds.UserIdentity{
-		&userds.UserIdentity{
-			App:  "TEST",
-			User: "webee",
-		},
-		&userds.UserIdentity{
-			App:  "TEST",
-			User: "xiaoee",
-		},
-	}
+func getChannelOnlineUserInstances(app, channel string) []*userds.UserLocation {
+	uids := db.GetChannelSubscribers(app, channel)
 	if len(uids) == 0 {
 		return []*userds.UserLocation{}
 	}

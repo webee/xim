@@ -14,9 +14,10 @@ type Args struct {
 	testing              bool
 	debug                bool
 	pprofAddr            string
-	saltPath             string
 	appKeyPath           string
 	userKeyPath          string
+	dbDriverName         string
+	dbDatasourceName     string
 }
 
 var (
@@ -31,7 +32,8 @@ func init() {
 	flag.BoolVar(&args.testing, "testing", false, "whether to serv a testing page.")
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6061", "debug pprof http address.")
-	flag.StringVar(&args.saltPath, "salt-path", path.Join("conf", env, "xim/salt.txt"), "app key file path.")
 	flag.StringVar(&args.appKeyPath, "app-key-path", path.Join("conf", env, "xim/app_key.txt"), "app key file path.")
 	flag.StringVar(&args.userKeyPath, "user-key-path", path.Join("conf", env, "xim/user_key.txt"), "user key file path.")
+	flag.StringVar(&args.dbDriverName, "db-driver-name", "postgres", "database driver name.")
+	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", "postgres://xim:xim1234@localhost:5432/xim?sslmode=disable", "database datasoure name.")
 }

@@ -6,6 +6,7 @@ import (
 
 	"xim/broker/proto"
 	"xim/broker/userds"
+	"xim/logic/db"
 	"xim/logic/dispatcher"
 	"xim/logic/rpcservice/types"
 )
@@ -27,10 +28,7 @@ func (l *RPCLogic) HandleMsg(args *types.RPCLogicHandleMsgArgs, reply *types.RPC
 }
 
 func handleMsgMsg(user userds.UserLocation, channel, kind string, msg interface{}) (replyMsg interface{}, err error) {
-	// TODO
-	// check org.user permission for channel.
-	// errors.New(ErrPermDenied)
-	if len(channel) < 3 {
+	if !db.CanUserPubChannel(user, channel) {
 		err = errors.New(ErrPermDenied)
 		return
 	}

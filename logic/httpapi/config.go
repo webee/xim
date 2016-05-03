@@ -6,7 +6,6 @@ import "github.com/imdario/mergo"
 type ServerConfig struct {
 	Debug       bool
 	Addr        string
-	SaltPath    string
 	AppKeyPath  string
 	UserKeyPath string
 }

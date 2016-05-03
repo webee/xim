@@ -10,10 +10,6 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
-func init() {
-	//scrypt.Key(password []byte, salt []byte, N int, r int, p int, keyLen int)
-}
-
 // Start run the http server.
 func Start(config *ServerConfig) {
 	setupKeys(config)
@@ -31,8 +27,6 @@ func Start(config *ServerConfig) {
 }
 
 func setupAppAPI(e *echo.Echo) {
-	e.GET("app.new_token", appNewToken)
-
 	gAppXim := e.Group("/app/xim")
 	c := middleware.DefaultJWTAuthConfig
 	c.ContextKey = "app"
