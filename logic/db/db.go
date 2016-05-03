@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"log"
+	"xim/broker/userds"
 
 	"database/sql"
 
@@ -49,4 +50,13 @@ func PrintApps() {
 			fmt.Printf("app: name=%q, desc=%q, app=%q, password=%q\n", app.Name, app.Desc, app.App, app.Password.String)
 		}
 	}
+}
+
+// CanUserPubChannel checks whether user is a publisher of channel.
+func CanUserPubChannel(user userds.UserLocation, channel string) bool {
+	var can bool
+	db.Get(&can,
+		`select 1 from xim_app a left join xim_channel c on a.id = c.app_id left join xim_member m on c.id = m.channel_id where a.name=$1 and c.channel=$2 and m.user=$3 and can_pub=true`,
+		user.App, channel, user.User)
+	return can
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo"
 )
 
+// genPassword gen scrypt password from raw password.
 func genPassword(raw string) string {
 	dk, err := scrypt.Key([]byte(raw), salt, 16384, 8, 1, 32)
 	if err != nil {
@@ -21,6 +22,7 @@ func genPassword(raw string) string {
 	return base64.StdEncoding.EncodeToString(dk)
 }
 
+// appAuth verify app and password and return this xim app.
 func appAuth(app, password string) (*db.App, bool) {
 	ximApp, err := db.GetApp(app)
 	if err != nil {
@@ -45,10 +47,11 @@ func appNewToken(c echo.Context) error {
 
 	// Create token
 	token := jwt.New(jwt.SigningMethodHS256)
+	expireAt := time.Now().Add(24 * time.Hour).Unix()
 
 	// Set claims
 	token.Claims["app"] = ximApp.App
-	token.Claims["exp"] = time.Now().Add(6 * time.Hour).Unix()
+	token.Claims["exp"] = expireAt
 
 	// Generate encoded token and send it as response.
 	t, err := token.SignedString(appKey)
@@ -56,8 +59,9 @@ func appNewToken(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"ok":    true,
-		"token": t,
+		"ok":        true,
+		"expire_at": expireAt,
+		"token":     t,
 	})
 }
 
@@ -80,18 +84,19 @@ func newUserToken(c echo.Context) (err error) {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]interface{}{
 				"ok":  false,
-				"err": "bad expire",
+				"err": "bad expire time",
 			})
 		}
 	}
 
 	// Create token
 	token := jwt.New(jwt.SigningMethodHS256)
+	expireAt := time.Now().Add(exp).Unix()
 
 	// Set claims
 	token.Claims["app"] = app
 	token.Claims["user"] = user
-	token.Claims["exp"] = time.Now().Add(exp).Unix()
+	token.Claims["exp"] = expireAt
 
 	// Generate encoded token and send it as response.
 	t, err := token.SignedString(userKey)
@@ -99,7 +104,18 @@ func newUserToken(c echo.Context) (err error) {
 		return err
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"ok":    true,
-		"token": t,
+		"ok":        true,
+		"expire_at": expireAt,
+		"token":     t,
 	})
+}
+
+// newChannel creates a messaging channel.
+func newChannel(c echo.Context) error {
+	return c.String(http.StatusOK, "TODO")
+}
+
+// channelAddMembers add members to channel.
+func channelAddMembers(c echo.Context) error {
+	return c.String(http.StatusOK, "TODO")
 }

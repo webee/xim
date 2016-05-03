@@ -79,7 +79,7 @@ func getAuthTokenFromRequest(r *http.Request) (token string, err error) {
 		}
 		token = parts[1]
 	} else {
-		token = r.FormValue("token")
+		token = r.FormValue("jwt")
 	}
 	if token == "" {
 		err = errors.New("need authorization token")
