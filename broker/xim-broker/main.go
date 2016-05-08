@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	userBoard = userboard.NewUserBaord()
+	userBoard = userboard.NewUserBoard()
 )
 
 func main() {
@@ -23,5 +23,6 @@ func main() {
 	initLogicRPC()
 	startRPCService()
 	startWebsocket()
+	startAppWebsocket()
 	setupSignal()
 }

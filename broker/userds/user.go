@@ -2,7 +2,15 @@ package userds
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/youtube/vitess/go/pools"
+)
+
+var (
+	idPool    = pools.NewIDPool()
+	appIDPool = pools.NewIDPool()
 )
 
 // AppIdentity is a app instance.
@@ -18,11 +26,25 @@ func (aid *AppIdentity) String() string {
 type AppLocation struct {
 	AppIdentity
 	Broker   string
-	Instance string
+	Instance uint32
 }
 
 func (a *AppLocation) String() string {
-	return fmt.Sprintf("%s>%s#%s", &a.AppIdentity, a.Broker, a.Instance)
+	return fmt.Sprintf("%s>%s#%d", &a.AppIdentity, a.Broker, a.Instance)
+}
+
+// NewAppLocation create a new app location.
+func NewAppLocation(aid *AppIdentity, broker string) *AppLocation {
+	return &AppLocation{
+		AppIdentity: *aid,
+		Broker:      broker,
+		Instance:    appIDPool.Get(),
+	}
+}
+
+// Close return the instance id.
+func (a *AppLocation) Close() {
+	appIDPool.Put(a.Instance)
 }
 
 // UserIdentity is a user instance.
@@ -44,11 +66,25 @@ func (uid *UserIdentity) IsValid() bool {
 type UserLocation struct {
 	UserIdentity
 	Broker   string
-	Instance string
+	Instance uint32
+}
+
+// NewUserLocation create a new user location.
+func NewUserLocation(uid *UserIdentity, broker string) *UserLocation {
+	return &UserLocation{
+		UserIdentity: *uid,
+		Broker:       broker,
+		Instance:     idPool.Get(),
+	}
+}
+
+// Close return the instance id.
+func (u *UserLocation) Close() {
+	idPool.Put(u.Instance)
 }
 
 func (u *UserLocation) String() string {
-	return fmt.Sprintf("%s>%s#%s", &u.UserIdentity, u.Broker, u.Instance)
+	return fmt.Sprintf("%s>%s#%d", &u.UserIdentity, u.Broker, u.Instance)
 }
 
 // ParseUserIdentify parse a user identity from a string.
@@ -64,9 +100,10 @@ func ParseUserIdentify(s string) *UserIdentity {
 func ParseUserLocation(s string) *UserLocation {
 	parts := strings.Split(s, ">")
 	parts2 := strings.Split(parts[1], "#")
+	instance, _ := strconv.ParseUint(parts2[1], 10, 32)
 	return &UserLocation{
 		UserIdentity: *ParseUserIdentify(parts[0]),
 		Broker:       parts2[0],
-		Instance:     parts2[1],
+		Instance:     uint32(instance),
 	}
 }

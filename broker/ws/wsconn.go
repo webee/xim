@@ -19,19 +19,17 @@ type wsConn struct {
 	wLock  sync.Mutex
 	s      *WebsocketServer
 	conn   *websocket.Conn
-	user   *userds.UserLocation
 	from   string
 	msgbox chan interface{}
 	done   chan struct{}
 }
 
-func newWsConn(s *WebsocketServer, user *userds.UserLocation, conn *websocket.Conn) *wsConn {
+func newWsConn(s *WebsocketServer, conn *websocket.Conn, msgboxSize int) *wsConn {
 	return &wsConn{
 		s:      s,
-		user:   user,
 		conn:   conn,
 		from:   conn.RemoteAddr().String(),
-		msgbox: make(chan interface{}, 5),
+		msgbox: make(chan interface{}, msgboxSize),
 		done:   make(chan struct{}, 1),
 	}
 }
@@ -66,7 +64,7 @@ func (c *wsConn) HandleMsg() {
 	for {
 		select {
 		case <-c.done:
-			break
+			return
 		case msg, ok := <-c.msgbox:
 			if ok {
 				c.WriteMsg(msg)

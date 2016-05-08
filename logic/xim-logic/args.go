@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"os"
 	"path"
+	"xim/utils/envutils"
 )
 
 // Args is app's arguments.
@@ -25,7 +25,7 @@ var (
 )
 
 func init() {
-	env := os.Getenv("XIM_ENV")
+	env := envutils.GetEnvDefault("XIM_ENV", "dev")
 	flag.StringVar(&args.addr, "addr", "localhost:6880", "address to serv.")
 	flag.StringVar(&args.rpcNetAddr, "rpc-net-addr", "tcp@localhost:6780", "rpc network address to listen.")
 	flag.StringVar(&args.dispatcherRPCNetAddr, "dispatcher-rpc-net-addr", "tcp@localhost:7780", "dispatcher rpc network address to listen.")

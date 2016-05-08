@@ -5,12 +5,12 @@ import (
 	"xim/broker/ws"
 )
 
-func startWebsocket() {
-	wsServer := ws.NewWebsocketServer(userBoard, &ws.UserServer{},
+func startAppWebsocket() {
+	wsServer := ws.NewWebsocketServer(userBoard, ws.NewAppServer(),
 		ws.NewWebsocketServerConfig(
 			&ws.WebsocketServerConfig{
 				Testing:          args.testing,
-				Addr:             args.addr,
+				Addr:             args.appAddr,
 				Broker:           args.rpcNetAddr,
 				HTTPReadTimeout:  args.httpReadTimeout,
 				HTTPWriteTimeout: args.httpWriteTimeout,

@@ -46,12 +46,8 @@ func (h *MsgHandler) Start() {
 }
 
 func (h *MsgHandler) handle() {
-	var (
-		err          error
-		logicMsgChan chan *proto.Msg
-	)
-
-	logicMsgChan = make(chan *proto.Msg, 10)
+	var err error
+	logicMsgChan := make(chan *proto.Msg, 10)
 	go h.ProcessLogicMsg(logicMsgChan)
 	defer func() {
 		close(logicMsgChan)
@@ -77,15 +73,17 @@ func (h *MsgHandler) handle() {
 
 		if time.Now().Sub(t) > h.heartbeatTimeout {
 			log.Println("heartbeat timeout.")
-			// ping timeout.
-			return
+			if msg.Type != "" && msg.Type != proto.PingMsg {
+				h.Register()
+				t = time.Now()
+			}
 		}
 
 		switch msg.Type {
 		case "":
 			h.Register()
 			t = time.Now()
-			h.PushMsg(map[string]string{})
+			h.PushMsg(&proto.Reply{})
 		case proto.PingMsg:
 			// reseting user identity timeout.
 			h.Register()
@@ -105,16 +103,14 @@ func (h *MsgHandler) handle() {
 
 // ProcessLogicMsg process logic messages.
 func (h *MsgHandler) ProcessLogicMsg(q <-chan *proto.Msg) {
-	defer func() {
-		close(h.done)
-	}()
+	defer close(h.done)
 
 	for {
 		select {
 		case msg, ok := <-h.msgbox:
 			// push
 			if ok {
-				h.WriteMsg(msg)
+				_ = h.WriteMsg(msg)
 			}
 		case msg, ok := <-q:
 			// send
@@ -165,6 +161,8 @@ func (h *MsgHandler) Close() {
 	// unregister before finish.
 	if h.user != nil {
 		h.userBoard.Unregister(h.user)
+		h.user.Close()
 	}
 	close(h.c)
+	<-h.done
 }

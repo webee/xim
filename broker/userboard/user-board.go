@@ -11,13 +11,13 @@ import (
 // UserBoard records the relations between users and connections.
 type UserBoard struct {
 	sync.RWMutex
-	mapping map[string]map[string]map[string]UserMsgBox
+	mapping map[string]map[string]map[uint32]UserMsgBox
 }
 
-// NewUserBaord creates a user board.
-func NewUserBaord() *UserBoard {
+// NewUserBoard creates a user board.
+func NewUserBoard() *UserBoard {
 	return &UserBoard{
-		mapping: make(map[string]map[string]map[string]UserMsgBox),
+		mapping: make(map[string]map[string]map[uint32]UserMsgBox),
 	}
 }
 
@@ -25,8 +25,8 @@ func NewUserBaord() *UserBoard {
 func (ub *UserBoard) Register(user *userds.UserLocation, conn UserMsgBox) error {
 	var (
 		ok        bool
-		users     map[string]map[string]UserMsgBox
-		instances map[string]UserMsgBox
+		users     map[string]map[uint32]UserMsgBox
+		instances map[uint32]UserMsgBox
 	)
 	ub.Lock()
 	defer ub.Unlock()
@@ -35,11 +35,11 @@ func (ub *UserBoard) Register(user *userds.UserLocation, conn UserMsgBox) error 
 	instance := user.Instance
 
 	if users, ok = ub.mapping[uid.App]; !ok {
-		users = make(map[string]map[string]UserMsgBox)
+		users = make(map[string]map[uint32]UserMsgBox)
 		ub.mapping[uid.App] = users
 	}
 	if instances, ok = users[uid.User]; !ok {
-		instances = make(map[string]UserMsgBox)
+		instances = make(map[uint32]UserMsgBox)
 		users[uid.User] = instances
 	}
 	instances[instance] = conn
@@ -52,8 +52,8 @@ func (ub *UserBoard) Register(user *userds.UserLocation, conn UserMsgBox) error 
 func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
 	var (
 		ok        bool
-		users     map[string]map[string]UserMsgBox
-		instances map[string]UserMsgBox
+		users     map[string]map[uint32]UserMsgBox
+		instances map[uint32]UserMsgBox
 	)
 	ub.Lock()
 	defer ub.Unlock()
@@ -83,8 +83,8 @@ func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
 func (ub *UserBoard) GetUserMsgBox(user *userds.UserLocation) (UserMsgBox, error) {
 	var (
 		ok        bool
-		users     map[string]map[string]UserMsgBox
-		instances map[string]UserMsgBox
+		users     map[string]map[uint32]UserMsgBox
+		instances map[uint32]UserMsgBox
 		msgBox    UserMsgBox
 	)
 	ub.RLock()

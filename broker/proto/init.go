@@ -12,13 +12,18 @@ const (
 	PutStatusMsg = "status"
 	PutNotifyMsg = "notify"
 	MsgMsg       = "msg"
+
+	AppNullMsg           = "null"
+	AppRegisterUserMsg   = "register"
+	AppUnregisterUserMsg = "unregister"
 )
 
 // Msg is the base user send msg.
 type Msg struct {
+	UID     uint32      `json:"uid"`
+	User    string      `json:"user,omitempty"`
 	ID      int         `json:"id"`
 	Type    string      `json:"type,omitempty"`
-	Token   string      `json:"token,omitempty"`
 	Channel string      `json:"channel,omitempty"`
 	Kind    string      `json:"kind,omitempty"`
 	Msg     interface{} `json:"msg,omitempty"`
@@ -32,6 +37,8 @@ type MsgWithBytes struct {
 
 // Reply is the base server reply msg.
 type Reply struct {
+	UID     interface{} `json:"uid,omitempty"`
+	User    string      `json:"user,omitempty"`
 	ReplyTo interface{} `json:"reply_to,omitempty"`
 	Ok      interface{} `json:"ok,omitempty"`
 	Type    string      `json:"type,omitempty"`
@@ -41,6 +48,7 @@ type Reply struct {
 
 // ChannelMsg is channel event msg.
 type ChannelMsg struct {
+	UID     interface{} `json:"uid,omitempty"`
 	Type    string      `json:"type,omitempty"`
 	ID      string      `json:"id,omitempty"`
 	LastID  string      `json:"last_id,omitempty"`
@@ -68,6 +76,16 @@ func NewPong(replyTo int, msg interface{}) *Reply {
 // NewReplyBye create a reply bye msg.
 func NewReplyBye(replyTo int) *Reply {
 	return NewReply(replyTo, ByeMsg, nil)
+}
+
+// NewReplyRegister create a reply bye msg.
+func NewReplyRegister(replyTo int, user string, uid uint32) *Reply {
+	return &Reply{Ok: true, ReplyTo: replyTo, Type: AppRegisterUserMsg, User: user, UID: uid}
+}
+
+// NewReplyUnregister create a reply bye msg.
+func NewReplyUnregister(replyTo int, uid uint32) *Reply {
+	return &Reply{Ok: true, ReplyTo: replyTo, Type: AppUnregisterUserMsg, UID: uid}
 }
 
 // NewResponse create a response msg.
