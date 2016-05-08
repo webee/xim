@@ -47,6 +47,10 @@ func handleMsgMsg(user userds.UserLocation, channel, kind string, msg interface{
 		// channel status msg, eg. user typing.
 		err := dispatcher.PutStatusMsg(user, channel, msg)
 		return nil, err
+	case proto.PutNotifyMsg:
+		// channel notify msg
+		err := dispatcher.PutStatusMsg(user, channel, msg)
+		return nil, err
 	default:
 		return nil, errors.New(ErrUnknownPutMsgKind)
 	}

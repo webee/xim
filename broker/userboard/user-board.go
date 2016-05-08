@@ -11,22 +11,22 @@ import (
 // UserBoard records the relations between users and connections.
 type UserBoard struct {
 	sync.RWMutex
-	mapping map[string]map[string]map[string]UserConn
+	mapping map[string]map[string]map[string]UserMsgBox
 }
 
 // NewUserBaord creates a user board.
 func NewUserBaord() *UserBoard {
 	return &UserBoard{
-		mapping: make(map[string]map[string]map[string]UserConn),
+		mapping: make(map[string]map[string]map[string]UserMsgBox),
 	}
 }
 
 // Register a user.
-func (ub *UserBoard) Register(user *userds.UserLocation, conn UserConn) error {
+func (ub *UserBoard) Register(user *userds.UserLocation, conn UserMsgBox) error {
 	var (
 		ok        bool
-		users     map[string]map[string]UserConn
-		instances map[string]UserConn
+		users     map[string]map[string]UserMsgBox
+		instances map[string]UserMsgBox
 	)
 	ub.Lock()
 	defer ub.Unlock()
@@ -35,11 +35,11 @@ func (ub *UserBoard) Register(user *userds.UserLocation, conn UserConn) error {
 	instance := user.Instance
 
 	if users, ok = ub.mapping[uid.App]; !ok {
-		users = make(map[string]map[string]UserConn)
+		users = make(map[string]map[string]UserMsgBox)
 		ub.mapping[uid.App] = users
 	}
 	if instances, ok = users[uid.User]; !ok {
-		instances = make(map[string]UserConn)
+		instances = make(map[string]UserMsgBox)
 		users[uid.User] = instances
 	}
 	instances[instance] = conn
@@ -52,8 +52,8 @@ func (ub *UserBoard) Register(user *userds.UserLocation, conn UserConn) error {
 func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
 	var (
 		ok        bool
-		users     map[string]map[string]UserConn
-		instances map[string]UserConn
+		users     map[string]map[string]UserMsgBox
+		instances map[string]UserMsgBox
 	)
 	ub.Lock()
 	defer ub.Unlock()
@@ -79,13 +79,13 @@ func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
 	return userdb.UserOffline(user)
 }
 
-// GetUserConn find the user's connection.
-func (ub *UserBoard) GetUserConn(user *userds.UserLocation) (UserConn, error) {
+// GetUserMsgBox find the user's msgbox.
+func (ub *UserBoard) GetUserMsgBox(user *userds.UserLocation) (UserMsgBox, error) {
 	var (
 		ok        bool
-		users     map[string]map[string]UserConn
-		instances map[string]UserConn
-		broker    UserConn
+		users     map[string]map[string]UserMsgBox
+		instances map[string]UserMsgBox
+		msgBox    UserMsgBox
 	)
 	ub.RLock()
 	defer ub.RUnlock()
@@ -94,8 +94,8 @@ func (ub *UserBoard) GetUserConn(user *userds.UserLocation) (UserConn, error) {
 
 	if users, ok = ub.mapping[uid.App]; ok {
 		if instances, ok = users[uid.User]; ok {
-			if broker, ok = instances[instance]; ok {
-				return broker, nil
+			if msgBox, ok = instances[instance]; ok {
+				return msgBox, nil
 			}
 		}
 	}

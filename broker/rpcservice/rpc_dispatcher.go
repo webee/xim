@@ -20,9 +20,9 @@ func NewRPCBroker(userBoard *userboard.UserBoard) *RPCBroker {
 // PushMsg push msg to broker.
 func (r *RPCBroker) PushMsg(args *types.RPCBrokerPushMsgArgs, reply *rpcutils.NoReply) error {
 	log.Println("GET PUSH:", args.User, args.Msg)
-	userConn, err := r.userBoard.GetUserConn(&args.User)
+	msgBox, err := r.userBoard.GetUserMsgBox(&args.User)
 	if err != nil {
 		return err
 	}
-	return userConn.PushMsg(&args.Msg)
+	return msgBox.PushMsg(&args.Msg)
 }

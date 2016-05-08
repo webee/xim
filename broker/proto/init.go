@@ -10,6 +10,7 @@ const (
 	ErrorReply   = "error"
 	PutMsg       = "put"
 	PutStatusMsg = "status"
+	PutNotifyMsg = "notify"
 	MsgMsg       = "msg"
 )
 

@@ -1,6 +1,6 @@
 package userboard
 
-// UserConn represents a user connection(ws/tcp).
-type UserConn interface {
+// UserMsgBox represents a user msg box.
+type UserMsgBox interface {
 	PushMsg(v interface{}) (err error)
 }

@@ -12,6 +12,7 @@ func initUserboard() {
 		Debug:        args.debug,
 	})
 	userboard.InitUserboard(&userboard.Config{
+		AppKeyPath:  args.appKeyPath,
 		UserKeyPath: args.userKeyPath,
 		Debug:       args.debug,
 	})

@@ -4,6 +4,7 @@ import "github.com/imdario/mergo"
 
 // Config is the configs for userboard.
 type Config struct {
+	AppKeyPath  string
 	UserKeyPath string
 	Debug       bool
 }

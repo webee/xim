@@ -62,6 +62,19 @@ func (c *wsConn) PushMsg(user *userds.UserLocation, v interface{}) (err error) {
 	}
 }
 
+func (c *wsConn) HandleMsg() {
+	for {
+		select {
+		case <-c.done:
+			break
+		case msg, ok := <-c.msgbox:
+			if ok {
+				c.WriteMsg(msg)
+			}
+		}
+	}
+}
+
 // WriteMsg write json message in a write timeout duration.
 func (c *wsConn) WriteMsg(v interface{}) (err error) {
 	err = c.WriteJSON(v, c.s.config.WriteTimeout)
@@ -127,9 +140,6 @@ func (c *wsConn) ReadJSONData(timeout time.Duration) (jd *simplejson.Json, err e
 
 // Close closes the underlying websocket connection.
 func (c *wsConn) Close() error {
-	// unregister before finish.
-	if c.user != nil {
-		c.s.userBoard.Unregister(c.user)
-	}
+	close(c.done)
 	return c.conn.Close()
 }

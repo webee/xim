@@ -33,8 +33,7 @@ func setupAppAPI(e *echo.Echo) {
 	c.SigningKey = appKey
 	c.Extractor = jwtFromHeaderOrQueryParam
 	gAppXim.Use(middleware.JWTAuthWithConfig(c))
-	gAppXim.GET(".new_user_token", newUserToken)
-	gAppXim.POST(".new_channel", newChannel)
+	gAppXim.POST(".put_msg", putMsg)
 }
 
 func setupUserAPI(e *echo.Echo) {
