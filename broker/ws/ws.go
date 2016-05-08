@@ -53,7 +53,7 @@ func (s *WebsocketServer) initHTTPServer() {
 	httpServeMux.Handle("/ws", s)
 	if s.config.Testing {
 		httpServeMux.HandleFunc("/testing", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintln(w, "OK")
+			fmt.Fprintln(w, "WS OK.")
 		})
 	}
 	s.httpServer = &http.Server{

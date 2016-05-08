@@ -53,7 +53,7 @@ func (c *wsConn) ReadMsg() (msg proto.Msg, err error) {
 }
 
 // PushMsg write json message in a write timeout duration.
-func (c *wsConn) PushMsg(v interface{}) (err error) {
+func (c *wsConn) PushMsg(user *userds.UserLocation, v interface{}) (err error) {
 	select {
 	case <-c.done:
 		return errors.New("connection closed")

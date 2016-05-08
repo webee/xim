@@ -20,7 +20,7 @@ type WebsocketServerConfig struct {
 var (
 	defaultWebsocketServerConfig = &WebsocketServerConfig{
 		Testing:          false,
-		Addr:             "localhost:2780",
+		Addr:             "localhost:2880",
 		HTTPReadTimeout:  7 * time.Second,
 		HTTPWriteTimeout: 7 * time.Second,
 		HeartbeatTimeout: 12 * time.Second,
