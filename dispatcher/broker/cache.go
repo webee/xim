@@ -20,7 +20,7 @@ var (
 
 func newRPCClientPoolFromKey(key string) *rpcClientPool {
 	netAddr, _ := netutils.ParseNetAddr(key)
-	pool := newRPCClientPool(netAddr, 10)
+	pool := newRPCClientPool(netAddr, 100)
 	return pool
 }
 

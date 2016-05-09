@@ -18,7 +18,7 @@ type AppIdentity struct {
 	App string
 }
 
-func (aid *AppIdentity) String() string {
+func (aid AppIdentity) String() string {
 	return fmt.Sprintf("%s", aid.App)
 }
 
@@ -29,7 +29,7 @@ type AppLocation struct {
 	Instance uint32
 }
 
-func (a *AppLocation) String() string {
+func (a AppLocation) String() string {
 	return fmt.Sprintf("%s>%s#%d", &a.AppIdentity, a.Broker, a.Instance)
 }
 
@@ -53,7 +53,7 @@ type UserIdentity struct {
 	User string
 }
 
-func (uid *UserIdentity) String() string {
+func (uid UserIdentity) String() string {
 	return fmt.Sprintf("%s:%s", uid.App, uid.User)
 }
 
@@ -83,7 +83,7 @@ func (u *UserLocation) Close() {
 	idPool.Put(u.Instance)
 }
 
-func (u *UserLocation) String() string {
+func (u UserLocation) String() string {
 	return fmt.Sprintf("%s>%s#%d", &u.UserIdentity, u.Broker, u.Instance)
 }
 

@@ -107,10 +107,10 @@ func (h *MsgHandler) ProcessLogicMsg(q <-chan *proto.Msg) {
 
 	for {
 		select {
-		case msg, ok := <-h.msgbox:
+		case msg := <-h.msgbox:
 			// push
-			if ok {
-				_ = h.WriteMsg(msg)
+			if err := h.WriteMsg(msg); err != nil {
+				return
 			}
 		case msg, ok := <-q:
 			// send
