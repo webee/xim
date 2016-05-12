@@ -42,33 +42,21 @@ func (r *RPCDispatcher) PutMsg(args *types.RPCDispatcherPutMsgArgs, reply *types
 func (r *RPCDispatcher) PutStatusMsg(args *types.RPCDispatcherPutMsgArgs, reply *rpcutils.NoReply) error {
 	log.Println(types.RPCDispatcherPutStatusMsg, "is called:", args.User, args.Channel, args.Msg)
 
-	doDispatchStatusMsg(args.Channel, &args.User, args.Msg)
+	doDispatchMsg(args.Channel, &args.User, "", "", proto.PutStatusMsg, args.Msg)
 	return nil
 }
 
-func doDispatchMsg(channel string, user *userds.UserLocation, id, lastID string, msg interface{}) {
-	log.Printf("dispatch msg: #%s, %s, [%s<-%s, %s]\n", channel, user, lastID, id, msg)
+func doDispatchMsg(channel string, user *userds.UserLocation, id, lastID string, kind string, msg interface{}) {
+	log.Printf("dispatch %s msg: #%s, %s, [%s<-%s, %s]\n", kind, channel, user, lastID, id, msg)
 	protoMsg := &proto.ChannelMsg{
 		Type:    proto.MsgMsg,
 		Channel: channel,
 		User:    user.User,
 		ID:      id,
 		LastID:  lastID,
+		Kind:    kind,
 		Msg:     msg,
 	}
-	putMsg(channel, user, protoMsg)
-}
-
-func doDispatchStatusMsg(channel string, user *userds.UserLocation, msg interface{}) {
-	log.Printf("dispatch status msg: #%s, %s, %s\n", channel, user, msg)
-	protoMsg := &proto.ChannelMsg{
-		Type:    proto.MsgMsg,
-		Channel: channel,
-		User:    user.User,
-		Kind:    proto.PutStatusMsg,
-		Msg:     msg,
-	}
-
 	putMsg(channel, user, protoMsg)
 }
 

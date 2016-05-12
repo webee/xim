@@ -42,7 +42,7 @@ func (t *msgChanTransformer) transform(m interface{}) interface{} {
 
 func dispatchMsg(m interface{}) error {
 	dm := m.(*toDispatchMsg)
-	doDispatchMsg(dm.channel, &dm.user, dm.id, dm.lastID, dm.msg)
+	doDispatchMsg(dm.channel, &dm.user, dm.id, dm.lastID, "", dm.msg)
 	return nil
 }
 
