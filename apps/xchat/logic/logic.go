@@ -34,7 +34,9 @@ func subreg(c *turnpike.Client) {
 		log.Fatalf("Error subscribing to %s: %s\n", URIWAMPSessionOnLeave, err)
 	}
 
-	if err := c.Register(URITestToUpper, toUpper, map[string]interface{}{}); err != nil {
+	if err := c.Register(URITestToUpper, toUpper, map[string]interface{}{
+		"invoke": "first",
+	}); err != nil {
 		log.Fatalf("Error register %s: %s\n", URITestToUpper, err)
 	}
 }
