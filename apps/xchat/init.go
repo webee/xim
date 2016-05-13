@@ -1,0 +1,4 @@
+package xchat
+
+func init() {
+}
