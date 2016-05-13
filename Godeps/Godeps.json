@@ -97,6 +97,10 @@
 			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
 		},
 		{
+			"ImportPath": "github.com/ugorji/go/codec",
+			"Rev": "a396ed22fc049df733440d90efe17475e3929ccb"
+		},
+		{
 			"ImportPath": "github.com/valyala/fasttemplate",
 			"Rev": "3b874956e03f1636d171bda64b130f9135f42cff"
 		},
@@ -154,6 +158,10 @@
 			"ImportPath": "gopkg.in/go-redis/cache.v3/lrucache",
 			"Comment": "v1.0.1-4-g313857c",
 			"Rev": "313857ce218310c8135af1c3f9762cd6dd50df4d"
+		},
+		{
+			"ImportPath": "gopkg.in/jcelliott/turnpike.v2",
+			"Rev": "65eb3bacd2852f9554a44d7d1b60a91fdb26fe67"
 		},
 		{
 			"ImportPath": "gopkg.in/redis.v3",
