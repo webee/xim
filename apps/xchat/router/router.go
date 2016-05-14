@@ -2,6 +2,7 @@ package router
 
 import (
 	"fmt"
+	"net/http"
 	"xim/utils/jwtutils"
 
 	"gopkg.in/jcelliott/turnpike.v2"
@@ -69,6 +70,9 @@ func NewXChatRouter(debug bool, userKey []byte) (*XChatRouter, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	allowAllOrigin := func(r *http.Request) bool { return true }
+	s.Upgrader.CheckOrigin = allowAllOrigin
 
 	return &XChatRouter{
 		WebsocketServer: s,
