@@ -41,11 +41,11 @@ func (m *Mid) Start() {
 		log.Fatalf("Error subscribing to %s: %s\n", URIWAMPSessionOnLeave, err)
 	}
 
-	if err := xchat.BasicRegister(URITestToUpper, toUpper); err != nil {
+	if err := xchat.BasicRegister(URITestToUpper, call(toUpper)); err != nil {
 		log.Fatalf("Error register %s: %s\n", URITestToUpper, err)
 	}
 
-	if err := xchat.BasicRegister(URITestAdd, add); err != nil {
+	if err := xchat.BasicRegister(URITestAdd, call(add)); err != nil {
 		log.Fatalf("Error register %s: %s\n", URITestAdd, err)
 	}
 }
@@ -64,6 +64,10 @@ func routerInitSetup(config *Config, xchat *turnpike.Client, ximClient *XIMClien
 // 处理用户连接注册
 func (m *Mid) onJoin(args []interface{}, kwargs map[string]interface{}) {
 	details := args[0].(map[string]interface{})
+	if details == nil {
+		return
+	}
+
 	role := details["role"].(string)
 	// register this user.
 	if role == "user" {
@@ -120,4 +124,15 @@ func add(args []interface{}, kargs map[string]interface{}) (result *turnpike.Cal
 	}
 	res := a + b
 	return &turnpike.CallResult{Args: []interface{}{res}}
+}
+
+func call(handler turnpike.BasicMethodHandler) turnpike.BasicMethodHandler {
+	return func(args []interface{}, kargs map[string]interface{}) (result *turnpike.CallResult) {
+		defer func() {
+			if r := recover(); r != nil {
+				result = &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{r}}
+			}
+		}()
+		return handler(args, kargs)
+	}
 }
