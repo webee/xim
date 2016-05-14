@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CM</title>
+</head>
+<body>
+<h1>XChat</h1>
+<p>Open JavaScript console to watch output.</p>
+<button onclick="online()">online</button><br/>
+<button onclick="offline()">offline</button><br/>
+<script>AUTOBAHN_DEBUG = false;</script>
+<script src="http://autobahn.s3.amazonaws.com/autobahnjs/latest/autobahn.min.jgz"></script>
+
+<script>
+    // the URL of the WAMP Router (Crossbar.io)
+    //
+    var wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" + document.location.host + "/ws";
+
+    function onchallenge (session, method, extra) {
+        console.log("onchallenge", method, extra);
+        if (method === "jwt") {
+            return "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE0NjYyMTgwNDgsInVzZXJuYW1lIjoidGVzdCIsInVzZXIiOiJ0ZXN0In0.b0Pcf-ANG86sXE4cfkV_6cHw84gjyMOV80bLqEZSPFw";
+        } else {
+            throw "don't know how to authenticate using '" + method + "'";
+        }
+    }
+
+    // the WAMP connection to the Router
+    //
+    var connection = new autobahn.Connection({
+        url: wsuri,
+        realm: "xchat",
+        authmethods: ["jwt"],
+        onchallenge: onchallenge
+    });
+
+    var session = null;
+    var msg_sub = null;
+    // timers
+    //
+    var t1;
+
+
+    // fired when connection is established and session attached
+    //
+    connection.onopen = function (newSession, details) {
+        session = newSession;
+        console.log("Connected");
+        console.log(session);
+        console.log(details);
+
+        // CALL a remote procedure every second
+        //
+        var x = 0;
+
+        t1 = setInterval(function () {
+
+            session.call('xchat.test.add', [x, 1]).then(
+                    function (res) {
+                        console.log("add() result:", res);
+                    },
+                    function (err) {
+                        console.log("add() error:", err);
+                    }
+            );
+
+            x += 1;
+        }, 5000);
+    };
+
+
+    // fired when connection was lost (or could not be established)
+    //
+    connection.onclose = function (reason, details) {
+        console.log("Connection lost: " + reason);
+        if (t1) {
+            clearInterval(t1);
+            t1 = null;
+        }
+        session = null;
+    };
+
+
+    // now actually open the connection
+    //
+    connection.open();
+
+    function online () {
+        if (session) {
+            session.call("xchat.user.online").then(
+                    function (res) {
+                        if (res.ok) {
+                            console.log("ok");
+
+                            function on_msg (args) {
+                                var n = args[0];
+                                console.log("receive msg: " + n);
+                            }
+                            session.subscribe('xchat.user.' + session.id + '.msg', on_msg).then(
+                                    function (sub) {
+                                        msg_sub = sub;
+                                        console.log('subscribed to topic');
+                                    },
+                                    function (err) {
+                                        console.log('failed to subscribe to topic', err);
+                                    }
+                            );
+                        } else {
+                            console.log('failed.');
+                        }
+                    },
+                    function (err) {
+                        console.log('error:'+JSON.stringify(err));
+                    }
+            );
+        } else {
+            console.log("not connected!");
+        }
+    }
+
+    function offline () {
+        if (session) {
+            session.call("xchat.user." + session.id +".offline").then(
+                    function (res) {
+                        msg_sub.unsubscribe().then(
+                                function() {
+                                    console.log("successful unsubscribe");
+                                    msg_sub = null;
+                                },
+                                function(error) {
+                                    console.log("unsubscribe error ", error);
+                                }
+                        );
+                        alert('offline:' + res.ok);
+                    },
+                    function (err) {
+                        alert('error:'+JSON.stringify(err));
+                    }
+            );
+        } else {
+            console.log("not connected!");
+        }
+    }
+</script>
+</body>
+</html>

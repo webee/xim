@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"log"
 	"runtime"
+	"xim/apps/xchat/router"
 	"xim/utils/pprofutils"
 )
 
@@ -13,7 +15,15 @@ func main() {
 	if args.debug {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
+	setupKeys()
 	initDB()
-	startLogic()
+	xchatRouter, err := router.NewXChatRouter(args.debug, userKey)
+	if err != nil {
+		log.Fatalln("create xchat router failed:", err)
+	}
+
+	setupMid(xchatRouter)
+
+	startRouter(xchatRouter)
 	setupSignal()
 }

@@ -1,17 +1,24 @@
-package logic
+package mid
 
 import "github.com/imdario/mergo"
 
 // Config is the configs for http api server.
 type Config struct {
-	Debug     bool
-	BrokerURL string
+	Debug       bool
+	XIMHostURL  string
+	XIMApp      string
+	XIMPassword string
+	XIMAppWsURL string
+	UserKeyPath string
 }
 
 var (
 	defaultConfig = &Config{
-		Debug:     false,
-		BrokerURL: "ws://127.0.0.1:48079/app-ws",
+		Debug:       false,
+		XIMHostURL:  "http://localhost:6980",
+		XIMApp:      "test",
+		XIMPassword: "test1234",
+		XIMAppWsURL: "ws://127.0.0.1:2980/ws",
 	}
 )
 
