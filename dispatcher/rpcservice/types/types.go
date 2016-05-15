@@ -12,7 +12,8 @@ type RPCDispatcherPutMsgArgs struct {
 
 // RPCDispatcherPutMsgReply is the msg reply.
 type RPCDispatcherPutMsgReply struct {
-	MsgID string
+	MsgID     int
+	Timestamp int64
 }
 
 // RPCServer methods.

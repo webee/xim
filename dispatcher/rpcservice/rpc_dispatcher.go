@@ -29,11 +29,13 @@ func (r *RPCDispatcher) PutMsg(args *types.RPCDispatcherPutMsgArgs, reply *types
 		user:    args.User,
 		channel: args.Channel,
 		msg:     args.Msg,
-		id:      make(chan string, 1),
+		id:      make(chan int, 1),
+		ts:      make(chan int64, 1),
 	}
 	log.Println("sending", args.User, args.Channel, args.Msg)
 	if err = msgChan.Put(qm); err == nil {
 		reply.MsgID = <-qm.id
+		reply.Timestamp = <-qm.ts
 	}
 	return err
 }
@@ -42,20 +44,21 @@ func (r *RPCDispatcher) PutMsg(args *types.RPCDispatcherPutMsgArgs, reply *types
 func (r *RPCDispatcher) PutStatusMsg(args *types.RPCDispatcherPutMsgArgs, reply *rpcutils.NoReply) error {
 	log.Println(types.RPCDispatcherPutStatusMsg, "is called:", args.User, args.Channel, args.Msg)
 
-	doDispatchMsg(args.Channel, &args.User, "", "", proto.PutStatusMsg, args.Msg)
+	// FIXME: 是否考虑状态消息顺序?
+	doDispatchMsg(args.Channel, &args.User, nil, proto.PutStatusMsg, args.Msg, nil)
 	return nil
 }
 
-func doDispatchMsg(channel string, user *userds.UserLocation, id, lastID string, kind string, msg interface{}) {
-	log.Printf("dispatch %s msg: #%s, %s, [%s<-%s, %s]\n", kind, channel, user, lastID, id, msg)
+func doDispatchMsg(channel string, user *userds.UserLocation, id interface{}, kind string, msg interface{}, ts interface{}) {
+	log.Printf("dispatch %s msg: #%s, %s, [%d, %s]\n", kind, channel, user, id, msg)
 	protoMsg := &proto.ChannelMsg{
-		Type:    proto.MsgMsg,
-		Channel: channel,
-		User:    user.User,
-		ID:      id,
-		LastID:  lastID,
-		Kind:    kind,
-		Msg:     msg,
+		Type:      proto.MsgMsg,
+		Channel:   channel,
+		User:      user.User,
+		ID:        id,
+		Kind:      kind,
+		Msg:       msg,
+		Timestamp: ts,
 	}
 	putMsg(channel, user, protoMsg)
 }

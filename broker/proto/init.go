@@ -48,14 +48,14 @@ type Reply struct {
 
 // ChannelMsg is channel event msg.
 type ChannelMsg struct {
-	UID     interface{} `json:"uid,omitempty"`
-	Type    string      `json:"type,omitempty"`
-	ID      string      `json:"id,omitempty"`
-	LastID  string      `json:"last_id,omitempty"`
-	User    string      `json:"user"`
-	Channel string      `json:"channel"`
-	Kind    string      `json:"kind,omitempty"`
-	Msg     interface{} `json:"msg"`
+	UID       interface{} `json:"uid,omitempty"`
+	Type      string      `json:"type,omitempty"`
+	ID        interface{} `json:"id,omitempty"`
+	User      string      `json:"user"`
+	Channel   string      `json:"channel"`
+	Timestamp interface{} `json:"ts"`
+	Kind      string      `json:"kind,omitempty"`
+	Msg       interface{} `json:"msg"`
 }
 
 // NewReply create a reply msg.

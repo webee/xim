@@ -3,77 +3,81 @@ package rpcservice
 import (
 	"fmt"
 	"log"
+	"time"
 	"xim/broker/proto"
 	"xim/broker/userds"
 	"xim/dispatcher/broker"
 	"xim/dispatcher/msgchan"
 )
 
-func genQueueMsgTransformer() msgchan.MsgChannelTransformer {
+func genQueueMsgTransformer(channel string) msgchan.MsgChannelTransformer {
 	idGen := NewIDGenerator()
+	// FIXME: get channel latest id.
+	// idGen.SetID(0)
 	return func(m interface{}) interface{} {
 		qm := m.(*queueMsg)
 		id := idGen.ID()
+		ts := time.Now().Unix()
 		qm.id <- id
-		return &chanMsg{id, qm.channel, qm.user, qm.msg}
+		qm.ts <- ts
+		return &chanMsg{id, qm.channel, qm.user, qm.msg, ts}
 	}
 }
 
 type msgChanTransformer struct {
-	count  uint
-	lastID string
+	count uint
 }
 
 func (t *msgChanTransformer) transform(m interface{}) interface{} {
 	cm := m.(*chanMsg)
-	// save to db.
+	// TODO: save to db.
 	t.count++
-	lastID := t.lastID
-	t.lastID = cm.id
 	log.Println("channel:", cm)
 	return &toDispatchMsg{
 		channel: cm.channel,
 		user:    cm.user,
 		id:      cm.id,
-		lastID:  lastID,
 		msg:     cm.msg,
+		ts:      cm.ts,
 	}
 }
 
 func dispatchMsg(m interface{}) error {
 	dm := m.(*toDispatchMsg)
-	doDispatchMsg(dm.channel, &dm.user, dm.id, dm.lastID, "", dm.msg)
+	doDispatchMsg(dm.channel, &dm.user, dm.id, "", dm.msg, dm.ts)
 	return nil
 }
 
-func newDispatcherMsgChan(name string) *msgchan.MsgChannel {
-	c := msgchan.NewMsgChannel(fmt.Sprintf("%s.channel", name), 100,
+func newDispatcherMsgChan(channel string) *msgchan.MsgChannel {
+	c := msgchan.NewMsgChannel(fmt.Sprintf("%s.channel", channel), 100,
 		new(msgChanTransformer).transform,
-		msgchan.NewMsgChannelHandlerDownStream(fmt.Sprintf("%s.dispatcher", name), dispatchMsg))
+		msgchan.NewMsgChannelHandlerDownStream(fmt.Sprintf("%s.dispatcher", channel), dispatchMsg))
 
-	return msgchan.NewMsgChannel(fmt.Sprintf("%s.queue", name), 10, genQueueMsgTransformer(), c)
+	return msgchan.NewMsgChannel(fmt.Sprintf("%s.queue", channel), 10, genQueueMsgTransformer(channel), c)
 }
 
 type queueMsg struct {
 	user    userds.UserLocation
 	channel string
 	msg     interface{}
-	id      chan string
+	id      chan int
+	ts      chan int64
 }
 
 type chanMsg struct {
-	id      string
+	id      int
 	channel string
 	user    userds.UserLocation
 	msg     interface{}
+	ts      int64
 }
 
 type toDispatchMsg struct {
 	channel string
 	user    userds.UserLocation
-	id      string
-	lastID  string
+	id      int
 	msg     interface{}
+	ts      int64
 }
 
 func (qm *queueMsg) String() string {
@@ -81,11 +85,11 @@ func (qm *queueMsg) String() string {
 }
 
 func (cm *chanMsg) String() string {
-	return fmt.Sprintf("%s: %s[%s]", cm.user, cm.msg, cm.id)
+	return fmt.Sprintf("%s: %s[%d]", cm.user, cm.msg, cm.id)
 }
 
 func (cm *toDispatchMsg) String() string {
-	return fmt.Sprintf("%s: %s[%s<-%s]", cm.user, cm.msg, cm.lastID, cm.id)
+	return fmt.Sprintf("%s: %s[%d]", cm.user, cm.msg, cm.id)
 }
 
 func pushMsg(m interface{}) error {

@@ -35,12 +35,13 @@ func handleMsgMsg(user userds.UserLocation, channel, kind string, msg interface{
 
 	switch kind {
 	case "":
-		msgID, err := dispatcher.PutMsg(user, channel, msg)
+		msgID, ts, err := dispatcher.PutMsg(user, channel, msg)
 		if err != nil {
 			return nil, err
 		}
 		replyMsg = map[string]interface{}{
 			"id": msgID,
+			"ts": ts,
 		}
 		return replyMsg, err
 	case proto.PutStatusMsg:

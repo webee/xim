@@ -1,14 +1,8 @@
 package rpcservice
 
-import (
-	"fmt"
-	"time"
-)
-
 // IDGenerator is a time based id generator.
 type IDGenerator struct {
-	ts    int64
-	count int
+	id int
 }
 
 // NewIDGenerator creates a new id generator.
@@ -16,13 +10,13 @@ func NewIDGenerator() *IDGenerator {
 	return &IDGenerator{}
 }
 
+// SetID sets the id.
+func (g *IDGenerator) SetID(id int) {
+	g.id = id
+}
+
 // ID return the next id.
-func (g *IDGenerator) ID() string {
-	ts := time.Now().Unix()
-	if ts > g.ts {
-		g.ts = ts
-		g.count = 0
-	}
-	g.count++
-	return fmt.Sprintf("%d.%06d", g.ts, g.count)
+func (g *IDGenerator) ID() int {
+	g.id++
+	return g.id
 }

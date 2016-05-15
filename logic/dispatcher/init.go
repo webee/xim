@@ -20,7 +20,7 @@ func InitDispatcherRPC(netAddr *netutils.NetAddr) {
 }
 
 // PutMsg push a msg to channel.
-func PutMsg(user userds.UserLocation, channel string, msg interface{}) (msgID string, err error) {
+func PutMsg(user userds.UserLocation, channel string, msg interface{}) (msgID int, ts int64, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
@@ -34,7 +34,7 @@ func PutMsg(user userds.UserLocation, channel string, msg interface{}) (msgID st
 	log.Println("put:", user, channel, msg)
 	reply := new(types.RPCDispatcherPutMsgReply)
 	err = dispatcherRPCClient.Client.Call(types.RPCDispatcherPutMsg, args, reply)
-	return reply.MsgID, err
+	return reply.MsgID, reply.Timestamp, err
 }
 
 // PutStatusMsg push a msg to channel.
