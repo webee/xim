@@ -33,7 +33,7 @@ func init() {
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6070", "debug pprof http address.")
 	flag.StringVar(&args.dbDriverName, "db-driver-name", "postgres", "database driver name.")
-	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", "postgres://xchat:xchat1234@localhost:5432/xim?sslmode=disable", "database datasoure name.")
+	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", "postgres://xchat:xchat1234@localhost:5432/xchat?sslmode=disable", "database datasoure name.")
 	flag.StringVar(&args.ximHostURL, "xim-host-url", "http://localhost:6980", "xim api host url.")
 	flag.StringVar(&args.ximApp, "xim-app", "test", "xim app name.")
 	flag.StringVar(&args.ximPassword, "xim-password", "test1234", "xim password.")

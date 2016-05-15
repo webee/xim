@@ -34,6 +34,7 @@
     });
 
     var session = null;
+    var reply_sub = null;
     var msg_sub = null;
     // timers
     var t1;
@@ -45,10 +46,23 @@
         console.log("session:", session);
         console.log("details:", details);
 
-        function on_msg (args) {
-          console.log("on msg:", args)
+        function onReply (args, kwargs) {
+          console.log(">>>>reply:", args, kwargs)
         }
-        session.subscribe('xchat.user.' + session.id + '.msg', on_msg).then(
+        session.subscribe('xchat.user.' + session.id + '.reply', onReply).then(
+          function (sub) {
+            reply_sub = sub;
+            console.log('subscribed to topic');
+          },
+          function (err) {
+            console.log('failed to subscribe to topic', err);
+          }
+        );
+
+        function onMsg (args, kwargs) {
+          console.log(">>>>msg:", args, kwargs)
+        }
+        session.subscribe('xchat.user.' + session.id + '.msg', onMsg).then(
           function (sub) {
             msg_sub = sub;
             console.log('subscribed to topic');
@@ -57,8 +71,17 @@
             console.log('failed to subscribe to topic', err);
           }
         );
+        session.call('xchat.user.login').then(
+            function (res) {
+                console.log("login success:", res);
+            },
+            function (err) {
+                console.log("login error:", err);
+            }
+        )
 
         // CALL a remote procedure every 5 seconds.
+        /*
         var x = 0;
 
         t1 = setInterval(function () {
@@ -74,6 +97,7 @@
 
             x += 1;
         }, 5000);
+        */
     };
 
     // fired when connection was lost (or could not be established)
@@ -86,6 +110,7 @@
             clearInterval(t1);
             t1 = null;
         }
+        reply_sub = null;
         msg_sub = null;
         session = null;
     };

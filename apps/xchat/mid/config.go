@@ -5,6 +5,7 @@ import "github.com/imdario/mergo"
 // Config is the configs for http api server.
 type Config struct {
 	Debug       bool
+	Testing     bool
 	XIMHostURL  string
 	XIMApp      string
 	XIMPassword string
@@ -15,6 +16,7 @@ type Config struct {
 var (
 	defaultConfig = &Config{
 		Debug:       false,
+		Testing:     false,
 		XIMHostURL:  "http://localhost:6980",
 		XIMApp:      "test",
 		XIMPassword: "test1234",

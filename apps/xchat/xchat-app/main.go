@@ -17,6 +17,7 @@ func main() {
 	}
 	setupKeys()
 	initDB()
+
 	xchatRouter, err := router.NewXChatRouter(userKey, args.debug, args.testing)
 	if err != nil {
 		log.Fatalln("create xchat router failed:", err)

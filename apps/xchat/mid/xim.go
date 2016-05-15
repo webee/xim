@@ -1,5 +1,7 @@
 package mid
 
+import "time"
+
 // XIMClient handles xim apis and app ws connections.
 type XIMClient struct {
 	// sessionID to uid.
@@ -13,6 +15,7 @@ func NewXIMClient(config *Config) *XIMClient {
 
 // Register register user with sessionID.
 func (c *XIMClient) Register(sessionID uint64, user string) error {
+	time.Sleep(500 * time.Millisecond)
 	return nil
 }
 
@@ -27,6 +30,7 @@ func (c *XIMClient) Ping(sessionID uint64) error {
 }
 
 // SendMsg send uid's msg to channel.
-func (c *XIMClient) SendMsg(sessionID uint64, channel string, msg interface{}) error {
+func (c *XIMClient) SendMsg(id uint64, sessionID uint64, channel string, msg interface{}) error {
+	time.Sleep(200 * time.Millisecond)
 	return nil
 }

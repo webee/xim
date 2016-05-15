@@ -9,6 +9,7 @@ func setupMid(xchatRouter *router.XChatRouter) {
 	config := mid.NewConfig(
 		&mid.Config{
 			Debug:       args.debug,
+			Testing:     args.testing,
 			XIMHostURL:  args.ximHostURL,
 			XIMApp:      args.ximApp,
 			XIMPassword: args.ximPassword,
