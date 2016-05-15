@@ -61,7 +61,7 @@ func (m *Mid) Start() {
 		log.Fatalf("Error register %s: %s\n", URIXChatLogin, err)
 	}
 
-	if err := xchat.BasicRegister(URIXChatSendMsg, m.sendMsg); err != nil {
+	if err := xchat.BasicRegister(URIXChatSendMsg, call(m.sendMsg)); err != nil {
 		log.Fatalf("Error register %s: %s\n", URIXChatSendMsg, err)
 	}
 }
