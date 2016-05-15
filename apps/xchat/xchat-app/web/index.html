@@ -7,9 +7,7 @@
 <body>
 <h1>XChat</h1>
 <p>Open JavaScript console to watch output.</p>
-<button onclick="online()">online</button><br/>
-<button onclick="offline()">offline</button><br/>
-<script>AUTOBAHN_DEBUG = false;</script>
+<script>AUTOBAHN_DEBUG = true;</script>
 <script src="http://autobahn.s3.amazonaws.com/autobahnjs/latest/autobahn.min.jgz"></script>
 
 <script>
@@ -38,20 +36,29 @@
     var session = null;
     var msg_sub = null;
     // timers
-    //
     var t1;
 
-
     // fired when connection is established and session attached
-    //
     connection.onopen = function (newSession, details) {
         session = newSession;
         console.log("Connected");
-        console.log(session);
-        console.log(details);
+        console.log("session:", session);
+        console.log("details:", details);
 
-        // CALL a remote procedure every second
-        //
+        function on_msg (args) {
+          console.log("on msg:", args)
+        }
+        session.subscribe('xchat.user.' + session.id + '.msg', on_msg).then(
+          function (sub) {
+            msg_sub = sub;
+            console.log('subscribed to topic');
+          },
+          function (err) {
+            console.log('failed to subscribe to topic', err);
+          }
+        );
+
+        // CALL a remote procedure every 5 seconds.
         var x = 0;
 
         t1 = setInterval(function () {
@@ -69,79 +76,22 @@
         }, 5000);
     };
 
-
     // fired when connection was lost (or could not be established)
     //
     connection.onclose = function (reason, details) {
-        console.log("Connection lost: " + reason);
+        console.log("Connection lost")
+        console.log("reason:", reason)
+        console.log("details:", details)
         if (t1) {
             clearInterval(t1);
             t1 = null;
         }
+        msg_sub = null;
         session = null;
     };
 
-
     // now actually open the connection
-    //
     connection.open();
-
-    function online () {
-        if (session) {
-            session.call("xchat.user.online").then(
-                    function (res) {
-                        if (res.ok) {
-                            console.log("ok");
-
-                            function on_msg (args) {
-                                var n = args[0];
-                                console.log("receive msg: " + n);
-                            }
-                            session.subscribe('xchat.user.' + session.id + '.msg', on_msg).then(
-                                    function (sub) {
-                                        msg_sub = sub;
-                                        console.log('subscribed to topic');
-                                    },
-                                    function (err) {
-                                        console.log('failed to subscribe to topic', err);
-                                    }
-                            );
-                        } else {
-                            console.log('failed.');
-                        }
-                    },
-                    function (err) {
-                        console.log('error:'+JSON.stringify(err));
-                    }
-            );
-        } else {
-            console.log("not connected!");
-        }
-    }
-
-    function offline () {
-        if (session) {
-            session.call("xchat.user." + session.id +".offline").then(
-                    function (res) {
-                        msg_sub.unsubscribe().then(
-                                function() {
-                                    console.log("successful unsubscribe");
-                                    msg_sub = null;
-                                },
-                                function(error) {
-                                    console.log("unsubscribe error ", error);
-                                }
-                        );
-                        alert('offline:' + res.ok);
-                    },
-                    function (err) {
-                        alert('error:'+JSON.stringify(err));
-                    }
-            );
-        } else {
-            console.log("not connected!");
-        }
-    }
 </script>
 </body>
 </html>

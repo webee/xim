@@ -50,7 +50,7 @@ type XChatRouter struct {
 }
 
 // NewXChatRouter creates a xchat router.
-func NewXChatRouter(debug bool, userKey []byte) (*XChatRouter, error) {
+func NewXChatRouter(userKey []byte, debug, testing bool) (*XChatRouter, error) {
 	if debug {
 		turnpike.Debug()
 	}
@@ -62,7 +62,7 @@ func NewXChatRouter(debug bool, userKey []byte) (*XChatRouter, error) {
 			},
 		},
 	}
-	if debug {
+	if testing {
 		realms["realm1"] = turnpike.Realm{}
 	}
 
@@ -71,6 +71,7 @@ func NewXChatRouter(debug bool, userKey []byte) (*XChatRouter, error) {
 		return nil, err
 	}
 
+	// allow all origins.
 	allowAllOrigin := func(r *http.Request) bool { return true }
 	s.Upgrader.CheckOrigin = allowAllOrigin
 

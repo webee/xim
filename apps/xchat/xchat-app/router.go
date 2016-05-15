@@ -9,7 +9,7 @@ import (
 func startRouter(r *router.XChatRouter) {
 	go func() {
 		httpServeMux := http.NewServeMux()
-		if args.debug {
+		if args.testing {
 			httpServeMux.Handle("/", http.FileServer(http.Dir(args.testWebDir)))
 		}
 		httpServeMux.Handle(args.endpoint, r)
