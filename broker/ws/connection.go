@@ -20,7 +20,7 @@ type Connection interface {
 
 // GetMessageTimeout is a convenience function to get a single message from a
 // connection within a specified period of time
-func GetMessageTimeout(c Connection, t time.Duration) (interface{}, error) {
+func GetMessageTimeout(c Connection, t time.Duration) (*proto.Msg, error) {
 	select {
 	case msg, open := <-c.Receive():
 		if !open {

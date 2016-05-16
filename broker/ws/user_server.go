@@ -32,7 +32,7 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	c := newWsConnection(conn, 5)
+	c := newWsConnection(conn, 5, s.config.HeartbeatTimeout, s.config.WriteTimeout)
 	us.handleWebsocket(s, user, c)
 }
 

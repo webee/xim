@@ -12,18 +12,22 @@ import (
 
 // WsConn is a websocket connection.
 type wsConnection struct {
-	conn       *websocket.Conn
-	serializer Serializer
-	messages   chan *proto.Msg
-	closed     bool
-	sendMutex  sync.Mutex
+	conn             *websocket.Conn
+	serializer       Serializer
+	messages         chan *proto.Msg
+	closed           bool
+	sendMutex        sync.Mutex
+	heartbeatTimeout time.Duration
+	writeTimeout     time.Duration
 }
 
-func newWsConnection(conn *websocket.Conn, chanSize int) *wsConnection {
+func newWsConnection(conn *websocket.Conn, chanSize int, heartbeatTimeout, writeTimeout time.Duration) *wsConnection {
 	c := &wsConnection{
-		conn:       conn,
-		serializer: new(JSONSerializer),
-		messages:   make(chan *proto.Msg, chanSize),
+		conn:             conn,
+		serializer:       new(JSONSerializer),
+		messages:         make(chan *proto.Msg, chanSize),
+		heartbeatTimeout: heartbeatTimeout,
+		writeTimeout:     writeTimeout,
 	}
 	go c.run()
 	return c
@@ -37,6 +41,9 @@ func (c *wsConnection) Send(msg interface{}) error {
 	}
 	c.sendMutex.Lock()
 	defer c.sendMutex.Unlock()
+
+	c.conn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
+	defer c.conn.SetWriteDeadline(time.Time{})
 	return c.conn.WriteMessage(websocket.TextMessage, b)
 }
 
@@ -57,7 +64,11 @@ func (c *wsConnection) Close() error {
 
 func (c *wsConnection) run() {
 	for {
-		if msgType, b, err := c.conn.ReadMessage(); err != nil {
+		// NOTE: read timeout(heartbeat.)
+		c.conn.SetReadDeadline(time.Now().Add(c.heartbeatTimeout))
+		msgType, b, err := c.conn.ReadMessage()
+		c.conn.SetReadDeadline(time.Time{})
+		if err != nil {
 			if c.closed {
 				log.Println("peer connection closed")
 			} else {

@@ -44,7 +44,7 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 	ah := &AppServerHandler{
 		s:        s,
 		as:       as,
-		c:        newWsConnection(conn, 100),
+		c:        newWsConnection(conn, 100, s.config.HeartbeatTimeout, s.config.WriteTimeout),
 		app:      app,
 		handlers: make(map[uint32]*MsgLogic),
 	}

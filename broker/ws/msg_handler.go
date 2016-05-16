@@ -92,4 +92,5 @@ func (h *MsgLogic) Close() {
 		h.user.Close()
 	}
 	h.closed = true
+	log.Println(h.user, "msg handler closed.")
 }
