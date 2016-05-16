@@ -20,14 +20,14 @@ func (l *RPCLogic) HandleMsg(args *types.RPCLogicHandleMsgArgs, reply *types.RPC
 	log.Println(types.RPCLogicHandleMsg, "is called:", args.User, args.Type, args.Msg)
 	switch args.Type {
 	case proto.PutMsg:
-		reply.Msg, err = handleMsgMsg(args.User, args.Channel, args.Kind, args.Msg)
+		reply.Data, err = handleMsgMsg(args.User, args.Channel, args.Kind, args.Msg)
 	default:
 		return errors.New(ErrUnknownMsgType)
 	}
 	return err
 }
 
-func handleMsgMsg(user userds.UserLocation, channel, kind string, msg interface{}) (replyMsg interface{}, err error) {
+func handleMsgMsg(user userds.UserLocation, channel, kind string, msg interface{}) (replyData interface{}, err error) {
 	if !db.CanUserPubChannel(user, channel) {
 		err = errors.New(ErrPermDenied)
 		return
@@ -39,11 +39,11 @@ func handleMsgMsg(user userds.UserLocation, channel, kind string, msg interface{
 		if err != nil {
 			return nil, err
 		}
-		replyMsg = map[string]interface{}{
+		replyData = map[string]interface{}{
 			"id": msgID,
 			"ts": ts,
 		}
-		return replyMsg, err
+		return replyData, err
 	case proto.PutStatusMsg:
 		// channel status msg, eg. user typing.
 		err := dispatcher.PutStatusMsg(user, channel, msg)

@@ -28,5 +28,5 @@ func HandleLogicMsg(user *userds.UserLocation, msgType string, channel string, m
 	}
 	reply := new(types.RPCLogicHandleMsgReply)
 	err := logicRPCClient.Client.Call(types.RPCLogicHandleMsg, args, reply)
-	return reply.Msg, err
+	return reply.Data, err
 }

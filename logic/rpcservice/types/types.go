@@ -13,7 +13,7 @@ type RPCLogicHandleMsgArgs struct {
 
 // RPCLogicHandleMsgReply is the msg reply.
 type RPCLogicHandleMsgReply struct {
-	Msg interface{}
+	Data interface{}
 }
 
 // RPCServer methods.

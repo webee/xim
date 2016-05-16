@@ -36,7 +36,7 @@ type Reply struct {
 	SN   interface{} `json:"sn,omitempty"`
 	Ok   interface{} `json:"ok,omitempty"`
 	Type string      `json:"type,omitempty"`
-	Msg  interface{} `json:"msg,omitempty"`
+	Data interface{} `json:"data,omitempty"`
 	Err  string      `json:"err,omitempty"`
 }
 
@@ -90,8 +90,8 @@ func NewReplyUnregister(replyTo interface{}, uid uint32) *Reply {
 }
 
 // NewReply create a reply msg.
-func NewReply(replyTo interface{}, msg interface{}) *Reply {
-	return &Reply{Type: ReplyMsg, SN: replyTo, Ok: true, Msg: msg}
+func NewReply(replyTo interface{}, data interface{}) *Reply {
+	return &Reply{Type: ReplyMsg, SN: replyTo, Ok: true, Data: data}
 }
 
 // NewErrorReply create a error reply msg.
