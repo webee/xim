@@ -16,6 +16,8 @@ var (
 // InitDB init the db.
 func InitDB(driverName, dataSourceName string) {
 	db = sqlx.MustConnect(driverName, dataSourceName)
+	db.SetMaxIdleConns(3)
+	db.SetMaxOpenConns(100)
 }
 
 // GetChannelSubscribers get channel's subscribers.
