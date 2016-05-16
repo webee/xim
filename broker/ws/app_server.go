@@ -124,7 +124,7 @@ func (ah *AppServerHandler) registerUser(username string) (*userds.UserLocation,
 	}
 	user := userds.NewUserLocation(uid, ah.s.config.Broker)
 
-	handler, err := NewMsgLogic(ah.s.userBoard, user, newAppUserSender(ah, user, ah.c))
+	handler, err := NewMsgLogic(ah.s.userBoard, user, newAppUserSender(ah, user, ah.c), ah.s.config.HeartbeatTimeout)
 	if err != nil {
 		return nil, err
 	}

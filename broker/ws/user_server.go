@@ -38,7 +38,7 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 
 func (us *UserServer) handleWebsocket(s *WebsocketServer, user *userds.UserLocation, c Connection) {
 	defer c.Close()
-	handler, err := NewMsgLogic(s.userBoard, user, c)
+	handler, err := NewMsgLogic(s.userBoard, user, c, s.config.HeartbeatTimeout)
 	if err != nil {
 		return
 	}
