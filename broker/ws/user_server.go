@@ -32,25 +32,27 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	us.handleWebsocket(s, user, newWsConn(s, conn, 5))
+	c := newWsConnection(conn, 5)
+	us.handleWebsocket(s, user, c)
 }
 
-func (us *UserServer) handleWebsocket(s *WebsocketServer, user *userds.UserLocation, c *wsConn) {
-	go c.HandleMsg()
+func (us *UserServer) handleWebsocket(s *WebsocketServer, user *userds.UserLocation, c Connection) {
 	defer c.Close()
-	handler := NewMsgHandler(s.userBoard, user, c, s.config.HeartbeatTimeout, 5)
-	handler.Start()
+	handler, err := NewMsgLogic(s.userBoard, user, c)
+	if err != nil {
+		return
+	}
 	defer handler.Close()
 
+	r := c.Receive()
 	for {
-		msg, err := c.ReadMsg()
-		if err != nil {
-			log.Println(err)
-			c.WriteMsg(proto.NewReply(nil, proto.ByeMsg, nil))
-			break
+		var msg *proto.Msg
+		var open bool
+		msg, open = <-r
+		if !open {
+			return
 		}
-
-		if err := handler.HandleMsg(&msg); err != nil {
+		if ok := handler.Handle(msg); !ok {
 			break
 		}
 	}

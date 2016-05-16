@@ -44,9 +44,9 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 	ah := &AppServerHandler{
 		s:        s,
 		as:       as,
-		c:        newWsConn(s, conn, 100),
+		c:        newWsConnection(conn, 100),
 		app:      app,
-		handlers: make(map[uint32]*MsgHandler),
+		handlers: make(map[uint32]*MsgLogic),
 	}
 	ah.handleWebsocket()
 }
@@ -55,47 +55,51 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 type AppServerHandler struct {
 	s        *WebsocketServer
 	as       *AppServer
-	c        *wsConn
+	c        *wsConnection
 	app      *userds.AppLocation
-	handlers map[uint32]*MsgHandler
+	handlers map[uint32]*MsgLogic
 }
 
 func (ah *AppServerHandler) handleWebsocket() {
-	go ah.c.HandleMsg()
-	defer ah.c.Close()
 	defer ah.Close()
+	c := ah.c
+	c.Send(proto.NewHello())
+	r := c.Receive()
 
-	ah.c.PushMsg(nil, proto.NewHello())
 	for {
-		msg, err := ah.c.ReadMsg()
-		if err != nil {
-			log.Println(err)
-			ah.c.WriteMsg(proto.NewReply(nil, proto.ByeMsg, nil))
-			break
+		var msg *proto.Msg
+		var open bool
+		msg, open = <-r
+		if !open {
+			return
 		}
 
 		switch msg.Type {
 		case proto.AppRegisterUserMsg:
-			user := ah.registerUser(msg.User)
+			user, err := ah.registerUser(msg.User)
+			if err != nil {
+				log.Println("register user error:", err)
+				continue
+			}
 			if user != nil {
-				ah.c.PushMsg(nil, proto.NewReplyRegister(msg.ID, msg.User, user.Instance))
+				c.Send(proto.NewReplyRegister(msg.SN, msg.User, user.Instance))
 			}
 		case proto.AppUnregisterUserMsg:
 			if ah.unregisterUser(msg.UID) {
-				ah.c.PushMsg(nil, proto.NewReplyUnregister(msg.ID, msg.UID))
+				c.Send(proto.NewReplyUnregister(msg.SN, msg.UID))
 			}
 		case proto.ByeMsg:
-			ah.c.PushMsg(nil, proto.NewReplyBye(msg.ID))
+			c.Send(proto.NewBye())
 			return
 		case proto.AppNullMsg:
 		default:
 			if msg.UID > 0 {
 				if handler, ok := ah.handlers[msg.UID]; ok {
-					handler.HandleMsg(&msg)
+					_ = handler.Handle(msg)
 				}
 			} else {
 				for _, handler := range ah.handlers {
-					handler.HandleMsg(&msg)
+					_ = handler.Handle(msg)
 				}
 			}
 		}
@@ -107,11 +111,12 @@ func (ah *AppServerHandler) Close() {
 	for _, handler := range ah.handlers {
 		handler.Close()
 	}
+	ah.c.Close()
 }
 
-func (ah *AppServerHandler) registerUser(username string) *userds.UserLocation {
+func (ah *AppServerHandler) registerUser(username string) (*userds.UserLocation, error) {
 	if len(username) <= 0 {
-		return nil
+		return nil, errors.New("bad username")
 	}
 	uid := &userds.UserIdentity{
 		App:  ah.app.AppIdentity.App,
@@ -119,10 +124,12 @@ func (ah *AppServerHandler) registerUser(username string) *userds.UserLocation {
 	}
 	user := userds.NewUserLocation(uid, ah.s.config.Broker)
 
-	handler := NewMsgHandler(ah.s.userBoard, user, ah, ah.s.config.HeartbeatTimeout, 5)
+	handler, err := NewMsgLogic(ah.s.userBoard, user, newAppUserSender(ah, user, ah.c))
+	if err != nil {
+		return nil, err
+	}
 	ah.handlers[handler.user.Instance] = handler
-	handler.Start()
-	return user
+	return user, nil
 }
 
 func (ah *AppServerHandler) unregisterUser(uid uint32) bool {
@@ -135,24 +142,45 @@ func (ah *AppServerHandler) unregisterUser(uid uint32) bool {
 	return false
 }
 
-// PushMsg write json message in a write timeout duration.
-func (ah *AppServerHandler) PushMsg(user *userds.UserLocation, v interface{}) (err error) {
-	handler, ok := ah.handlers[user.Instance]
-	if !ok {
-		return errors.New("user is disconnected")
+// AppUserSender can send msg to user.
+type AppUserSender struct {
+	app    *AppServerHandler
+	user   *userds.UserLocation
+	sender Sender
+}
+
+func newAppUserSender(app *AppServerHandler, user *userds.UserLocation, sender Sender) Sender {
+	return &AppUserSender{
+		app:    app,
+		user:   user,
+		sender: sender,
 	}
+}
+
+// Send sends msg to user.
+func (s *AppUserSender) Send(v interface{}) error {
 	switch msg := v.(type) {
 	case *proto.ChannelMsg:
-		msg.UID = handler.user.Instance
-		return ah.c.PushMsg(nil, msg)
+		msg.UID = s.user.Instance
+		return s.sender.Send(msg)
+	case *proto.TypeMsg:
+		switch msg.Type {
+		case proto.HelloMsg:
+			// ignore hello.
+			return nil
+		case proto.ByeMsg:
+			s.app.unregisterUser(s.user.Instance)
+		}
+		msg.UID = s.user.Instance
+		return s.sender.Send(msg)
 	case *proto.Reply:
 		switch msg.Type {
 		case proto.HelloMsg:
 			// ignore hello.
 			return nil
 		}
-		msg.UID = handler.user.Instance
-		return ah.c.PushMsg(nil, msg)
+		msg.UID = s.user.Instance
+		return s.sender.Send(msg)
 	}
 	return nil
 }

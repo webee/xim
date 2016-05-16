@@ -2,48 +2,49 @@ package proto
 
 // msg types.
 const (
-	HelloMsg     = "hello"
-	PingMsg      = "ping"
-	PongMsg      = "pong"
-	ByeMsg       = "bye"
-	RespReply    = "resp"
-	ErrorReply   = "error"
+	HelloMsg = "hello"
+	PingMsg  = "ping"
+	PongMsg  = "pong"
+	ByeMsg   = "bye"
+
+	ReplyMsg     = "reply"
 	PutMsg       = "put"
 	PutStatusMsg = "status"
 	PutNotifyMsg = "notify"
 	MsgMsg       = "msg"
 
 	AppNullMsg           = "null"
-	AppRegisterUserMsg   = "register"
-	AppUnregisterUserMsg = "unregister"
+	AppRegisterUserMsg   = "reg"
+	AppUnregisterUserMsg = "unreg"
 )
 
 // Msg is the base user send msg.
 type Msg struct {
 	UID     uint32      `json:"uid"`
 	User    string      `json:"user,omitempty"`
-	ID      int         `json:"id"`
+	SN      interface{} `json:"sn"`
 	Type    string      `json:"type,omitempty"`
 	Channel string      `json:"channel,omitempty"`
 	Kind    string      `json:"kind,omitempty"`
 	Msg     interface{} `json:"msg,omitempty"`
 }
 
-// MsgWithBytes is msg with full msg bytes.
-type MsgWithBytes struct {
-	Msg
-	Bytes []byte
-}
-
 // Reply is the base server reply msg.
 type Reply struct {
-	UID     interface{} `json:"uid,omitempty"`
-	User    string      `json:"user,omitempty"`
-	ReplyTo interface{} `json:"reply_to,omitempty"`
-	Ok      interface{} `json:"ok,omitempty"`
-	Type    string      `json:"type,omitempty"`
-	Msg     interface{} `json:"msg,omitempty"`
-	Err     string      `json:"err,omitempty"`
+	UID  interface{} `json:"uid,omitempty"`
+	User string      `json:"user,omitempty"`
+	SN   interface{} `json:"sn,omitempty"`
+	Ok   interface{} `json:"ok,omitempty"`
+	Type string      `json:"type,omitempty"`
+	Msg  interface{} `json:"msg,omitempty"`
+	Err  string      `json:"err,omitempty"`
+}
+
+// TypeMsg is a type with a msg payload.
+type TypeMsg struct {
+	UID  interface{} `json:"uid,omitempty"`
+	Type string      `json:"type,omitempty"`
+	Msg  interface{} `json:"msg,omitempty"`
 }
 
 // ChannelMsg is channel event msg.
@@ -58,42 +59,42 @@ type ChannelMsg struct {
 	Msg       interface{} `json:"msg"`
 }
 
-// NewReply create a reply msg.
-func NewReply(replyTo interface{}, msgType string, msg interface{}) *Reply {
-	return &Reply{ReplyTo: replyTo, Type: msgType, Msg: msg}
+// NewHello create a hello msg.
+func NewHello() *TypeMsg {
+	return &TypeMsg{Type: HelloMsg}
 }
 
-// NewHello create a hello msg.
-func NewHello() *Reply {
-	return NewReply(nil, HelloMsg, nil)
+// NewPing create a ping msg.
+func NewPing(msg interface{}) *TypeMsg {
+	return &TypeMsg{Type: PongMsg, Msg: msg}
 }
 
 // NewPong create a pong msg.
-func NewPong(replyTo int, msg interface{}) *Reply {
-	return NewReply(replyTo, PongMsg, msg)
+func NewPong(msg interface{}) *TypeMsg {
+	return &TypeMsg{Type: PongMsg, Msg: msg}
 }
 
-// NewReplyBye create a reply bye msg.
-func NewReplyBye(replyTo int) *Reply {
-	return NewReply(replyTo, ByeMsg, nil)
+// NewBye create a bye msg.
+func NewBye() *TypeMsg {
+	return &TypeMsg{Type: ByeMsg}
 }
 
 // NewReplyRegister create a reply bye msg.
-func NewReplyRegister(replyTo int, user string, uid uint32) *Reply {
-	return &Reply{Ok: true, ReplyTo: replyTo, Type: AppRegisterUserMsg, User: user, UID: uid}
+func NewReplyRegister(replyTo interface{}, user string, uid uint32) *Reply {
+	return &Reply{Type: ReplyMsg, SN: replyTo, Ok: true, User: user, UID: uid}
 }
 
 // NewReplyUnregister create a reply bye msg.
-func NewReplyUnregister(replyTo int, uid uint32) *Reply {
-	return &Reply{Ok: true, ReplyTo: replyTo, Type: AppUnregisterUserMsg, UID: uid}
+func NewReplyUnregister(replyTo interface{}, uid uint32) *Reply {
+	return &Reply{Type: ReplyMsg, SN: replyTo, Ok: true, UID: uid}
 }
 
-// NewResponse create a response msg.
-func NewResponse(replyTo int, msg interface{}) *Reply {
-	return &Reply{ReplyTo: replyTo, Ok: true, Type: RespReply, Msg: msg}
+// NewReply create a reply msg.
+func NewReply(replyTo interface{}, msg interface{}) *Reply {
+	return &Reply{Type: ReplyMsg, SN: replyTo, Ok: true, Msg: msg}
 }
 
 // NewErrorReply create a error reply msg.
-func NewErrorReply(replyTo int, err string) *Reply {
-	return &Reply{ReplyTo: replyTo, Ok: false, Type: ErrorReply, Err: err}
+func NewErrorReply(replyTo interface{}, err string) *Reply {
+	return &Reply{Type: ReplyMsg, SN: replyTo, Ok: false, Err: err}
 }
