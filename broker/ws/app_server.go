@@ -48,6 +48,11 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 		app:      app,
 		handlers: make(map[uint32]*MsgLogic),
 	}
+	log.Printf("app: %s connected.", app)
+	defer func() {
+		log.Printf("app: %s disconnected.", app)
+	}()
+
 	ah.handleWebsocket()
 }
 

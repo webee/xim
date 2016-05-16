@@ -53,12 +53,14 @@ func (c *wsConnection) Receive() <-chan *proto.Msg {
 
 // Close closes the underlying websocket connection.
 func (c *wsConnection) Close() error {
-	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "bye")
-	err := c.conn.WriteControl(websocket.CloseMessage, closeMsg, time.Now().Add(5*time.Second))
-	if err != nil {
-		log.Println("error sending close message:", err)
-	}
-	c.closed = true
+	/*
+		closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "bye")
+		err := c.conn.WriteControl(websocket.CloseMessage, closeMsg, time.Now().Add(5*time.Second))
+		if err != nil {
+			log.Println("error sending close message:", err)
+		}
+		c.closed = true
+	*/
 	return c.conn.Close()
 }
 
