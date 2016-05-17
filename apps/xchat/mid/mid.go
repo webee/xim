@@ -122,7 +122,7 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 	ts := time.Now().Unix()
 
 	go func() {
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 		m.xchat.Publish(fmt.Sprintf(URIXChatUserReply, sessionID), nil, map[string]interface{}{
 			"sn": id,
 			"ok": true,
@@ -134,7 +134,7 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 	}()
 	go func() {
 		msgID++
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 		for _, session := range sessions {
 			if session != sessionID {
 				m.xchat.Publish(fmt.Sprintf(URIXChatUserMsg, session), nil, map[string]interface{}{
