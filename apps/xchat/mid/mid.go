@@ -127,7 +127,7 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 			"sn": id,
 			"ok": true,
 			"data": map[string]interface{}{
-				"id": 1,
+				"id": msgID,
 				"ts": ts,
 			},
 		})
