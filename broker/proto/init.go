@@ -32,7 +32,6 @@ type Msg struct {
 // Reply is the base server reply msg.
 type Reply struct {
 	UID  interface{} `json:"uid,omitempty"`
-	User string      `json:"user,omitempty"`
 	SN   interface{} `json:"sn,omitempty"`
 	Ok   interface{} `json:"ok,omitempty"`
 	Type string      `json:"type,omitempty"`
@@ -79,14 +78,9 @@ func NewBye() *TypeMsg {
 	return &TypeMsg{Type: ByeMsg}
 }
 
-// NewReplyRegister create a reply bye msg.
-func NewReplyRegister(replyTo interface{}, user string, uid uint32) *Reply {
-	return &Reply{Type: ReplyMsg, SN: replyTo, Ok: true, User: user, UID: uid}
-}
-
-// NewReplyUnregister create a reply bye msg.
-func NewReplyUnregister(replyTo interface{}, uid uint32) *Reply {
-	return &Reply{Type: ReplyMsg, SN: replyTo, Ok: true, UID: uid}
+// NewAppReply create an app reply msg.
+func NewAppReply(uid interface{}, replyTo interface{}, data interface{}) *Reply {
+	return &Reply{UID: uid, Type: ReplyMsg, SN: replyTo, Ok: true, Data: data}
 }
 
 // NewReply create a reply msg.

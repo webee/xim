@@ -87,11 +87,11 @@ func (ah *AppServerHandler) handleWebsocket() {
 				continue
 			}
 			if user != nil {
-				c.Send(proto.NewReplyRegister(msg.SN, msg.User, user.Instance))
+				c.Send(proto.NewAppReply(user.Instance, msg.SN, nil))
 			}
 		case proto.AppUnregisterUserMsg:
 			if ah.unregisterUser(msg.UID) {
-				c.Send(proto.NewReplyUnregister(msg.SN, msg.UID))
+				c.Send(proto.NewAppReply(msg.UID, msg.SN, nil))
 			}
 		case proto.ByeMsg:
 			c.Send(proto.NewBye())

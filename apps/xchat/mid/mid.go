@@ -27,9 +27,12 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 		log.Fatalln("create xchat error:", err)
 	}
 
+	xim := NewXIMClient(config)
+	defer xim.Close()
+
 	mid = &Mid{
 		xchat:  xchat,
-		xim:    NewXIMClient(config),
+		xim:    xim,
 		config: config,
 	}
 	mid.Start()
@@ -66,7 +69,7 @@ func (m *Mid) Start() {
 	}
 }
 
-// 处理用户连接注册
+// 处理用户连接
 func (m *Mid) onJoin(args []interface{}, kwargs map[string]interface{}) {
 	details := args[0].(map[string]interface{})
 	log.Println("join: ", details)
@@ -80,6 +83,7 @@ func (m *Mid) onLeave(args []interface{}, kwargs map[string]interface{}) {
 	m.xim.Unregister(sessionID)
 }
 
+// 处理用户注册
 func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	details := kwargs["details"].(map[string]interface{})
 	sessionID := uint64(details["session"].(turnpike.ID))
@@ -116,7 +120,8 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 			"ok":       true,
 			"type":     "resp",
 			"msg": map[string]interface{}{
-				"id": "1463299708.000001",
+				"id": 1,
+				"ts": 1463299708,
 			},
 		})
 	}()

@@ -34,3 +34,7 @@ func (c *XIMClient) SendMsg(id uint64, sessionID uint64, channel string, msg int
 	time.Sleep(200 * time.Millisecond)
 	return nil
 }
+
+// Close free resources.
+func (c *XIMClient) Close() {
+}
