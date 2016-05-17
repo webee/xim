@@ -9,20 +9,21 @@ import (
 	"xim/broker/proto"
 	"xim/broker/userboard"
 	"xim/broker/userds"
+	"xim/utils/msgutils"
 )
 
 // MsgLogic is handler of messages.
 type MsgLogic struct {
 	userBoard        *userboard.UserBoard
 	user             *userds.UserLocation
-	sender           Sender
+	sender           msgutils.Sender
 	closed           bool
 	heartbeatTimeout time.Duration
 	lastRegisterTime time.Time
 }
 
 // NewMsgLogic create a msg logic.
-func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, sender Sender, heartbeatTimeout time.Duration) (*MsgLogic, error) {
+func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, sender msgutils.Sender, heartbeatTimeout time.Duration) (*MsgLogic, error) {
 	h := &MsgLogic{
 		userBoard:        userBoard,
 		user:             user,

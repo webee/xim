@@ -7,6 +7,7 @@ import (
 	"xim/broker/proto"
 	"xim/broker/userboard"
 	"xim/broker/userds"
+	"xim/utils/msgutils"
 )
 
 // AppServer handles user websocket connection.
@@ -42,11 +43,11 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 		return
 	}
 	ah := &AppServerHandler{
-		s:        s,
-		as:       as,
-		c:        newWsConnection(conn, 100, s.config.HeartbeatTimeout, s.config.WriteTimeout),
-		app:      app,
-		handlers: make(map[uint32]*MsgLogic),
+		s:          s,
+		as:         as,
+		transeiver: msgutils.NewWSTranseiver(conn, new(ProtoJSONSerializer), 100*s.config.MsgBufSize, s.config.HeartbeatTimeout),
+		app:        app,
+		handlers:   make(map[uint32]*MsgLogic),
 	}
 	log.Printf("app: %s connected.", app)
 	defer func() {
@@ -58,48 +59,50 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 
 // AppServerHandler handles app server.
 type AppServerHandler struct {
-	s        *WebsocketServer
-	as       *AppServer
-	c        *wsConnection
-	app      *userds.AppLocation
-	handlers map[uint32]*MsgLogic
+	s          *WebsocketServer
+	as         *AppServer
+	transeiver msgutils.Transeiver
+	app        *userds.AppLocation
+	handlers   map[uint32]*MsgLogic
 }
 
 func (ah *AppServerHandler) handleWebsocket() {
 	defer ah.Close()
-	c := ah.c
-	c.Send(proto.NewHello())
-	r := c.Receive()
+	transeiver := ah.transeiver
+	transeiver.Send(proto.NewHello())
+	r := transeiver.Receive()
 
 	for {
 		var msg *proto.Msg
+		var m msgutils.Message
 		var open bool
-		msg, open = <-r
+		m, open = <-r
 		if !open {
 			return
 		}
+		msg = m.(*proto.Msg)
 
 		switch msg.Type {
 		case proto.AppRegisterUserMsg:
 			user, err := ah.registerUser(msg.User)
 			if err != nil {
 				log.Println("register user error:", err)
-				c.Send(proto.NewErrorReply(msg.SN, "register error"))
+				transeiver.Send(proto.NewErrorReply(msg.SN, "register error"))
 				continue
 			}
 			if user == nil {
-				c.Send(proto.NewErrorReply(msg.SN, "register failed"))
+				transeiver.Send(proto.NewErrorReply(msg.SN, "register failed"))
 				continue
 			}
-			c.Send(proto.NewAppReply(user.Instance, msg.SN, nil))
+			transeiver.Send(proto.NewAppReply(user.Instance, msg.SN, nil))
 		case proto.AppUnregisterUserMsg:
 			if ah.unregisterUser(msg.UID) {
-				c.Send(proto.NewAppReply(msg.UID, msg.SN, nil))
+				transeiver.Send(proto.NewAppReply(msg.UID, msg.SN, nil))
 			} else {
-				c.Send(proto.NewAppErrorReply(msg.UID, msg.SN, "unregister failed"))
+				transeiver.Send(proto.NewAppErrorReply(msg.UID, msg.SN, "unregister failed"))
 			}
 		case proto.ByeMsg:
-			c.Send(proto.NewBye())
+			transeiver.Send(proto.NewBye())
 			return
 		case proto.AppNullMsg:
 		default:
@@ -121,7 +124,7 @@ func (ah *AppServerHandler) Close() {
 	for _, handler := range ah.handlers {
 		handler.Close()
 	}
-	ah.c.Close()
+	ah.transeiver.Close()
 }
 
 func (ah *AppServerHandler) registerUser(username string) (*userds.UserLocation, error) {
@@ -134,7 +137,9 @@ func (ah *AppServerHandler) registerUser(username string) (*userds.UserLocation,
 	}
 	user := userds.NewUserLocation(uid, ah.s.config.Broker)
 
-	handler, err := NewMsgLogic(ah.s.userBoard, user, newAppUserSender(ah, user, ah.c), ah.s.config.HeartbeatTimeout)
+	handler, err := NewMsgLogic(ah.s.userBoard, user,
+		newAppUserSender(ah, user, ah.transeiver),
+		ah.s.config.HeartbeatTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -156,10 +161,10 @@ func (ah *AppServerHandler) unregisterUser(uid uint32) bool {
 type AppUserSender struct {
 	app    *AppServerHandler
 	user   *userds.UserLocation
-	sender Sender
+	sender msgutils.Sender
 }
 
-func newAppUserSender(app *AppServerHandler, user *userds.UserLocation, sender Sender) Sender {
+func newAppUserSender(app *AppServerHandler, user *userds.UserLocation, sender msgutils.Sender) msgutils.Sender {
 	return &AppUserSender{
 		app:    app,
 		user:   user,
@@ -168,7 +173,7 @@ func newAppUserSender(app *AppServerHandler, user *userds.UserLocation, sender S
 }
 
 // Send sends msg to user.
-func (s *AppUserSender) Send(v interface{}) error {
+func (s *AppUserSender) Send(v msgutils.Message) error {
 	switch msg := v.(type) {
 	case *proto.ChannelMsg:
 		msg.UID = s.user.Instance

@@ -15,7 +15,6 @@ func startWebsocket() {
 				HTTPReadTimeout:  args.httpReadTimeout,
 				HTTPWriteTimeout: args.httpWriteTimeout,
 				HeartbeatTimeout: args.connHeartbeatTimeout,
-				WriteTimeout:     args.connWriteTimeout,
 			}))
 	go func() {
 		log.Fatal(wsServer.ListenAndServe())

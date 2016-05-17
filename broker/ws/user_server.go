@@ -6,6 +6,7 @@ import (
 	"xim/broker/proto"
 	"xim/broker/userboard"
 	"xim/broker/userds"
+	"xim/utils/msgutils"
 )
 
 // UserServer handles user websocket connection.
@@ -32,26 +33,29 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	c := newWsConnection(conn, 5, s.config.HeartbeatTimeout, s.config.WriteTimeout)
-	us.handleWebsocket(s, user, c)
+	transeiver := msgutils.NewWSTranseiver(conn, new(ProtoJSONSerializer), s.config.MsgBufSize, s.config.HeartbeatTimeout)
+	defer transeiver.Close()
+
+	us.handleWebsocket(s, user, transeiver)
 }
 
-func (us *UserServer) handleWebsocket(s *WebsocketServer, user *userds.UserLocation, c Connection) {
-	defer c.Close()
-	handler, err := NewMsgLogic(s.userBoard, user, c, s.config.HeartbeatTimeout)
+func (us *UserServer) handleWebsocket(s *WebsocketServer, user *userds.UserLocation, transeiver msgutils.Transeiver) {
+	handler, err := NewMsgLogic(s.userBoard, user, transeiver, s.config.HeartbeatTimeout)
 	if err != nil {
 		return
 	}
 	defer handler.Close()
 
-	r := c.Receive()
+	r := transeiver.Receive()
 	for {
 		var msg *proto.Msg
+		var m msgutils.Message
 		var open bool
-		msg, open = <-r
+		m, open = <-r
 		if !open {
 			return
 		}
+		msg = m.(*proto.Msg)
 		if ok := handler.Handle(msg); !ok {
 			break
 		}
