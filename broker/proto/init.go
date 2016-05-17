@@ -83,6 +83,11 @@ func NewAppReply(uid interface{}, replyTo interface{}, data interface{}) *Reply 
 	return &Reply{UID: uid, Type: ReplyMsg, SN: replyTo, Ok: true, Data: data}
 }
 
+// NewAppErrorReply create an app error reply msg.
+func NewAppErrorReply(uid interface{}, replyTo interface{}, err string) *Reply {
+	return &Reply{UID: uid, Type: ReplyMsg, SN: replyTo, Ok: false, Err: err}
+}
+
 // NewReply create a reply msg.
 func NewReply(replyTo interface{}, data interface{}) *Reply {
 	return &Reply{Type: ReplyMsg, SN: replyTo, Ok: true, Data: data}

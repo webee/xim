@@ -17,6 +17,7 @@ type Args struct {
 	pprofAddr            string
 	rpcNetAddr           string
 	redisNetAddr         string
+	redisPassword        string
 	userTimeout          int
 	httpReadTimeout      time.Duration
 	httpWriteTimeout     time.Duration
@@ -40,6 +41,7 @@ func init() {
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6060", "debug pprof http address.")
 	flag.StringVar(&args.rpcNetAddr, "rpc-net-addr", "tcp@localhost:2780", "rpc network address to listen.")
 	flag.StringVar(&args.redisNetAddr, "redis-net-addr", "tcp@localhost:6379", "redis network address.")
+	flag.StringVar(&args.redisPassword, "redis-password", "", "redis password.")
 	flag.IntVar(&args.userTimeout, "user-timeout", 13, "user session timeout(second).")
 	flag.DurationVar(&args.httpReadTimeout, "http-read-timeout", 7*time.Second, "http read timeout.")
 	flag.DurationVar(&args.httpWriteTimeout, "http-write-timeout", 7*time.Second, "http write timeout.")

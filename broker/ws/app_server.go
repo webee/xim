@@ -84,14 +84,19 @@ func (ah *AppServerHandler) handleWebsocket() {
 			user, err := ah.registerUser(msg.User)
 			if err != nil {
 				log.Println("register user error:", err)
+				c.Send(proto.NewErrorReply(msg.SN, "register error"))
 				continue
 			}
-			if user != nil {
-				c.Send(proto.NewAppReply(user.Instance, msg.SN, nil))
+			if user == nil {
+				c.Send(proto.NewErrorReply(msg.SN, "register failed"))
+				continue
 			}
+			c.Send(proto.NewAppReply(user.Instance, msg.SN, nil))
 		case proto.AppUnregisterUserMsg:
 			if ah.unregisterUser(msg.UID) {
 				c.Send(proto.NewAppReply(msg.UID, msg.SN, nil))
+			} else {
+				c.Send(proto.NewAppErrorReply(msg.UID, msg.SN, "unregister failed"))
 			}
 		case proto.ByeMsg:
 			c.Send(proto.NewBye())

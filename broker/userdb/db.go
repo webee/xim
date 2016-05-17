@@ -24,12 +24,12 @@ func InitUserDB(c *Config) {
 	if err != nil {
 		log.Fatalln("bad redis net addr:", config.RedisNetAddr)
 	}
-	initRedisConnection(netAddr)
+	initRedisConnection(netAddr, c.RedisPassword)
 }
 
 // InitRedisConnection initialize the redis connection.
-func initRedisConnection(netAddr *netutils.NetAddr) {
-	redisConnPool = dbutils.NewRedisConnPool(netAddr, 4, 8, time.Second)
+func initRedisConnection(netAddr *netutils.NetAddr, password string) {
+	redisConnPool = dbutils.NewRedisConnPool(netAddr, password, 4, 8, time.Second)
 }
 
 func getUserKey(uid *userds.UserIdentity) string {

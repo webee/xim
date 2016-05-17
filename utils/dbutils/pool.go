@@ -26,9 +26,9 @@ type RedisConnPool struct {
 }
 
 // NewRedisConnPool creates a redis connection pool.
-func NewRedisConnPool(netAddr *netutils.NetAddr, capacity, maxCap int, idleTimeout time.Duration) *RedisConnPool {
+func NewRedisConnPool(netAddr *netutils.NetAddr, password string, capacity, maxCap int, idleTimeout time.Duration) *RedisConnPool {
 	p := pools.NewResourcePool(func() (pools.Resource, error) {
-		c, err := redis.Dial(netAddr.Network, netAddr.LAddr)
+		c, err := redis.Dial(netAddr.Network, netAddr.LAddr, redis.DialPassword(password))
 		return &RedisConn{c}, err
 	}, capacity, maxCap, idleTimeout)
 	return &RedisConnPool{

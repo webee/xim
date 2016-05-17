@@ -4,16 +4,18 @@ import "github.com/imdario/mergo"
 
 // Config is the configs for userboard.
 type Config struct {
-	RedisNetAddr string
-	UserTimeout  int
-	Debug        bool
+	RedisNetAddr  string
+	RedisPassword string
+	UserTimeout   int
+	Debug         bool
 }
 
 var (
 	defaultConfig = &Config{
-		RedisNetAddr: "tcp@localhost:6379",
-		UserTimeout:  12,
-		Debug:        false,
+		RedisNetAddr:  "tcp@localhost:6379",
+		RedisPassword: "",
+		UserTimeout:   12,
+		Debug:         false,
 	}
 	config *Config
 )

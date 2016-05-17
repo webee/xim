@@ -7,9 +7,10 @@ import (
 
 func initUserboard() {
 	userdb.InitUserDB(&userdb.Config{
-		RedisNetAddr: args.redisNetAddr,
-		UserTimeout:  args.userTimeout,
-		Debug:        args.debug,
+		RedisNetAddr:  args.redisNetAddr,
+		RedisPassword: args.redisPassword,
+		UserTimeout:   args.userTimeout,
+		Debug:         args.debug,
 	})
 	userboard.InitUserboard(&userboard.Config{
 		AppKeyPath:  args.appKeyPath,
