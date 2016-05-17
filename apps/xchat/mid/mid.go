@@ -18,7 +18,11 @@ type Mid struct {
 	config *Config
 }
 
-var mid *Mid
+var (
+	msgID    int
+	sessions []uint64
+	mid      *Mid
+)
 
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
@@ -30,6 +34,7 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	xim := NewXIMClient(config)
 	defer xim.Close()
 
+	sessions = make([]uint64, 10)
 	mid = &Mid{
 		xchat:  xchat,
 		xim:    xim,
@@ -88,6 +93,7 @@ func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *
 	details := kwargs["details"].(map[string]interface{})
 	sessionID := uint64(details["session"].(turnpike.ID))
 	user := details["user"].(string)
+	sessions = append(sessions, sessionID)
 	if err := m.xim.Register(sessionID, user); err != nil {
 		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{err}}
 	}
@@ -113,17 +119,33 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{err}}
 	}
 
+	ts := time.Now().Unix()
+
 	go func() {
 		time.Sleep(300 * time.Millisecond)
 		m.xchat.Publish(fmt.Sprintf(URIXChatUserReply, sessionID), nil, map[string]interface{}{
-			"reply_to": id,
-			"ok":       true,
-			"type":     "resp",
-			"msg": map[string]interface{}{
+			"sn": id,
+			"ok": true,
+			"data": map[string]interface{}{
 				"id": 1,
-				"ts": 1463299708,
+				"ts": ts,
 			},
 		})
+	}()
+	go func() {
+		msgID++
+		time.Sleep(300 * time.Millisecond)
+		for _, session := range sessions {
+			if session != sessionID {
+				m.xchat.Publish(fmt.Sprintf(URIXChatUserMsg, session), nil, map[string]interface{}{
+					"chat_id": chatID,
+					"user":    user,
+					"id":      msgID,
+					"ts":      ts,
+					"msg":     msg,
+				})
+			}
+		}
 	}()
 	return &turnpike.CallResult{Args: []interface{}{true}}
 }

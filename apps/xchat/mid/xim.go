@@ -5,12 +5,19 @@ import "time"
 // XIMClient handles xim apis and app ws connections.
 type XIMClient struct {
 	// sessionID to uid.
-	users map[uint64]uint32
+	users        map[uint64]uint32
+	ximAppWsConn *XIMAppWsConn
+	acts         chan func()
 }
 
 // NewXIMClient create a xim client.
 func NewXIMClient(config *Config) *XIMClient {
-	return nil
+	//ximAppWsConn := NewXIMAppWsConn(config.XIMApp, config.XIMPassword, config.XIMHostURL, config.XIMAppWsURL)
+	return &XIMClient{
+		users: make(map[uint64]uint32, 128),
+		//ximAppWsConn: ximAppWsConn,
+		acts: make(chan func(), 10),
+	}
 }
 
 // Register register user with sessionID.

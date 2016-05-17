@@ -26,7 +26,7 @@ type XIMAppWsConn struct {
 	url       string
 	token     string
 	tokenExp  int64
-	ws        *websocket.Conn
+	conn      Connection
 }
 
 // NewXIMAppWsConn creates a xim app websocket connection object.
@@ -63,34 +63,54 @@ func (c *XIMAppWsConn) getToken() string {
 }
 
 func (c *XIMAppWsConn) run() {
-	for {
+	var retryTimes time.Duration
+	for retryTimes <= 3 {
 		header := http.Header{}
 		token := c.getToken()
 		header.Add("Authorization", "Bearer "+token)
-		ws, _, err := websocket.DefaultDialer.Dial(c.url, header)
+		wsConn, _, err := websocket.DefaultDialer.Dial(c.url, header)
 		if err != nil {
 			log.Println("websocket dial:", err)
-			time.Sleep(1 * time.Second)
+			time.Sleep(2 * retryTimes * time.Second)
+			retryTimes++
 			continue
 		}
-		defer ws.Close()
-		c.ws = ws
+		retryTimes = 0
+
+		conn := newWsConnection(wsConn, 100)
+		c.conn = conn
 		c.handleMsg()
-		c.ws = nil
+		c.conn = nil
 	}
 }
 
 // SendMsg send msg.
 func (c *XIMAppWsConn) SendMsg(v interface{}) {
 	// TODO use a buffer channel.
-	c.ws.WriteJSON(v)
+	c.conn.Send(v)
 }
 
 func (c *XIMAppWsConn) handleMsg() {
+	defer c.conn.Close()
+	var msg map[string]interface{}
+
+	msg, err := GetMessageTimeout(c.conn, 2*time.Second)
+	if err != nil {
+		log.Println("waiting hello error:", err)
+	}
+	msgType, ok := msg["type"].(string)
+	if !ok || msgType != "hello" {
+		log.Println("not hello msg.")
+	}
+
+	r := c.conn.Receive()
 	for {
-		msg := make(map[string]interface{})
-		if err := c.ws.ReadJSON(&msg); err != nil {
-			break
+		var msg map[string]interface{}
+		var open bool
+		msg, open = <-r
+		if !open {
+			return
 		}
+		log.Println("msg:", msg)
 	}
 }
