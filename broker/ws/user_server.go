@@ -33,7 +33,7 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	transeiver := msgutils.NewWSTranseiver(conn, new(ProtoJSONSerializer), s.config.MsgBufSize, s.config.HeartbeatTimeout)
+	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONSerializer), s.config.MsgBufSize, s.config.HeartbeatTimeout)
 	defer transeiver.Close()
 
 	us.handleWebsocket(s, user, transeiver)

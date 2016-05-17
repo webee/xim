@@ -45,7 +45,7 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 	ah := &AppServerHandler{
 		s:          s,
 		as:         as,
-		transeiver: msgutils.NewWSTranseiver(conn, new(ProtoJSONSerializer), 100*s.config.MsgBufSize, s.config.HeartbeatTimeout),
+		transeiver: msgutils.NewWSTranseiver(conn, new(proto.JSONSerializer), 100*s.config.MsgBufSize, s.config.HeartbeatTimeout),
 		app:        app,
 		handlers:   make(map[uint32]*MsgLogic),
 	}

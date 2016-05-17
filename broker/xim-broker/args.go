@@ -44,7 +44,7 @@ func init() {
 	flag.IntVar(&args.userTimeout, "user-timeout", 13, "user session timeout(second).")
 	flag.DurationVar(&args.httpReadTimeout, "http-read-timeout", 7*time.Second, "http read timeout.")
 	flag.DurationVar(&args.httpWriteTimeout, "http-write-timeout", 7*time.Second, "http write timeout.")
-	flag.DurationVar(&args.connHeartbeatTimeout, "conn-heartbeat-timeout", 12*time.Second, "connection heartbeat timeout.")
+	flag.DurationVar(&args.connHeartbeatTimeout, "conn-heartbeat-timeout", 120*time.Second, "connection heartbeat timeout.")
 	flag.StringVar(&args.appKeyPath, "app-key-path", path.Join("conf", env, "xim/app_key.txt"), "app key file path.")
 	flag.StringVar(&args.userKeyPath, "user-key-path", path.Join("conf", env, "xim/user_key.txt"), "user key file path.")
 }

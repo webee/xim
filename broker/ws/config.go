@@ -24,7 +24,7 @@ var (
 		HTTPReadTimeout:  7 * time.Second,
 		HTTPWriteTimeout: 7 * time.Second,
 		MsgBufSize:       5,
-		HeartbeatTimeout: 12 * time.Second,
+		HeartbeatTimeout: 120 * time.Second,
 	}
 )
 
