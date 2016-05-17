@@ -138,6 +138,7 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 		time.Sleep(5 * time.Millisecond)
 		for session := range sessions {
 			if session != sessionID {
+				log.Println("send to:", session)
 				m.xchat.Publish(fmt.Sprintf(URIXChatUserMsg, session), nil, map[string]interface{}{
 					"chat_id": chatID,
 					"user":    user,
