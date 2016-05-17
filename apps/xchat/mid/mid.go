@@ -94,6 +94,7 @@ func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *
 	details := kwargs["details"].(map[string]interface{})
 	sessionID := uint64(details["session"].(turnpike.ID))
 	user := details["user"].(string)
+	log.Println("login:", sessionID)
 	sessions[sessionID] = true
 	if err := m.xim.Register(sessionID, user); err != nil {
 		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{err}}
