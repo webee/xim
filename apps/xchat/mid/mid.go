@@ -20,7 +20,7 @@ type Mid struct {
 
 var (
 	msgID    int
-	sessions []uint64
+	sessions map[uint64]bool
 	mid      *Mid
 )
 
@@ -34,7 +34,7 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	xim := NewXIMClient(config)
 	defer xim.Close()
 
-	sessions = make([]uint64, 10)
+	sessions = make(map[uint64]bool)
 	mid = &Mid{
 		xchat:  xchat,
 		xim:    xim,
@@ -83,6 +83,7 @@ func (m *Mid) onJoin(args []interface{}, kwargs map[string]interface{}) {
 // 处理用户断开注销
 func (m *Mid) onLeave(args []interface{}, kwargs map[string]interface{}) {
 	sessionID := uint64(args[0].(turnpike.ID))
+	delete(sessions, sessionID)
 	log.Printf("<%d> left\n", sessionID)
 	// unregister this user.
 	m.xim.Unregister(sessionID)
@@ -93,7 +94,7 @@ func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *
 	details := kwargs["details"].(map[string]interface{})
 	sessionID := uint64(details["session"].(turnpike.ID))
 	user := details["user"].(string)
-	sessions = append(sessions, sessionID)
+	sessions[sessionID] = true
 	if err := m.xim.Register(sessionID, user); err != nil {
 		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{err}}
 	}
@@ -135,7 +136,7 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 	go func() {
 		msgID++
 		time.Sleep(5 * time.Millisecond)
-		for _, session := range sessions {
+		for session := range sessions {
 			if session != sessionID {
 				m.xchat.Publish(fmt.Sprintf(URIXChatUserMsg, session), nil, map[string]interface{}{
 					"chat_id": chatID,
