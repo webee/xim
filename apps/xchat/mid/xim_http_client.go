@@ -3,8 +3,13 @@ package mid
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/url"
+	"sync"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 // api uris.
@@ -12,11 +17,22 @@ const (
 	URIAppNewToken = "/xim/app.new_token"
 )
 
+var (
+	ximHTTPClient *XIMHTTPClient
+)
+
+func initXimHTTPClient(app, password, hostURL string) {
+	ximHTTPClient = NewXIMHTTPClient(app, password, hostURL)
+}
+
 // XIMHTTPClient is the xim http api client.
 type XIMHTTPClient struct {
+	sync.Mutex
 	app      string
 	password string
 	hostURL  string
+	token    string
+	tokenExp int64
 }
 
 // NewXIMHTTPClient creates a xim client.
@@ -51,4 +67,28 @@ func (c *XIMHTTPClient) NewToken() (string, error) {
 		return "", err
 	}
 	return res["token"], nil
+}
+
+func (c *XIMHTTPClient) isCurrentTokenValid() bool {
+	n := time.Now().Unix()
+	return c.token != "" && c.tokenExp > n
+}
+
+// Token returns a valid token.
+func (c *XIMHTTPClient) Token() string {
+	if !c.isCurrentTokenValid() {
+		c.Lock()
+		defer c.Unlock()
+		if !c.isCurrentTokenValid() {
+			token, err := c.NewToken()
+			if err != nil {
+				log.Println("get token:", err)
+				return ""
+			}
+			c.token = token
+			t, _ := jwt.Parse(token, nil)
+			c.tokenExp = int64(t.Claims["exp"].(float64))
+		}
+	}
+	return c.token
 }
