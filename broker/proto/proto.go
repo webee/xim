@@ -60,9 +60,9 @@ func (mt XIMMsgType) String() string {
 	case REPLY:
 		return "reply"
 	case REGISTER:
-		return "register"
+		return "reg"
 	case UNREGISTER:
-		return "unregister"
+		return "unreg"
 	default:
 		panic("Invalid message type")
 	}

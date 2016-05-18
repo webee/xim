@@ -55,6 +55,8 @@ func (us *UserServer) handleWebsocket(s *WebsocketServer, user *userds.UserLocat
 		if !open {
 			return
 		}
+		// register.
+		handler.register()
 		if ok := handler.Handle(msg); !ok {
 			break
 		}

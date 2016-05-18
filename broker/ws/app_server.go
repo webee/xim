@@ -81,8 +81,6 @@ func (ah *AppServerHandler) handleWebsocket() {
 		}
 
 		switch x := msg.(type) {
-		case *proto.Null:
-			transeiver.Send(x)
 		case *proto.Bye:
 			transeiver.Send(x)
 			return
@@ -104,6 +102,11 @@ func (ah *AppServerHandler) handleWebsocket() {
 			} else {
 				transeiver.Send(proto.NewAppErrorReply(x.GetID(), x.UID, "unregister failed"))
 			}
+		case *proto.Null:
+			for _, handler := range ah.handlers {
+				_ = handler.Handle(x)
+			}
+			transeiver.Send(x)
 		case *proto.Ping:
 			for _, handler := range ah.handlers {
 				_ = handler.Handle(x)
@@ -182,7 +185,8 @@ func (s *AppUserSender) Send(msg msgutils.Message) error {
 		return s.sender.Send(x)
 	case *proto.Hello:
 	case *proto.Bye:
-		s.app.unregisterUser(s.user.Instance)
+		// impossible.
+		//s.app.unregisterUser(s.user.Instance)
 	case *proto.Reply:
 		x.UID = s.user.Instance
 		return s.sender.Send(x)
