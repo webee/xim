@@ -5,19 +5,6 @@ import (
 	"time"
 )
 
-// An ID is a unique, non-negative number.
-type ID uint64
-
-// Message is the send/recv message.
-type Message interface{}
-
-// SyncMessage is a sync send/reply message.
-type SyncMessage interface {
-	Message
-	SetID(ID)
-	GetID() ID
-}
-
 // A Sender can send a message to its peer.
 //
 // For clients, this sends a message to the router, and for routers,

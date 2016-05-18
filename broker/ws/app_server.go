@@ -45,7 +45,7 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 	ah := &AppServerHandler{
 		s:          s,
 		as:         as,
-		transeiver: msgutils.NewWSTranseiver(conn, new(proto.JSONSerializer), 100*s.config.MsgBufSize, s.config.HeartbeatTimeout),
+		transeiver: msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), 1000*s.config.MsgBufSize, s.config.HeartbeatTimeout),
 		app:        app,
 		handlers:   make(map[uint32]*MsgLogic),
 	}
@@ -69,52 +69,54 @@ type AppServerHandler struct {
 func (ah *AppServerHandler) handleWebsocket() {
 	defer ah.Close()
 	transeiver := ah.transeiver
-	transeiver.Send(proto.NewHello())
+	transeiver.Send(proto.HELLO.New())
 	r := transeiver.Receive()
 
+	var msg msgutils.Message
+	var open bool
 	for {
-		var msg *proto.Msg
-		var m msgutils.Message
-		var open bool
-		m, open = <-r
+		msg, open = <-r
 		if !open {
 			return
 		}
-		msg = m.(*proto.Msg)
 
-		switch msg.Type {
-		case proto.AppRegisterUserMsg:
-			user, err := ah.registerUser(msg.User)
+		switch x := msg.(type) {
+		case *proto.Null:
+			transeiver.Send(x)
+		case *proto.Bye:
+			transeiver.Send(x)
+			return
+		case *proto.Register:
+			user, err := ah.registerUser(x.User)
 			if err != nil {
 				log.Println("register user error:", err)
-				transeiver.Send(proto.NewErrorReply(msg.SN, "register error"))
+				transeiver.Send(proto.NewErrorReply(x.GetID(), "register error"))
 				continue
 			}
 			if user == nil {
-				transeiver.Send(proto.NewErrorReply(msg.SN, "register failed"))
+				transeiver.Send(proto.NewErrorReply(x.GetID(), "register failed"))
 				continue
 			}
-			transeiver.Send(proto.NewAppReply(user.Instance, msg.SN, nil))
-		case proto.AppUnregisterUserMsg:
-			if ah.unregisterUser(msg.UID) {
-				transeiver.Send(proto.NewAppReply(msg.UID, msg.SN, nil))
+			transeiver.Send(proto.NewAppReply(x.GetID(), user.Instance, nil))
+		case *proto.Unregister:
+			if ah.unregisterUser(x.UID) {
+				transeiver.Send(proto.NewAppReply(x.GetID(), x.UID, nil))
 			} else {
-				transeiver.Send(proto.NewAppErrorReply(msg.UID, msg.SN, "unregister failed"))
+				transeiver.Send(proto.NewAppErrorReply(x.GetID(), x.UID, "unregister failed"))
 			}
-		case proto.ByeMsg:
-			transeiver.Send(proto.NewBye())
-			return
-		case proto.AppNullMsg:
+		case *proto.Ping:
+			for _, handler := range ah.handlers {
+				_ = handler.Handle(x)
+			}
+			transeiver.Send(proto.PONG.New())
+		case *proto.Put:
+			if x.UID > 0 {
+				if handler, ok := ah.handlers[x.UID]; ok {
+					_ = handler.Handle(x)
+				}
+			}
 		default:
-			if msg.UID > 0 {
-				if handler, ok := ah.handlers[msg.UID]; ok {
-					_ = handler.Handle(msg)
-				}
-			} else {
-				for _, handler := range ah.handlers {
-					_ = handler.Handle(msg)
-				}
-			}
+			log.Println("bad message type:", msg.MessageType())
 		}
 	}
 }
@@ -173,29 +175,17 @@ func newAppUserSender(app *AppServerHandler, user *userds.UserLocation, sender m
 }
 
 // Send sends msg to user.
-func (s *AppUserSender) Send(v msgutils.Message) error {
-	switch msg := v.(type) {
-	case *proto.ChannelMsg:
-		msg.UID = s.user.Instance
-		return s.sender.Send(msg)
-	case *proto.TypeMsg:
-		switch msg.Type {
-		case proto.HelloMsg:
-			// ignore hello.
-			return nil
-		case proto.ByeMsg:
-			s.app.unregisterUser(s.user.Instance)
-		}
-		msg.UID = s.user.Instance
-		return s.sender.Send(msg)
+func (s *AppUserSender) Send(msg msgutils.Message) error {
+	switch x := msg.(type) {
+	case *proto.Push:
+		x.UID = s.user.Instance
+		return s.sender.Send(x)
+	case *proto.Hello:
+	case *proto.Bye:
+		s.app.unregisterUser(s.user.Instance)
 	case *proto.Reply:
-		switch msg.Type {
-		case proto.HelloMsg:
-			// ignore hello.
-			return nil
-		}
-		msg.UID = s.user.Instance
-		return s.sender.Send(msg)
+		x.UID = s.user.Instance
+		return s.sender.Send(x)
 	}
 	return nil
 }

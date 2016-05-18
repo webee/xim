@@ -45,25 +45,24 @@ func (r *RPCDispatcher) PutStatusMsg(args *types.RPCDispatcherPutMsgArgs, reply 
 	log.Println(types.RPCDispatcherPutStatusMsg, "is called:", args.User, args.Channel, args.Msg)
 
 	// FIXME: 是否考虑状态消息顺序?
-	doDispatchMsg(args.Channel, &args.User, nil, proto.PutStatusMsg, args.Msg, nil)
+	doDispatchMsg(args.Channel, &args.User, nil, proto.PutStatusMsgKind, args.Msg, nil)
 	return nil
 }
 
 func doDispatchMsg(channel string, user *userds.UserLocation, id interface{}, kind string, msg interface{}, ts interface{}) {
 	log.Printf("dispatch %s msg: #%s, %s, [%d, %s]\n", kind, channel, user, id, msg)
-	protoMsg := &proto.ChannelMsg{
-		Type:      proto.MsgMsg,
-		Channel:   channel,
-		User:      user.User,
-		ID:        id,
-		Kind:      kind,
-		Msg:       msg,
-		Timestamp: ts,
+	protoMsg := &proto.Push{
+		Channel: channel,
+		User:    user.User,
+		ID:      uint64(id.(int)),
+		Kind:    kind,
+		Msg:     msg,
+		Ts:      uint64(ts.(int64)),
 	}
 	putMsg(channel, user, protoMsg)
 }
 
-func putMsg(channel string, user *userds.UserLocation, protoMsg *proto.ChannelMsg) {
+func putMsg(channel string, user *userds.UserLocation, protoMsg *proto.Push) {
 	for _, u := range getChannelOnlineUserInstances(user.App, channel) {
 		if *u == *user {
 			continue
@@ -71,7 +70,7 @@ func putMsg(channel string, user *userds.UserLocation, protoMsg *proto.ChannelMs
 
 		toPutMsg := &toPushMsg{
 			user: *u,
-			msg:  *protoMsg,
+			msg:  protoMsg,
 		}
 		userMsgChan := userChannelCache.getMsgChan(u.String())
 		userMsgChan.Put(toPutMsg)

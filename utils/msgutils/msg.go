@@ -7,6 +7,24 @@ import (
 	"time"
 )
 
+// An ID is a unique, non-negative number.
+type ID uint64
+
+// MessageType type.
+type MessageType int
+
+// Message is the send/recv message.
+type Message interface {
+	MessageType() MessageType
+}
+
+// SyncMessage is a sync send/reply message.
+type SyncMessage interface {
+	Message
+	SetID(ID)
+	GetID() ID
+}
+
 // MessageHandler handles selected messages.
 type MessageHandler func(msg Message)
 
@@ -37,7 +55,7 @@ func NewMsgController(t Transeiver, handler MessageHandler) *MsgController {
 }
 
 // NewNoSyncMsgController creates a Transeiver msg controller without sync send.
-func NewNosyncMsgController(t Transeiver, handler MessageHandler) *MsgController {
+func NewNoSyncMsgController(t Transeiver, handler MessageHandler) *MsgController {
 	c := &MsgController{
 		Transeiver:    t,
 		ReplyTimeout:  10 * time.Second,

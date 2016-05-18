@@ -19,7 +19,7 @@ type RPCLogic struct {
 func (l *RPCLogic) HandleMsg(args *types.RPCLogicHandleMsgArgs, reply *types.RPCLogicHandleMsgReply) (err error) {
 	log.Println(types.RPCLogicHandleMsg, "is called:", args.User, args.Type, args.Msg)
 	switch args.Type {
-	case proto.PutMsg:
+	case proto.PUT.String():
 		reply.Data, err = handleMsgMsg(args.User, args.Channel, args.Kind, args.Msg)
 	default:
 		return errors.New(ErrUnknownMsgType)
@@ -44,11 +44,11 @@ func handleMsgMsg(user userds.UserLocation, channel, kind string, msg interface{
 			"ts": ts,
 		}
 		return replyData, err
-	case proto.PutStatusMsg:
+	case proto.PutStatusMsgKind:
 		// channel status msg, eg. user typing.
 		err := dispatcher.PutStatusMsg(user, channel, msg)
 		return nil, err
-	case proto.PutNotifyMsg:
+	case proto.PutNotifyMsgKind:
 		// channel notify msg
 		err := dispatcher.PutStatusMsg(user, channel, msg)
 		return nil, err

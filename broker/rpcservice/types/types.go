@@ -8,7 +8,7 @@ import (
 // RPCBrokerPushMsgArgs is the msg args.
 type RPCBrokerPushMsgArgs struct {
 	User userds.UserLocation
-	Msg  proto.ChannelMsg
+	Msg  *proto.Push
 }
 
 // RPCServer methods.

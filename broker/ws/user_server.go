@@ -33,7 +33,7 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONSerializer), s.config.MsgBufSize, s.config.HeartbeatTimeout)
+	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), s.config.MsgBufSize, s.config.HeartbeatTimeout)
 	defer transeiver.Close()
 
 	us.handleWebsocket(s, user, transeiver)
@@ -47,15 +47,14 @@ func (us *UserServer) handleWebsocket(s *WebsocketServer, user *userds.UserLocat
 	defer handler.Close()
 
 	r := transeiver.Receive()
+
+	var msg msgutils.Message
 	for {
-		var msg *proto.Msg
-		var m msgutils.Message
 		var open bool
-		m, open = <-r
+		msg, open = <-r
 		if !open {
 			return
 		}
-		msg = m.(*proto.Msg)
 		if ok := handler.Handle(msg); !ok {
 			break
 		}

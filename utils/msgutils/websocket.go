@@ -61,11 +61,19 @@ func (c *WSTranseiver) Close() error {
 }
 
 func (c *WSTranseiver) run() {
+	var msgType int
+	var b []byte
+	var err error
 	for {
 		// NOTE: read timeout(heartbeat.)
-		c.conn.SetReadDeadline(time.Now().Add(c.heartbeatTimeout))
-		msgType, b, err := c.conn.ReadMessage()
-		c.conn.SetReadDeadline(time.Time{})
+		if c.heartbeatTimeout > 0 {
+			c.conn.SetReadDeadline(time.Now().Add(c.heartbeatTimeout))
+			msgType, b, err = c.conn.ReadMessage()
+			c.conn.SetReadDeadline(time.Time{})
+		} else {
+			msgType, b, err = c.conn.ReadMessage()
+		}
+
 		if err != nil {
 			if c.closed {
 				log.Println("connection closed")

@@ -35,7 +35,7 @@ func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, send
 		return nil, err
 	}
 
-	if err := h.PushMsg(proto.NewHello()); err != nil {
+	if err := h.PushMsg(proto.HELLO.New()); err != nil {
 		log.Println(err)
 		h.Close()
 		return nil, err
@@ -44,34 +44,31 @@ func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, send
 }
 
 // Handle handles the msg.
-func (h *MsgLogic) Handle(msg *proto.Msg) bool {
-	log.Println(h.user, ":", msg.SN, msg.Type, msg.Msg)
+func (h *MsgLogic) Handle(msg msgutils.Message) bool {
+	log.Println("handle user msg:", h.user, msg.MessageType(), msg)
 	if h.closed {
 		log.Println("client closed")
 		return false
 	}
 
-	switch msg.Type {
-	case "":
+	switch x := msg.(type) {
+	case *proto.Null:
 		h.register()
-		h.PushMsg(&proto.Reply{})
-	case proto.PingMsg:
-		// reseting user identity timeout.
+		h.PushMsg(x)
+	case *proto.Ping:
 		h.register()
-		h.PushMsg(proto.NewPong(msg.Msg))
-	case proto.ByeMsg:
-		h.PushMsg(proto.NewBye())
+		h.PushMsg(proto.PONG.New())
+	case *proto.Bye:
+		h.PushMsg(x)
 		return false
-	case proto.HelloMsg:
-		// ignore
-	default:
+	case *proto.Put:
 		// handle by logic
-		replyMsg, err := broker.HandleLogicMsg(h.user, msg.Type, msg.Channel, msg.Kind, msg.Msg)
+		replyMsg, err := broker.HandleLogicMsg(h.user, proto.PUT.String(), x.Channel, x.Kind, x.Msg)
 		// TODO handle send error.
 		if err != nil {
-			_ = h.PushMsg(proto.NewErrorReply(msg.SN, err.Error()))
+			_ = h.PushMsg(proto.NewErrorReply(x.GetID(), err.Error()))
 		} else if replyMsg != nil {
-			_ = h.PushMsg(proto.NewReply(msg.SN, replyMsg))
+			_ = h.PushMsg(proto.NewReply(x.GetID(), replyMsg))
 		}
 	}
 	return true
@@ -88,11 +85,11 @@ func (h *MsgLogic) register() error {
 }
 
 // PushMsg push msg to msgbox.
-func (h *MsgLogic) PushMsg(v interface{}) (err error) {
+func (h *MsgLogic) PushMsg(msg msgutils.Message) (err error) {
 	if h.closed {
 		return errors.New("client closed")
 	}
-	return h.sender.Send(v)
+	return h.sender.Send(msg)
 }
 
 // Close close this handler.

@@ -24,5 +24,5 @@ func (r *RPCBroker) PushMsg(args *types.RPCBrokerPushMsgArgs, reply *rpcutils.No
 	if err != nil {
 		return err
 	}
-	return msgBox.PushMsg(&args.Msg)
+	return msgBox.PushMsg(args.Msg)
 }

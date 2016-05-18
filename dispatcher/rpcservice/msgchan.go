@@ -104,5 +104,5 @@ func newUserMsgChan(name string) *msgchan.MsgChannel {
 
 type toPushMsg struct {
 	user userds.UserLocation
-	msg  proto.ChannelMsg
+	msg  *proto.Push
 }

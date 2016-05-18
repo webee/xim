@@ -9,7 +9,7 @@ import (
 )
 
 // PushMsg push a msg to broker.
-func PushMsg(user userds.UserLocation, msg proto.ChannelMsg) (err error) {
+func PushMsg(user userds.UserLocation, msg *proto.Push) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
