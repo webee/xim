@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"xim/broker"
+	"xim/broker/logic"
 	"xim/broker/proto"
 	"xim/broker/userboard"
 	"xim/broker/userds"
@@ -35,7 +35,7 @@ func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, send
 		return nil, err
 	}
 
-	if err := h.PushMsg(proto.HELLO.New()); err != nil {
+	if err := h.PushMsg(&proto.Hello{User: user.User}); err != nil {
 		log.Println(err)
 		h.Close()
 		return nil, err
@@ -62,7 +62,7 @@ func (h *MsgLogic) Handle(msg msgutils.Message) bool {
 		return false
 	case *proto.Put:
 		// handle by logic
-		replyMsg, err := broker.HandleLogicMsg(h.user, proto.PUT.String(), x.Channel, x.Kind, x.Msg)
+		replyMsg, err := logic.PutMsg(h.user, x.Channel, x.Kind, x.Msg)
 		// TODO handle send error.
 		if err != nil {
 			_ = h.PushMsg(proto.NewErrorReply(x.GetID(), err.Error()))

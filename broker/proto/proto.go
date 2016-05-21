@@ -93,6 +93,7 @@ func (msg *Null) MessageType() msgutils.MessageType {
 
 // Hello []
 type Hello struct {
+	User string `json:"user";mapstructure:"user"`
 }
 
 // MessageType returns the message type.

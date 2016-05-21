@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	"xim/broker"
+	"xim/broker/logic"
 	"xim/utils/netutils"
 )
 
@@ -12,5 +12,5 @@ func initLogicRPC() {
 	if err != nil {
 		log.Fatalln(args.logicRPCNetAddr, err)
 	}
-	broker.InitLogicRPC(netAddr)
+	logic.InitLogicRPC(netAddr)
 }

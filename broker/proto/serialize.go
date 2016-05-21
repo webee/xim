@@ -111,7 +111,8 @@ func (s *JSONObjSerializer) Deserialize(data []byte) (msg msgutils.Message, err 
 	case nil, NULL.String():
 		return NULL.New(), nil
 	case HELLO.String():
-		return HELLO.New(), nil
+		msg := HELLO.New()
+		return msg, mapstructure.Decode(obj, msg)
 	case PING.String():
 		return PING.New(), nil
 	case PONG.String():

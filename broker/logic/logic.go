@@ -1,4 +1,4 @@
-package broker
+package logic
 
 import (
 	"xim/broker/userds"
@@ -17,16 +17,15 @@ func InitLogicRPC(netAddr *netutils.NetAddr) {
 	logicRPCClient, _ = rpcutils.NewRPCClient(netAddr, true)
 }
 
-// HandleLogicMsg handle logic msg.
-func HandleLogicMsg(user *userds.UserLocation, msgType string, channel string, msgKind string, msg interface{}) (interface{}, error) {
-	args := &types.RPCLogicHandleMsgArgs{
+// PutMsg put msg.
+func PutMsg(user *userds.UserLocation, channel string, msgKind string, msg interface{}) (interface{}, error) {
+	args := &types.RPCLogicPutMsgArgs{
 		User:    *user,
-		Type:    msgType,
 		Channel: channel,
 		Kind:    msgKind,
 		Msg:     msg,
 	}
-	reply := new(types.RPCLogicHandleMsgReply)
-	err := logicRPCClient.Client.Call(types.RPCLogicHandleMsg, args, reply)
+	reply := new(types.RPCLogicPutMsgReply)
+	err := logicRPCClient.Client.Call(types.RPCLogicPutMsg, args, reply)
 	return reply.Data, err
 }

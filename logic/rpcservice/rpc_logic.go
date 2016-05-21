@@ -15,19 +15,14 @@ import (
 type RPCLogic struct {
 }
 
-// HandleMsg handle user send msg.
-func (l *RPCLogic) HandleMsg(args *types.RPCLogicHandleMsgArgs, reply *types.RPCLogicHandleMsgReply) (err error) {
-	log.Println(types.RPCLogicHandleMsg, "is called:", args.User, args.Type, args.Msg)
-	switch args.Type {
-	case proto.PUT.String():
-		reply.Data, err = handleMsgMsg(args.User, args.Channel, args.Kind, args.Msg)
-	default:
-		return errors.New(ErrUnknownMsgType)
-	}
+// PutMsg put user send msg to channel.
+func (l *RPCLogic) PutMsg(args *types.RPCLogicPutMsgArgs, reply *types.RPCLogicPutMsgReply) (err error) {
+	log.Println(types.RPCLogicPutMsg, "is called:", args.User, args.Channel, args.Msg)
+	reply.Data, err = handlePutMsg(args.User, args.Channel, args.Kind, args.Msg)
 	return err
 }
 
-func handleMsgMsg(user userds.UserLocation, channel, kind string, msg interface{}) (replyData interface{}, err error) {
+func handlePutMsg(user userds.UserLocation, channel, kind string, msg interface{}) (replyData interface{}, err error) {
 	if !db.CanUserPubChannel(user, channel) {
 		err = errors.New(ErrPermDenied)
 		return

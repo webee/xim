@@ -47,8 +47,8 @@ func CanUserPubChannel(user userds.UserLocation, channel string) bool {
 	log.Println(user, channel)
 	var can bool
 	if err := db.Get(&can,
-		`select true from xim_app a left join xim_channel c on a.id = c.app_id left join xim_member m on c.id = m.channel_id where a.name=$1 and c.channel=$2 and m.user=$3 and can_pub=true`,
-		user.App, channel, user.User); err != nil {
+		`select true from xim_channel c left join xim_channel_publishers p on c.id = p.channel_id left join xim_appuser u on u.id = p.appuser_id where c.channel=$1 and u.user=$2`,
+		channel, user.User); err != nil {
 		log.Println(err)
 		return false
 	}

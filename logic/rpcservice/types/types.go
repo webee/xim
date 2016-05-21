@@ -2,21 +2,20 @@ package types
 
 import "xim/broker/userds"
 
-// RPCLogicHandleMsgArgs is the msg args.
-type RPCLogicHandleMsgArgs struct {
+// RPCLogicPutMsgArgs is the msg args.
+type RPCLogicPutMsgArgs struct {
 	User    userds.UserLocation
-	Type    string
 	Channel string
 	Kind    string
 	Msg     interface{}
 }
 
-// RPCLogicHandleMsgReply is the msg reply.
-type RPCLogicHandleMsgReply struct {
+// RPCLogicPutMsgReply is the msg reply.
+type RPCLogicPutMsgReply struct {
 	Data interface{}
 }
 
 // RPCServer methods.
 const (
-	RPCLogicHandleMsg = "RPCLogic.HandleMsg"
+	RPCLogicPutMsg = "RPCLogic.PutMsg"
 )
