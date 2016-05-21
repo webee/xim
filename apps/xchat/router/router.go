@@ -14,7 +14,7 @@ type jwtAuth struct {
 }
 
 func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interface{}, error) {
-	return nil, nil
+	return details, nil
 }
 
 func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[string]interface{}, error) {

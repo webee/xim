@@ -81,7 +81,7 @@ func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *
 	user := details["user"].(string)
 	log.Println("login:", sessionID)
 	if err := m.xim.Register(sessionID, user); err != nil {
-		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{err}}
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 	return &turnpike.CallResult{Args: []interface{}{true}}
 }
@@ -97,12 +97,12 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 	msg := args[1]
 	channel, err := db.GetChannelByChatIDAndUser(chatID, user)
 	if err != nil {
-		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{err}}
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
 	id, ts, err := m.xim.SendMsg(sessionID, channel, msg)
 	if err != nil {
-		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{false, 1, err.Error()}}
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
 	return &turnpike.CallResult{Args: []interface{}{true, id, ts}}
