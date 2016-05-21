@@ -3,6 +3,7 @@ package proto
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"xim/utils/msgutils"
 
 	"github.com/mitchellh/mapstructure"
@@ -23,6 +24,7 @@ type JSONObjSerializer struct {
 
 // Serialize marshals the payload into a message.
 func (s *JSONObjSerializer) Serialize(m msgutils.Message) ([]byte, error) {
+	log.Println("serialze: ", XIMMsgType(m.MessageType()).String(), m)
 	var msg msgutils.Message
 	switch x := m.(type) {
 	case *Null:
@@ -87,7 +89,7 @@ func (s *JSONObjSerializer) Serialize(m msgutils.Message) ([]byte, error) {
 		}{REGISTER.String(), x}
 	case *Unregister:
 		msg = &struct {
-			Type string
+			Type string `json:"type,omitempty"`
 			*Unregister
 		}{UNREGISTER.String(), x}
 	default:
@@ -98,6 +100,7 @@ func (s *JSONObjSerializer) Serialize(m msgutils.Message) ([]byte, error) {
 
 // Deserialize unmarshals the payload into a message.
 func (s *JSONObjSerializer) Deserialize(data []byte) (msg msgutils.Message, err error) {
+	log.Println("deserialze: ", string(data))
 	obj := make(map[string]interface{})
 	err = json.Unmarshal(data, &obj)
 	if err != nil {

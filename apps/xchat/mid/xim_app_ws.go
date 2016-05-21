@@ -1,116 +1,64 @@
 package mid
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"net/http"
-	"sync"
 	"time"
+	"xim/broker/proto"
+	"xim/utils/msgutils"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
 )
 
-var (
-	ximHTTPClient *XIMHTTPClient
-)
-
-func ximInitSetup(config *Config) {
-	ximAppWsConn := NewXIMAppWsConn(config.XIMApp, config.XIMPassword, config.XIMHostURL, config.XIMAppWsURL)
-	ximAppWsConn.run()
-}
-
-// XIMAppWsConn is a app websocket connection to xim.
-type XIMAppWsConn struct {
-	sync.Mutex
-	ximClient *XIMHTTPClient
-	url       string
-	token     string
-	tokenExp  int64
-	conn      Connection
-}
-
-// NewXIMAppWsConn creates a xim app websocket connection object.
-func NewXIMAppWsConn(app, password, hostURL, wsURL string) *XIMAppWsConn {
-	conn := &XIMAppWsConn{
-		ximClient: NewXIMHTTPClient(app, password, hostURL),
-		url:       wsURL,
-	}
-	go conn.run()
-	return conn
-}
-
-func (c *XIMAppWsConn) isCurrentTokenValid() bool {
-	n := time.Now().Unix()
-	return c.token != "" && c.tokenExp > n
-}
-
-func (c *XIMAppWsConn) getToken() string {
-	if !c.isCurrentTokenValid() {
-		c.Lock()
-		defer c.Unlock()
-		if !c.isCurrentTokenValid() {
-			token, err := c.ximClient.NewToken()
-			if err != nil {
-				log.Println("get token:", err)
-				return ""
-			}
-			c.token = token
-			t, _ := jwt.Parse(token, nil)
-			c.tokenExp = int64(t.Claims["exp"].(float64))
-		}
-	}
-	return c.token
-}
-
-func (c *XIMAppWsConn) run() {
-	var retryTimes time.Duration
-	for retryTimes <= 3 {
-		header := http.Header{}
-		token := c.getToken()
-		header.Add("Authorization", "Bearer "+token)
-		wsConn, _, err := websocket.DefaultDialer.Dial(c.url, header)
-		if err != nil {
-			log.Println("websocket dial:", err)
-			time.Sleep(2 * retryTimes * time.Second)
-			retryTimes++
-			continue
-		}
-		retryTimes = 0
-
-		conn := newWsConnection(wsConn, 100)
-		c.conn = conn
-		c.handleMsg()
-		c.conn = nil
-	}
-}
-
-// SendMsg send msg.
-func (c *XIMAppWsConn) SendMsg(v interface{}) {
-	// TODO use a buffer channel.
-	c.conn.Send(v)
-}
-
-func (c *XIMAppWsConn) handleMsg() {
-	defer c.conn.Close()
-	var msg map[string]interface{}
-
-	msg, err := GetMessageTimeout(c.conn, 2*time.Second)
+func getWSTranseiver(url, token string, msgBufSize int) (msgutils.Transeiver, error) {
+	conn, err := getWSConn(url, token)
 	if err != nil {
-		log.Println("waiting hello error:", err)
+		return nil, err
 	}
-	msgType, ok := msg["type"].(string)
-	if !ok || msgType != "hello" {
-		log.Println("not hello msg.")
+	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), msgBufSize, 0)
+
+	// waiting hello
+	msg, err := msgutils.GetMessageTimeout(transeiver, 2*time.Second)
+	if err != nil {
+		return nil, fmt.Errorf("waiting hello msg error: %s", err)
+	}
+	if _, ok := msg.(*proto.Hello); !ok {
+		return nil, errors.New("waiting hello msg failed")
 	}
 
-	r := c.conn.Receive()
-	for {
-		var msg map[string]interface{}
-		var open bool
-		msg, open = <-r
-		if !open {
-			return
-		}
-		log.Println("msg:", msg)
+	return transeiver, nil
+}
+
+func getWSConn(url, token string) (*websocket.Conn, error) {
+	header := http.Header{}
+	header.Add("Authorization", "Bearer "+token)
+	conn, _, err := websocket.DefaultDialer.Dial(url, header)
+	if err != nil {
+		return nil, err
 	}
+	return conn, nil
+}
+
+// XIMAppWsController is a app websocket connection controller.
+type XIMAppWsController struct {
+	*msgutils.MsgController
+	handler msgutils.MessageHandler
+}
+
+// NewXIMAppWsController creates a xim app websocket connection controller.
+func NewXIMAppWsController(t msgutils.Transeiver, handler msgutils.MessageHandler) *XIMAppWsController {
+	return &XIMAppWsController{
+		MsgController: msgutils.NewMsgController(t, handler),
+	}
+}
+
+// Req send a msg and wait reply.
+func (x *XIMAppWsController) Req(msg msgutils.SyncMessage) (msgutils.SyncMessage, error) {
+	return x.SyncSend(msg)
+}
+
+// Close close the controller.
+func (x *XIMAppWsController) Close() error {
+	return x.MsgController.Close()
 }

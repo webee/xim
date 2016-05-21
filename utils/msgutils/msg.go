@@ -42,16 +42,13 @@ type MsgController struct {
 
 // NewMsgController creates a Transeiver msg controller.
 func NewMsgController(t Transeiver, handler MessageHandler) *MsgController {
-	c := &MsgController{
+	return &MsgController{
 		Transeiver:    t,
 		ReplyTimeout:  10 * time.Second,
 		handler:       handler,
 		syncListeners: make(map[ID]chan SyncMessage),
 		acts:          make(chan func()),
 	}
-	go c.run()
-	go c.receive()
-	return c
 }
 
 // NewNoSyncMsgController creates a Transeiver msg controller without sync send.
@@ -68,6 +65,12 @@ func NewNoSyncMsgController(t Transeiver, handler MessageHandler) *MsgController
 	return c
 }
 
+// Start starts run and receive.
+func (c *MsgController) Start() {
+	go c.run()
+	go c.receive()
+}
+
 func (c *MsgController) run() {
 	for {
 		if act, ok := <-c.acts; ok {
@@ -81,8 +84,11 @@ func (c *MsgController) run() {
 
 // Close closes the connection to the server.
 func (c *MsgController) Close() error {
-	if err := c.Transeiver.Close(); err != nil {
-		return fmt.Errorf("error closing Transeiver: %v", err)
+	if !c.closed {
+		if err := c.Transeiver.Close(); err != nil {
+			return fmt.Errorf("error closing Transeiver: %v", err)
+		}
+		c.closed = true
 	}
 	return nil
 }
@@ -104,6 +110,7 @@ func (c *MsgController) receive() {
 	}
 
 	close(c.acts)
+	c.Close()
 }
 
 // SyncSend send msg and wait for reply.

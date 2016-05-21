@@ -3,10 +3,10 @@ package mid
 import (
 	"fmt"
 	"log"
-	"strings"
-	"time"
 	"xim/apps/xchat/db"
 	"xim/apps/xchat/router"
+	"xim/broker/proto"
+	"xim/utils/msgutils"
 
 	"gopkg.in/jcelliott/turnpike.v2"
 )
@@ -19,43 +19,30 @@ type Mid struct {
 }
 
 var (
-	msgID    int
-	sessions map[uint64]bool
-	mid      *Mid
+	mid *Mid
 )
 
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
+	initXimHTTPClient(config.XIMApp, config.XIMPassword, config.XIMHostURL)
+
 	xchat, err := xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
 		log.Fatalln("create xchat error:", err)
 	}
 
-	xim := NewXIMClient(config)
-	defer xim.Close()
-
-	sessions = make(map[uint64]bool)
 	mid = &Mid{
 		xchat:  xchat,
-		xim:    xim,
 		config: config,
 	}
+	mid.xim = NewXIMClient(config, mid.handleMsg)
+
 	mid.Start()
 }
 
 // Start starts the mid.
 func (m *Mid) Start() {
 	xchat := m.xchat
-
-	if m.config.Testing {
-		if err := xchat.BasicRegister(URITestToUpper, call(toUpper)); err != nil {
-			log.Fatalf("Error register %s: %s\n", URITestToUpper, err)
-		}
-
-		if err := xchat.BasicRegister(URITestAdd, call(add)); err != nil {
-			log.Fatalf("Error register %s: %s\n", URITestAdd, err)
-		}
-	}
 
 	if err := xchat.Subscribe(URIWAMPSessionOnJoin, m.onJoin); err != nil {
 		log.Fatalf("Error subscribing to %s: %s\n", URIWAMPSessionOnJoin, err)
@@ -83,10 +70,8 @@ func (m *Mid) onJoin(args []interface{}, kwargs map[string]interface{}) {
 // 处理用户断开注销
 func (m *Mid) onLeave(args []interface{}, kwargs map[string]interface{}) {
 	sessionID := uint64(args[0].(turnpike.ID))
-	delete(sessions, sessionID)
-	log.Printf("<%d> left\n", sessionID)
-	// unregister this user.
 	m.xim.Unregister(sessionID)
+	log.Printf("<%d> left\n", sessionID)
 }
 
 // 处理用户注册
@@ -95,7 +80,6 @@ func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *
 	sessionID := uint64(details["session"].(turnpike.ID))
 	user := details["user"].(string)
 	log.Println("login:", sessionID)
-	sessions[sessionID] = true
 	if err := m.xim.Register(sessionID, user); err != nil {
 		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{err}}
 	}
@@ -106,51 +90,41 @@ func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *
 func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	log.Printf("[rpc]%s: %v, %+v\n", URIXChatSendMsg, args, kwargs)
 	details := kwargs["details"].(map[string]interface{})
-	id := uint64(args[0].(float64))
 	user := details["user"].(string)
 	sessionID := uint64(details["session"].(turnpike.ID))
 
-	chatID := uint64(args[1].(float64))
-	msg := args[2]
+	chatID := uint64(args[0].(float64))
+	msg := args[1]
 	channel, err := db.GetChannelByChatIDAndUser(chatID, user)
 	if err != nil {
 		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{err}}
 	}
 
-	if err := m.xim.SendMsg(id, sessionID, channel, msg); err != nil {
-		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{err}}
+	id, ts, err := m.xim.SendMsg(sessionID, channel, msg)
+	if err != nil {
+		return &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	ts := time.Now().Unix()
+	return &turnpike.CallResult{Args: []interface{}{true, id, ts}}
+}
 
-	go func() {
-		time.Sleep(5 * time.Millisecond)
-		m.xchat.Publish(fmt.Sprintf(URIXChatUserReply, sessionID), nil, map[string]interface{}{
-			"sn": id,
-			"ok": true,
-			"data": map[string]interface{}{
-				"id": msgID,
-				"ts": ts,
-			},
-		})
-	}()
-	go func() {
-		msgID++
-		time.Sleep(5 * time.Millisecond)
-		for session := range sessions {
-			if session != sessionID {
-				log.Println("send to:", session)
-				m.xchat.Publish(fmt.Sprintf(URIXChatUserMsg, session), nil, map[string]interface{}{
-					"chat_id": chatID,
-					"user":    user,
-					"id":      msgID,
-					"ts":      ts,
-					"msg":     msg,
-				})
-			}
+func (m *Mid) handleMsg(msg msgutils.Message) {
+	switch x := msg.(type) {
+	case *proto.Push:
+		sessionID, err := m.xim.getSessionIDbyUID(x.UID)
+		if err != nil {
+			return
 		}
-	}()
-	return &turnpike.CallResult{Args: []interface{}{true}}
+
+		chatID := 1
+		_ = m.xchat.Publish(fmt.Sprintf(URIXChatUserMsg, sessionID), nil, map[string]interface{}{
+			"chat_id": chatID,
+			"user":    x.User,
+			"id":      x.ID,
+			"ts":      x.Ts,
+			"msg":     x.Msg,
+		})
+	}
 }
 
 func call(handler turnpike.BasicMethodHandler) turnpike.BasicMethodHandler {
@@ -162,33 +136,4 @@ func call(handler turnpike.BasicMethodHandler) turnpike.BasicMethodHandler {
 		}()
 		return handler(args, kargs)
 	}
-}
-
-func toUpper(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	details := kwargs["details"].(map[string]interface{})
-	user := details["user"].(string)
-	sessionID := uint64(details["session"].(turnpike.ID))
-	role := details["role"].(string)
-	log.Printf("<%s:%s:%d> [rpc]%s: %v, %v, %v\n", role, user, sessionID, URITestToUpper, args, kwargs, details)
-	s, ok := args[0].(string)
-	if !ok {
-		return &turnpike.CallResult{Err: turnpike.URI(URITestToUpper)}
-	}
-	res := strings.ToUpper(s)
-	return &turnpike.CallResult{Args: []interface{}{res}}
-}
-
-func add(args []interface{}, kargs map[string]interface{}) (result *turnpike.CallResult) {
-	details := kargs["details"].(map[string]interface{})
-	user := details["user"].(string)
-	sessionID := uint64(details["session"].(turnpike.ID))
-	role := details["role"].(string)
-	log.Printf("<%s:%s:%d> [rpc]%s: %v, %v, %v\n", role, user, sessionID, URITestAdd, args, kargs, details)
-	a, ok1 := args[0].(float64)
-	b, ok2 := args[1].(float64)
-	if !(ok1 && ok2) {
-		return &turnpike.CallResult{Err: turnpike.URI(URITestToUpper)}
-	}
-	res := a + b
-	return &turnpike.CallResult{Args: []interface{}{res}}
 }

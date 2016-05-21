@@ -36,8 +36,6 @@
     var session = null;
     var reply_sub = null;
     var msg_sub = null;
-    // timers
-    var t1;
 
     // fired when connection is established and session attached
     connection.onopen = function (newSession, details) {
@@ -79,25 +77,6 @@
                 console.log("login error:", err);
             }
         )
-
-        // CALL a remote procedure every 5 seconds.
-        /*
-        var x = 0;
-
-        t1 = setInterval(function () {
-
-            session.call('xchat.test.add', [x, 1]).then(
-                    function (res) {
-                        console.log("add() result:", res);
-                    },
-                    function (err) {
-                        console.log("add() error:", err);
-                    }
-            );
-
-            x += 1;
-        }, 5000);
-        */
     };
 
     // fired when connection was lost (or could not be established)
@@ -106,10 +85,6 @@
         console.log("Connection lost")
         console.log("reason:", reason)
         console.log("details:", details)
-        if (t1) {
-            clearInterval(t1);
-            t1 = null;
-        }
         reply_sub = null;
         msg_sub = null;
         session = null;

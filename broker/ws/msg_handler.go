@@ -45,7 +45,6 @@ func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, send
 
 // Handle handles the msg.
 func (h *MsgLogic) Handle(msg msgutils.Message) bool {
-	log.Println("handle user msg:", h.user, msg.MessageType(), msg)
 	if h.closed {
 		log.Println("client closed")
 		return false
@@ -76,7 +75,7 @@ func (h *MsgLogic) Handle(msg msgutils.Message) bool {
 
 func (h *MsgLogic) register() error {
 	n := time.Now()
-	if n.Sub(h.lastRegisterTime) > h.heartbeatTimeout-3*time.Second {
+	if n.Sub(h.lastRegisterTime) > h.heartbeatTimeout-36*time.Second {
 		err := h.userBoard.Register(h.user, h)
 		h.lastRegisterTime = n
 		return err
