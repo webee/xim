@@ -20,6 +20,7 @@ func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interfac
 }
 
 func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[string]interface{}, error) {
+	log.Println("Authenticate:", c)
 	token, err := jwtutils.ParseToken(signature, e.key)
 	if err != nil {
 		return nil, fmt.Errorf("parse token error: %s", err)

@@ -30,7 +30,7 @@
 		},
 		{
 			"ImportPath": "github.com/gorilla/websocket",
-			"Rev": "e2e3d8414d0fbae04004f151979f4e27c6747fe7"
+			"Rev": "1f512fc3f05332ba7117626cdfb4e07474e58e60"
 		},
 		{
 			"ImportPath": "github.com/imdario/mergo",
@@ -147,7 +147,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "e45385e9b226f570b1f086bf287b25d3d4117776"
+			"Rev": "ef00b378c73f107bf44d5c9b69875255ce89b79a"
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
