@@ -7,17 +7,32 @@ import (
 	"xim/broker/proto"
 	"xim/broker/userds"
 	"xim/dispatcher/broker"
+	"xim/dispatcher/db"
 	"xim/dispatcher/msgchan"
 )
 
 func genQueueMsgTransformer(channel string) msgchan.MsgChannelTransformer {
+	msgStore := db.GetMsgStore()
+	defer msgStore.Close()
+
 	idGen := NewIDGenerator()
-	// FIXME: get channel latest id.
-	// idGen.SetID(0)
+	// FIXME: handle error.
+	lastID, _ := msgStore.LastID(channel)
+	idGen.SetID(lastID)
 	return func(m interface{}) interface{} {
+		msgStore := db.GetMsgStore()
+		defer msgStore.Close()
+
 		qm := m.(*queueMsg)
 		id := idGen.ID()
 		ts := time.Now().Unix()
+		// NOTE: save to db.
+		if err := msgStore.AddChannelMsg(qm.channel, id, ts, qm.user.User, qm.msg); err != nil {
+			close(qm.id)
+			close(qm.ts)
+			return nil
+		}
+
 		qm.id <- id
 		qm.ts <- ts
 		return &chanMsg{id, qm.channel, qm.user, qm.msg, ts}
@@ -29,8 +44,11 @@ type msgChanTransformer struct {
 }
 
 func (t *msgChanTransformer) transform(m interface{}) interface{} {
+	if m == nil {
+		return nil
+	}
+
 	cm := m.(*chanMsg)
-	// TODO: save to db.
 	t.count++
 	log.Println("channel:", cm)
 	return &toDispatchMsg{
@@ -43,6 +61,10 @@ func (t *msgChanTransformer) transform(m interface{}) interface{} {
 }
 
 func dispatchMsg(m interface{}) error {
+	if m == nil {
+		return nil
+	}
+
 	dm := m.(*toDispatchMsg)
 	doDispatchMsg(dm.channel, &dm.user, dm.id, "", dm.msg, dm.ts)
 	return nil

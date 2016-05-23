@@ -1,6 +1,7 @@
 package rpcservice
 
 import (
+	"errors"
 	"log"
 	"xim/broker/proto"
 	"xim/broker/userdb"
@@ -34,8 +35,15 @@ func (r *RPCDispatcher) PutMsg(args *types.RPCDispatcherPutMsgArgs, reply *types
 	}
 	log.Println("sending", args.User, args.Channel, args.Msg)
 	if err = msgChan.Put(qm); err == nil {
-		reply.MsgID = <-qm.id
-		reply.Timestamp = <-qm.ts
+		var open bool
+		reply.MsgID, open = <-qm.id
+		if !open {
+			return errors.New("send failed")
+		}
+		reply.Timestamp, open = <-qm.ts
+		if !open {
+			return errors.New("send failed")
+		}
 	}
 	return err
 }

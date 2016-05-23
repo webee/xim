@@ -2,6 +2,7 @@ package router
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"xim/utils/jwtutils"
 
@@ -14,6 +15,7 @@ type jwtAuth struct {
 }
 
 func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interface{}, error) {
+	log.Println("challenge:", details)
 	return details, nil
 }
 

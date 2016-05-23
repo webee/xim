@@ -12,6 +12,7 @@ type Args struct {
 	redisPassword    string
 	dbDriverName     string
 	dbDatasourceName string
+	mangoURL         string
 }
 
 var (
@@ -27,4 +28,5 @@ func init() {
 	flag.StringVar(&args.redisPassword, "redis-password", "", "redis password.")
 	flag.StringVar(&args.dbDriverName, "db-driver-name", "postgres", "database driver name.")
 	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", "postgres://xim:xim1234@localhost:5432/xim?sslmode=disable", "database datasoure name.")
+	flag.StringVar(&args.mangoURL, "mango-url", "localhost:27017", "mango db url.")
 }
