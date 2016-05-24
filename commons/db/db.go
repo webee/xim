@@ -63,3 +63,13 @@ func GetChannelSubscribers(app, channel string) []*userds.UserIdentity {
 	}
 	return res
 }
+
+// AppChannelExists check if app channel exists.
+func AppChannelExists(app, channel string) bool {
+	var exists bool
+	if err := db.Get(&exists, `SELECT true FROM xim_app a left join xim_channel c on a.id = c.app_id where a.name=$1 and c.channel=$2`, app, channel); err != nil {
+		log.Println(err)
+		return false
+	}
+	return exists
+}

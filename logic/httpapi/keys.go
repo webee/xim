@@ -6,7 +6,6 @@ import (
 )
 
 var (
-	salt    []byte
 	appKey  []byte
 	userKey []byte
 )
@@ -25,7 +24,6 @@ func setupKeys(config *ServerConfig) {
 	}
 
 	if config.Debug {
-		log.Println("salt: ", string(salt))
 		log.Println("appKey: ", string(appKey))
 		log.Println("userKey: ", string(userKey))
 	}

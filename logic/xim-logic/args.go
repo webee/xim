@@ -18,6 +18,7 @@ type Args struct {
 	userKeyPath          string
 	dbDriverName         string
 	dbDatasourceName     string
+	mongoURL             string
 }
 
 var (
@@ -36,4 +37,5 @@ func init() {
 	flag.StringVar(&args.userKeyPath, "user-key-path", path.Join("conf", env, "xim/user_key.txt"), "user key file path.")
 	flag.StringVar(&args.dbDriverName, "db-driver-name", "postgres", "database driver name.")
 	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", "postgres://xim:xim1234@localhost:5432/xim?sslmode=disable", "database datasoure name.")
+	flag.StringVar(&args.mongoURL, "mango-url", "localhost:27017", "mango db url.")
 }

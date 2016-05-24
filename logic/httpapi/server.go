@@ -27,13 +27,15 @@ func Start(config *ServerConfig) {
 }
 
 func setupAppAPI(e *echo.Echo) {
-	gAppXim := e.Group("/app/xim")
+	gApp := e.Group("/xim/app")
 	c := middleware.DefaultJWTAuthConfig
-	c.ContextKey = "app"
+	c.ContextKey = "appToken"
 	c.SigningKey = appKey
 	c.Extractor = jwtFromHeaderOrQueryParam
-	gAppXim.Use(middleware.JWTAuthWithConfig(c))
-	gAppXim.POST(".put_msg", putMsg)
+	gApp.Use(middleware.JWTAuthWithConfig(c))
+	gApp.Use(fetchApp)
+
+	gApp.POST("/msg/:channel/last_id", getChannelLastID)
 }
 
 func setupUserAPI(e *echo.Echo) {

@@ -12,8 +12,8 @@ var (
 )
 
 // Init init the msg db.
-func Init(mangoURL string) {
-	session, err := mgo.Dial(mangoURL)
+func Init(mongoURL string) {
+	session, err := mgo.Dial(mongoURL)
 	if err != nil {
 		log.Panicln(err)
 	}

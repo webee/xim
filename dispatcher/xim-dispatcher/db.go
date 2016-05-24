@@ -7,5 +7,5 @@ import (
 
 func initDB() {
 	db.Init(args.dbDriverName, args.dbDatasourceName)
-	msgdb.Init(args.mangoURL)
+	msgdb.Init(args.mongoURL)
 }

@@ -1,15 +1,31 @@
 package httpapi
 
 import (
+	"log"
 	"net/http"
 
-	"github.com/dgrijalva/jwt-go"
+	"xim/commons/db"
+	"xim/commons/msgdb"
+
 	"github.com/labstack/echo"
 )
 
-// putMsg put message to channel.
-func putMsg(c echo.Context) error {
-	appToken := c.Get("app").(*jwt.Token)
-	app := appToken.Claims["app"].(string)
-	return c.String(http.StatusOK, "APP:"+app)
+func getChannelLastID(c echo.Context) error {
+	app := c.Get("app").(string)
+	channel := c.Param("channel")
+	if db.AppChannelExists(app, channel) {
+		msgStore := msgdb.GetMsgStore()
+		defer msgStore.Close()
+		id, err := msgStore.LastID(channel)
+		if err != nil {
+			log.Println("get last msg id err:", channel, err)
+		}
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"ok": true,
+			"id": id,
+		})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"ok": false,
+	})
 }
