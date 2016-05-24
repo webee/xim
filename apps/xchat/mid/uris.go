@@ -8,6 +8,8 @@ const (
 	URIWAMPSessionOnLeave = "wamp.session.on_leave"
 	URIXChatLogin         = "xchat.user.login"
 	URIXChatSendMsg       = "xchat.user.msg.send"
+	URIXChatFetchChatList = "xchat.user.chat.list"
+	URIXChatFetchChatMsg  = "xchat.user.chat.msg"
 	// 用户接收消息
 	URIXChatUserMsg = "xchat.user.%d.msg"
 	// 用户发送消息的返回

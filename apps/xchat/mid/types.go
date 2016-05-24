@@ -1,0 +1,15 @@
+package mid
+
+// UserMsg is a user send message.
+type UserMsg struct {
+	User string      `json:"user"`
+	ID   uint64      `json:"id"`
+	Ts   int64       `json:"ts"`
+	Msg  interface{} `json:"msg"`
+}
+
+// ChatMsgs is chat's messages.
+type ChatMsgs struct {
+	ChatID uint64    `json:"chat_id"`
+	Msgs   []UserMsg `json:"msgs"`
+}

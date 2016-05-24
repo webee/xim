@@ -44,7 +44,7 @@ type MsgCounter struct {
 // ChannelMsg is the channel message.
 type ChannelMsg struct {
 	Channel string      `bson:"channel"`
-	ID      int         `bson:"id"`
+	ID      uint64      `bson:"id"`
 	Ts      int64       `bson:"ts"`
 	User    string      `bson:"user"`
 	Msg     interface{} `bson:"msg"`
@@ -81,7 +81,7 @@ func (s *MsgStore) c(c string) *mgo.Collection {
 }
 
 // LastID gets channel's last message id.
-func (s *MsgStore) LastID(channel string) (int, error) {
+func (s *MsgStore) LastID(channel string) (uint64, error) {
 	msgCol := s.c("msg")
 	var channelMsgs []ChannelMsg
 	err := msgCol.Find(bson.M{"channel": channel}).Select(bson.M{"id": 1, "_id": 0}).Sort("-id").Limit(1).All(&channelMsgs)
@@ -96,7 +96,7 @@ func (s *MsgStore) LastID(channel string) (int, error) {
 }
 
 // AddChannelMsg add channel msg to db.
-func (s *MsgStore) AddChannelMsg(channel string, id int, ts int64, user string, msg interface{}) error {
+func (s *MsgStore) AddChannelMsg(channel string, id uint64, ts int64, user string, msg interface{}) error {
 	channelMsg := ChannelMsg{
 		Channel: channel,
 		ID:      id,

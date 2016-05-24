@@ -17,13 +17,6 @@ func InitDB(driverName, dataSourceName string) {
 	db.SetMaxOpenConns(100)
 }
 
-// Chat is a conversation.
-type Chat struct {
-	ID      uint64 `db:"id"`
-	Type    string
-	Channel string
-}
-
 // GetChatByChannel get chat by channel name.
 func GetChatByChannel(channel string) (*Chat, error) {
 	chat := Chat{}

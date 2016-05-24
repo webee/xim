@@ -12,7 +12,7 @@ type RPCDispatcherPutMsgArgs struct {
 
 // RPCDispatcherPutMsgReply is the msg reply.
 type RPCDispatcherPutMsgReply struct {
-	MsgID     int
+	MsgID     uint64
 	Timestamp int64
 }
 

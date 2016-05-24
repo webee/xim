@@ -30,7 +30,7 @@ func (r *RPCDispatcher) PutMsg(args *types.RPCDispatcherPutMsgArgs, reply *types
 		user:    args.User,
 		channel: args.Channel,
 		msg:     args.Msg,
-		id:      make(chan int, 1),
+		id:      make(chan uint64, 1),
 		ts:      make(chan int64, 1),
 	}
 	log.Println("sending", args.User, args.Channel, args.Msg)
@@ -62,10 +62,10 @@ func doDispatchMsg(channel string, user *userds.UserLocation, id interface{}, ki
 	protoMsg := &proto.Push{
 		Channel: channel,
 		User:    user.User,
-		ID:      uint64(id.(int)),
+		ID:      id.(uint64),
 		Kind:    kind,
 		Msg:     msg,
-		Ts:      uint64(ts.(int64)),
+		Ts:      ts.(int64),
 	}
 	putMsg(channel, user, protoMsg)
 }

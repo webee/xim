@@ -25,7 +25,7 @@ func getChannelLastID(c echo.Context) error {
 			"id": id,
 		})
 	}
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusBadRequest, map[string]interface{}{
 		"ok": false,
 	})
 }

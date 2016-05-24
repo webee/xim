@@ -151,7 +151,7 @@ type Push struct {
 	Kind    string      `json:"kind,omitempty"`
 	Msg     interface{} `json:"msg";mapstructure:"msg"`
 	ID      uint64      `json:"id";mapstructure:"id"`
-	Ts      uint64      `json:"ts";mapstructure:"ts"`
+	Ts      int64       `json:"ts";mapstructure:"ts"`
 }
 
 // MessageType returns the message type.

@@ -19,7 +19,9 @@ type Mid struct {
 }
 
 var (
-	mid *Mid
+	mid         *Mid
+	emptyArgs   = []interface{}{}
+	emptyKwargs = make(map[string]interface{})
 )
 
 // Setup initialze mid.
@@ -108,6 +110,35 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 	return &turnpike.CallResult{Args: []interface{}{true, id, ts}}
 }
 
+// 获取会话列表
+func (m *Mid) getChatList(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChatList, args, kwargs)
+	// details := kwargs["details"].(map[string]interface{})
+	// user := details["user"].(string)
+	// sessionID := uint64(details["session"].(turnpike.ID))
+	//
+	// chatType := args[0].(string)
+	// chatTag := args[1].(string)
+	// TODO
+
+	return nil
+}
+
+// 获取历史消息
+func (m *Mid) getChatMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChatMsg, args, kwargs)
+	// details := kwargs["details"].(map[string]interface{})
+	// user := details["user"].(string)
+	// sessionID := uint64(details["session"].(turnpike.ID))
+	//
+	// chatID := uint64(args[0].(float64))
+	// id1 := uint64(args[1].(float64))
+	// id2 := uint64(args[2].(float64))
+	// // TODO
+
+	return nil
+}
+
 func (m *Mid) handleMsg(msg msgutils.Message) {
 	switch x := msg.(type) {
 	case *proto.Push:
@@ -116,14 +147,21 @@ func (m *Mid) handleMsg(msg msgutils.Message) {
 			return
 		}
 
-		chatID := 1
-		_ = m.xchat.Publish(fmt.Sprintf(URIXChatUserMsg, sessionID), nil, map[string]interface{}{
-			"chat_id": chatID,
-			"user":    x.User,
-			"id":      x.ID,
-			"ts":      x.Ts,
-			"msg":     x.Msg,
-		})
+		channel := x.Channel
+		if chat, err := db.GetChatByChannel(channel); err == nil {
+			chatMsg := ChatMsgs{
+				ChatID: chat.ID,
+				Msgs: []UserMsg{
+					UserMsg{
+						User: x.User,
+						ID:   x.ID,
+						Ts:   x.Ts,
+						Msg:  x.Msg,
+					},
+				},
+			}
+			_ = m.xchat.Publish(fmt.Sprintf(URIXChatUserMsg, sessionID), []interface{}{chatMsg}, emptyKwargs)
+		}
 	}
 }
 

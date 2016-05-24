@@ -20,7 +20,7 @@ func InitDispatcherRPC(netAddr *netutils.NetAddr) {
 }
 
 // PutMsg push a msg to channel.
-func PutMsg(user userds.UserLocation, channel string, msg interface{}) (msgID int, ts int64, err error) {
+func PutMsg(user userds.UserLocation, channel string, msg interface{}) (msgID uint64, ts int64, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)

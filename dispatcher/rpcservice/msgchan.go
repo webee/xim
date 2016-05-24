@@ -82,12 +82,12 @@ type queueMsg struct {
 	user    userds.UserLocation
 	channel string
 	msg     interface{}
-	id      chan int
+	id      chan uint64
 	ts      chan int64
 }
 
 type chanMsg struct {
-	id      int
+	id      uint64
 	channel string
 	user    userds.UserLocation
 	msg     interface{}
@@ -97,7 +97,7 @@ type chanMsg struct {
 type toDispatchMsg struct {
 	channel string
 	user    userds.UserLocation
-	id      int
+	id      uint64
 	msg     interface{}
 	ts      int64
 }

@@ -35,7 +35,7 @@ func setupAppAPI(e *echo.Echo) {
 	gApp.Use(middleware.JWTAuthWithConfig(c))
 	gApp.Use(fetchApp)
 
-	gApp.POST("/msg/:channel/last_id", getChannelLastID)
+	gApp.Get("/msg/:channel/last_id", getChannelLastID)
 }
 
 func setupUserAPI(e *echo.Echo) {
