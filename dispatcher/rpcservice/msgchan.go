@@ -6,13 +6,13 @@ import (
 	"time"
 	"xim/broker/proto"
 	"xim/broker/userds"
+	"xim/commons/msgdb"
 	"xim/dispatcher/broker"
-	"xim/dispatcher/db"
 	"xim/dispatcher/msgchan"
 )
 
 func genQueueMsgTransformer(channel string) msgchan.MsgChannelTransformer {
-	msgStore := db.GetMsgStore()
+	msgStore := msgdb.GetMsgStore()
 	defer msgStore.Close()
 
 	idGen := NewIDGenerator()
@@ -20,7 +20,7 @@ func genQueueMsgTransformer(channel string) msgchan.MsgChannelTransformer {
 	lastID, _ := msgStore.LastID(channel)
 	idGen.SetID(lastID)
 	return func(m interface{}) interface{} {
-		msgStore := db.GetMsgStore()
+		msgStore := msgdb.GetMsgStore()
 		defer msgStore.Close()
 
 		qm := m.(*queueMsg)

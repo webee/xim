@@ -1,8 +1,11 @@
 package main
 
-import "xim/dispatcher/db"
+import (
+	"xim/commons/db"
+	"xim/commons/msgdb"
+)
 
 func initDB() {
-	db.InitDB(args.dbDriverName, args.dbDatasourceName)
-	db.InitMsgDB(args.mangoURL)
+	db.Init(args.dbDriverName, args.dbDatasourceName)
+	msgdb.Init(args.mangoURL)
 }
