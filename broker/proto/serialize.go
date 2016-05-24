@@ -5,8 +5,6 @@ import (
 	"errors"
 	"log"
 	"xim/utils/msgutils"
-
-	"github.com/mitchellh/mapstructure"
 )
 
 // Serialization indicates the data serialization format used in a connection.
@@ -20,6 +18,11 @@ const (
 // JSONObjSerializer is an implementation of Serializer that handles serializing
 // and deserializing JSON Object encoded messages.
 type JSONObjSerializer struct {
+}
+
+// MsgType hold the msg type.
+type MsgType struct {
+	Type string `json:"type"`
 }
 
 // Serialize marshals the payload into a message.
@@ -100,19 +103,19 @@ func (s *JSONObjSerializer) Serialize(m msgutils.Message) ([]byte, error) {
 
 // Deserialize unmarshals the payload into a message.
 func (s *JSONObjSerializer) Deserialize(data []byte) (msg msgutils.Message, err error) {
-	log.Println("deserialze: ", string(data))
-	obj := make(map[string]interface{})
-	err = json.Unmarshal(data, &obj)
+	log.Println("deserialize: ", string(data))
+	msgType := MsgType{}
+	err = json.Unmarshal(data, &msgType)
 	if err != nil {
 		return nil, err
 	}
 
-	switch obj["type"] {
-	case nil, NULL.String():
+	switch msgType.Type {
+	case NULL.String():
 		return NULL.New(), nil
 	case HELLO.String():
 		msg := HELLO.New()
-		return msg, mapstructure.Decode(obj, msg)
+		return msg, json.Unmarshal(data, msg)
 	case PING.String():
 		return PING.New(), nil
 	case PONG.String():
@@ -121,19 +124,19 @@ func (s *JSONObjSerializer) Deserialize(data []byte) (msg msgutils.Message, err 
 		return BYE.New(), nil
 	case PUT.String():
 		msg := PUT.New()
-		return msg, mapstructure.Decode(obj, msg)
+		return msg, json.Unmarshal(data, msg)
 	case PUSH.String():
 		msg := PUSH.New()
-		return msg, mapstructure.Decode(obj, msg)
+		return msg, json.Unmarshal(data, msg)
 	case REPLY.String():
 		msg := REPLY.New()
-		return msg, mapstructure.Decode(obj, msg)
+		return msg, json.Unmarshal(data, msg)
 	case REGISTER.String():
 		msg := REGISTER.New()
-		return msg, mapstructure.Decode(obj, msg)
+		return msg, json.Unmarshal(data, msg)
 	case UNREGISTER.String():
 		msg := UNREGISTER.New()
-		return msg, mapstructure.Decode(obj, msg)
+		return msg, json.Unmarshal(data, msg)
 	default:
 		return nil, errors.New("unkown message type")
 	}
