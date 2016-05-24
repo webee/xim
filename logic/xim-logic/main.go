@@ -14,7 +14,7 @@ func main() {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
 	initDB()
-	//go startHTTPApiServer()
+	startHTTPApiServer()
 	initDispatcherRPC()
 	startRPCService()
 	setupSignal()

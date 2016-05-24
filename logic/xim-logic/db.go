@@ -1,9 +1,9 @@
 package main
 
 import (
-	"xim/logic/db"
+	"xim/commons/db"
 )
 
 func initDB() {
-	db.InitDB(args.dbDriverName, args.dbDatasourceName)
+	db.Init(args.dbDriverName, args.dbDatasourceName)
 }

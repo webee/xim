@@ -6,7 +6,7 @@ import (
 
 	"xim/broker/proto"
 	"xim/broker/userds"
-	"xim/logic/db"
+	"xim/commons/db"
 	"xim/logic/dispatcher"
 	"xim/logic/rpcservice/types"
 )
