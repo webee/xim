@@ -93,7 +93,8 @@ func (msg *Null) MessageType() msgutils.MessageType {
 
 // Hello []
 type Hello struct {
-	User string `json:"user";mapstructure:"user"`
+	User string `json:"user,omitempty";mapstructure:"user,omitempty"`
+	App  string `json:"app,omitempty";mapstructure:"app,omitempty"`
 }
 
 // MessageType returns the message type.
@@ -162,7 +163,7 @@ func (msg *Push) MessageType() msgutils.MessageType {
 type Reply struct {
 	SnSyncMsg `mapstructure:",squash"`
 	UID       uint32      `json:"uid";mapstructure:"uid"`
-	Ok        bool        `jsoin:"ok";mapstructure:"ok"`
+	Ok        bool        `json:"ok";mapstructure:"ok"`
 	Data      interface{} `json:"data,omitempty";mapstructure:"data"`
 	ErrCode   string      `json:"err_code,omitempty";mapstructure:"err_code"`
 	ErrMsg    string      `json:"err_msg,omitempty";mapstructure:"err_code"`

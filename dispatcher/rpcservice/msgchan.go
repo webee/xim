@@ -71,7 +71,7 @@ func dispatchMsg(m interface{}) error {
 }
 
 func newDispatcherMsgChan(channel string) *msgchan.MsgChannel {
-	c := msgchan.NewMsgChannel(fmt.Sprintf("%s.channel", channel), 100,
+	c := msgchan.NewMsgChannel(fmt.Sprintf("%s.channel", channel), 200,
 		new(msgChanTransformer).transform,
 		msgchan.NewMsgChannelHandlerDownStream(fmt.Sprintf("%s.dispatcher", channel), dispatchMsg))
 
@@ -120,7 +120,7 @@ func pushMsg(m interface{}) error {
 }
 
 func newUserMsgChan(name string) *msgchan.MsgChannel {
-	return msgchan.NewMsgChannel(fmt.Sprintf("user.%s.msgchan", name), 10, nil,
+	return msgchan.NewMsgChannel(fmt.Sprintf("user.%s.msgchan", name), 20, nil,
 		msgchan.NewMsgChannelHandlerDownStream(fmt.Sprintf("user.%s.pusher", name), pushMsg))
 }
 

@@ -16,8 +16,8 @@ type msgChannelCache struct {
 }
 
 var (
-	channelCache     = newMsgChannelCache(15*time.Second, newDispatcherMsgChan)
-	userChannelCache = newMsgChannelCache(8*time.Second, newUserMsgChan)
+	channelCache     = newMsgChannelCache(60*time.Second, newDispatcherMsgChan)
+	userChannelCache = newMsgChannelCache(65*time.Second, newUserMsgChan)
 )
 
 func newMsgChannelCache(ttl time.Duration, new func(key string) *msgchan.MsgChannel) *msgChannelCache {
@@ -40,12 +40,14 @@ func newMsgChannelCache(ttl time.Duration, new func(key string) *msgchan.MsgChan
 	return c
 }
 
-func (c *msgChannelCache) getMsgChan(channel string) *msgchan.MsgChannel {
-	c.ko.DoOnKey(channel, func() {
-		msgChan := c.new(channel)
-		c.cache.Set(channel, msgChan)
-	})
+func (c *msgChannelCache) getMsgChan(key string) *msgchan.MsgChannel {
+	item, ok := c.cache.Get(key)
+	if !ok {
+		c.ko.DoOnKey(key, func() {
+			item = c.new(key)
+			c.cache.Set(key, item)
+		})
+	}
 
-	item, _ := c.cache.Get(channel)
 	return item.(*msgchan.MsgChannel)
 }

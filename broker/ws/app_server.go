@@ -69,7 +69,7 @@ type AppServerHandler struct {
 func (ah *AppServerHandler) handleWebsocket() {
 	defer ah.Close()
 	transeiver := ah.transeiver
-	transeiver.Send(proto.HELLO.New())
+	transeiver.Send(&proto.Hello{App: ah.app.App})
 	r := transeiver.Receive()
 
 	var msg msgutils.Message
@@ -115,6 +115,10 @@ func (ah *AppServerHandler) handleWebsocket() {
 		case *proto.Put:
 			if x.UID > 0 {
 				if handler, ok := ah.handlers[x.UID]; ok {
+					_ = handler.Handle(x)
+				}
+			} else {
+				for _, handler := range ah.handlers {
 					_ = handler.Handle(x)
 				}
 			}

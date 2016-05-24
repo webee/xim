@@ -24,7 +24,7 @@ type JSONObjSerializer struct {
 
 // Serialize marshals the payload into a message.
 func (s *JSONObjSerializer) Serialize(m msgutils.Message) ([]byte, error) {
-	log.Println("serialze: ", XIMMsgType(m.MessageType()).String(), m)
+	log.Printf("serialze: %s %+v\n", XIMMsgType(m.MessageType()).String(), m)
 	var msg msgutils.Message
 	switch x := m.(type) {
 	case *Null:

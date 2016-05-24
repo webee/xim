@@ -24,8 +24,8 @@ func NewRPCDispatcher() *RPCDispatcher {
 func (r *RPCDispatcher) PutMsg(args *types.RPCDispatcherPutMsgArgs, reply *types.RPCDispatcherPutMsgReply) error {
 	var err error
 	log.Println(types.RPCDispatcherPutMsg, "is called:", args.User, args.Channel, args.Msg)
-	// FIXME: channelCache在大量请求时无限阻塞
 	msgChan := channelCache.getMsgChan(args.Channel)
+
 	qm := &queueMsg{
 		user:    args.User,
 		channel: args.Channel,
