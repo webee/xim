@@ -17,6 +17,8 @@ func Init(mongoURL string) {
 	if err != nil {
 		log.Panicln(err)
 	}
+	session.SetMode(mgo.Monotonic, true)
+
 	initialMsgStore = NewMsgStore("xim", session)
 	msgCol := initialMsgStore.c("msg")
 	if err := msgCol.Create(&mgo.CollectionInfo{}); err != nil {
