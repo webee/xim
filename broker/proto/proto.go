@@ -132,7 +132,7 @@ func (msg *Bye) MessageType() msgutils.MessageType {
 // Put [channel, kind, msg]
 type Put struct {
 	SnSyncMsg `mapstructure:",squash"`
-	UID       uint32      `json:"uid";mapstructure:"uid"`
+	UID       uint32      `json:"uid,omitempty";mapstructure:"uid"`
 	Channel   string      `json:"channel";mapstructure:"channel"`
 	Kind      string      `json:"kind,omitempty";mapstructure:"kind"`
 	Msg       interface{} `json:"msg";mapstructure:"msg"`
@@ -145,7 +145,7 @@ func (msg *Put) MessageType() msgutils.MessageType {
 
 // Push [sn, channel, user, kind, msg, id, ts]
 type Push struct {
-	UID     uint32      `json:"uid";mapstructure:"uid"`
+	UID     uint32      `json:"uid,omitempty";mapstructure:"uid"`
 	Channel string      `json:"channel"`
 	User    string      `json:"user";mapstructure:"user"`
 	Kind    string      `json:"kind,omitempty"`
@@ -162,7 +162,7 @@ func (msg *Push) MessageType() msgutils.MessageType {
 // Reply [sn, ok, <data|err_code,err_msg>]
 type Reply struct {
 	SnSyncMsg `mapstructure:",squash"`
-	UID       uint32      `json:"uid";mapstructure:"uid"`
+	UID       uint32      `json:"uid,omitempty";mapstructure:"uid"`
 	Ok        bool        `json:"ok";mapstructure:"ok"`
 	Data      interface{} `json:"data,omitempty";mapstructure:"data"`
 	ErrCode   string      `json:"err_code,omitempty";mapstructure:"err_code"`
@@ -223,7 +223,7 @@ func (msg *Register) MessageType() msgutils.MessageType {
 // Unregister [sn, uid]
 type Unregister struct {
 	SnSyncMsg `mapstructure:",squash"`
-	UID       uint32 `json:"uid";mapstructure:"uid"`
+	UID       uint32 `json:"uid,omitempty";mapstructure:"uid"`
 }
 
 // MessageType returns the message type.

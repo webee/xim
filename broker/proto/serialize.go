@@ -56,35 +56,20 @@ func (s *JSONObjSerializer) Serialize(m msgutils.Message) ([]byte, error) {
 			*Bye
 		}{BYE.String(), x}
 	case *Put:
-		var uid interface{}
-		if x.UID != 0 {
-			uid = x.UID
-		}
 		msg = &struct {
 			Type string `json:"type,omitempty"`
 			*Put
-			UID interface{} `json:"uid,omitempty"`
-		}{PUT.String(), x, uid}
+		}{PUT.String(), x}
 	case *Push:
-		var uid interface{}
-		if x.UID != 0 {
-			uid = x.UID
-		}
 		msg = &struct {
 			Type string `json:"type,omitempty"`
 			*Push
-			UID interface{} `json:"uid,omitempty"`
-		}{PUSH.String(), x, uid}
+		}{PUSH.String(), x}
 	case *Reply:
-		var uid interface{}
-		if x.UID != 0 {
-			uid = x.UID
-		}
 		msg = &struct {
 			Type string `json:"type,omitempty"`
 			*Reply
-			UID interface{} `json:"uid,omitempty"`
-		}{REPLY.String(), x, uid}
+		}{REPLY.String(), x}
 	case *Register:
 		msg = &struct {
 			Type string `json:"type,omitempty"`
