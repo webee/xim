@@ -69,9 +69,11 @@ type AppServerHandler struct {
 func (ah *AppServerHandler) handleWebsocket() {
 	defer ah.Close()
 	transeiver := ah.transeiver
-	transeiver.Send(&proto.Hello{App: ah.app.App})
-	r := transeiver.Receive()
+	if err := transeiver.Send(&proto.Hello{App: ah.app.App}); err != nil {
+		return
+	}
 
+	r := transeiver.Receive()
 	var msg msgutils.Message
 	var open bool
 	for {

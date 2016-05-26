@@ -94,10 +94,12 @@ func (h *MsgLogic) PushMsg(msg msgutils.Message) (err error) {
 // Close close this handler.
 func (h *MsgLogic) Close() {
 	// unregister before finish.
-	if h.user != nil {
-		h.userBoard.Unregister(h.user)
-		h.user.Close()
+	if !h.closed {
+		if h.user != nil {
+			h.userBoard.Unregister(h.user)
+			h.user.Close()
+		}
+		h.closed = true
+		log.Println(h.user, "msg handler closed.")
 	}
-	h.closed = true
-	log.Println(h.user, "msg handler closed.")
 }

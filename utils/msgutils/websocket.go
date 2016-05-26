@@ -50,8 +50,8 @@ func (c *WSTranseiver) Send(msg Message) error {
 	defer c.conn.SetWriteDeadline(time.Time{})
 
 	err = c.conn.WriteMessage(websocket.TextMessage, b)
-	if IsCloseError(err) {
-		c.conn.Close()
+	if err != nil {
+		c.Close()
 	}
 
 	return err
@@ -101,11 +101,9 @@ func (c *WSTranseiver) run() {
 		}
 
 		if err != nil {
-			if IsCloseError(err) {
-				c.Close()
-				break
-			}
 			log.Println("read error:", err)
+			c.Close()
+			break
 		} else if msgType == websocket.CloseMessage {
 			c.Close()
 			break
