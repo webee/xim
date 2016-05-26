@@ -10,10 +10,10 @@ func setupMid(xchatRouter *router.XChatRouter) {
 		&mid.Config{
 			Debug:       args.debug,
 			Testing:     args.testing,
-			XIMHostURL:  args.ximHostURL,
-			XIMApp:      args.ximApp,
-			XIMPassword: args.ximPassword,
-			XIMAppWsURL: args.ximAppWsURL,
+			XIMHostURL:  args.XimArgs.HostURL,
+			XIMApp:      args.XimArgs.App,
+			XIMPassword: args.XimArgs.Password,
+			XIMAppWsURL: args.XimArgs.AppWsURL,
 		})
 
 	mid.Setup(config, xchatRouter)

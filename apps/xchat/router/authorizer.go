@@ -1,6 +1,8 @@
 package router
 
-import "github.com/jcelliott/turnpike"
+import (
+	"gopkg.in/jcelliott/turnpike.v2"
+)
 
 // UserRole defines user roles.
 type UserRole struct {

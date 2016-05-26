@@ -1,6 +1,7 @@
 package msgutils
 
 import (
+	"errors"
 	"log"
 	"sync"
 	"time"
@@ -10,6 +11,7 @@ import (
 
 // WSTranseiver is a websocket connection.
 type WSTranseiver struct {
+	sync.Mutex
 	conn             *websocket.Conn
 	serializer       Serializer
 	messages         chan Message
@@ -32,6 +34,10 @@ func NewWSTranseiver(conn *websocket.Conn, serializer Serializer, chanSize int, 
 
 // Send send messages.
 func (c *WSTranseiver) Send(msg Message) error {
+	if c.closed {
+		return errors.New("transeiver closed")
+	}
+
 	b, err := c.serializer.Serialize(msg)
 	if err != nil {
 		return err
@@ -40,10 +46,15 @@ func (c *WSTranseiver) Send(msg Message) error {
 	defer c.sendMutex.Unlock()
 
 	// NOTE: send timeout.
-	c.conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+	c.conn.SetWriteDeadline(time.Now().Add(7 * time.Second))
 	defer c.conn.SetWriteDeadline(time.Time{})
 
-	return c.conn.WriteMessage(websocket.TextMessage, b)
+	err = c.conn.WriteMessage(websocket.TextMessage, b)
+	if IsCloseError(err) {
+		c.conn.Close()
+	}
+
+	return err
 }
 
 // Receive get message channel.
@@ -54,10 +65,25 @@ func (c *WSTranseiver) Receive() <-chan Message {
 // Close closes the underlying websocket connection.
 func (c *WSTranseiver) Close() error {
 	if !c.closed {
+		c.Lock()
+		defer c.Unlock()
+		close(c.messages)
 		c.closed = true
+		log.Println("websocket transeiver closed.")
 		return c.conn.Close()
 	}
 	return nil
+}
+
+// Closed return wheather the transeiver is closed or not.
+func (c *WSTranseiver) Closed() bool {
+	return c.closed
+}
+
+// IsCloseError checks if the error is a websocket closed error.
+func IsCloseError(err error) bool {
+	_, ok := err.(*websocket.CloseError)
+	return ok
 }
 
 func (c *WSTranseiver) run() {
@@ -75,17 +101,13 @@ func (c *WSTranseiver) run() {
 		}
 
 		if err != nil {
-			if c.closed {
-				log.Println("connection closed")
-			} else {
-				log.Println("error reading from connection:", err)
-				c.conn.Close()
+			if IsCloseError(err) {
+				c.Close()
+				break
 			}
-			close(c.messages)
-			break
+			log.Println("read error:", err)
 		} else if msgType == websocket.CloseMessage {
-			c.conn.Close()
-			close(c.messages)
+			c.Close()
 			break
 		} else {
 			msg, err := c.serializer.Deserialize(b)

@@ -34,23 +34,24 @@ func getWSConn(url, token string) (*websocket.Conn, error) {
 	header := http.Header{}
 	header.Add("Authorization", "Bearer "+token)
 	conn, _, err := websocket.DefaultDialer.Dial(url, header)
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
+	return conn, err
 }
 
 // XIMAppWsController is a app websocket connection controller.
 type XIMAppWsController struct {
 	*msgutils.MsgController
-	handler msgutils.MessageHandler
 }
 
 // NewXIMAppWsController creates a xim app websocket connection controller.
-func NewXIMAppWsController(t msgutils.Transeiver, handler msgutils.MessageHandler) *XIMAppWsController {
+func NewXIMAppWsController(t msgutils.Transeiver, handler msgutils.MessageHandler, closeHandler msgutils.CloseHandler) *XIMAppWsController {
 	return &XIMAppWsController{
-		MsgController: msgutils.NewMsgController(t, handler),
+		MsgController: msgutils.NewMsgController(t, handler, closeHandler),
 	}
+}
+
+// Send send a msg.
+func (x *XIMAppWsController) Send(msg msgutils.Message) error {
+	return x.MsgController.Send(msg)
 }
 
 // Req send a msg and wait reply.

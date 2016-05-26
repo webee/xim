@@ -14,7 +14,8 @@ import (
 
 // api uris.
 const (
-	URIAppNewToken = "/xim/app.new_token"
+	URIAppNewToken      = "/xim/app.new_token"
+	URIFetchChannelMsgs = "/xim/app/channels/%s.msgs"
 )
 
 var (
@@ -91,4 +92,17 @@ func (c *XIMHTTPClient) Token() string {
 		}
 	}
 	return c.token
+}
+
+// ChannelMsg is a channel's message.
+type ChannelMsg struct {
+	ID   uint64 `json:"id"`
+	User string `json:"user"`
+	Ts   int64  `json:"ts"`
+	Msg  []byte `json:"msg"`
+}
+
+// FetchChannelMsgs fetch channel's messages.
+func (c *XIMHTTPClient) FetchChannelMsgs(channel string, lid, rid uint64, limit int) []ChannelMsg {
+	return nil
 }

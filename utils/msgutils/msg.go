@@ -28,12 +28,16 @@ type SyncMessage interface {
 // MessageHandler handles selected messages.
 type MessageHandler func(msg Message)
 
+// CloseHandler handle controller close event.
+type CloseHandler func(c *MsgController)
+
 // A MsgController controll msg from/to a Peer backend.
 type MsgController struct {
 	Transeiver
 	// ReplyTimeout is the amount of time that the controller will block waiting for a reply from the Transeiver.
 	ReplyTimeout  time.Duration
 	handler       MessageHandler
+	closeHandler  CloseHandler
 	syncListeners map[ID]chan SyncMessage
 	acts          chan func()
 	closed        bool
@@ -41,22 +45,24 @@ type MsgController struct {
 }
 
 // NewMsgController creates a Transeiver msg controller.
-func NewMsgController(t Transeiver, handler MessageHandler) *MsgController {
+func NewMsgController(t Transeiver, handler MessageHandler, closeHandler CloseHandler) *MsgController {
 	return &MsgController{
 		Transeiver:    t,
 		ReplyTimeout:  10 * time.Second,
 		handler:       handler,
+		closeHandler:  closeHandler,
 		syncListeners: make(map[ID]chan SyncMessage),
 		acts:          make(chan func()),
 	}
 }
 
 // NewNoSyncMsgController creates a Transeiver msg controller without sync send.
-func NewNoSyncMsgController(t Transeiver, handler MessageHandler) *MsgController {
+func NewNoSyncMsgController(t Transeiver, handler MessageHandler, closeHandler CloseHandler) *MsgController {
 	c := &MsgController{
 		Transeiver:    t,
 		ReplyTimeout:  10 * time.Second,
 		handler:       handler,
+		closeHandler:  closeHandler,
 		syncListeners: make(map[ID]chan SyncMessage),
 		acts:          make(chan func()),
 		noSync:        true,
@@ -72,12 +78,8 @@ func (c *MsgController) Start() {
 }
 
 func (c *MsgController) run() {
-	for {
-		if act, ok := <-c.acts; ok {
-			act()
-		} else {
-			break
-		}
+	for act := range c.acts {
+		act()
 	}
 	log.Println("client closed")
 }
@@ -89,6 +91,10 @@ func (c *MsgController) Close() error {
 			return fmt.Errorf("error closing Transeiver: %v", err)
 		}
 		c.closed = true
+		close(c.acts)
+		if c.closeHandler != nil {
+			c.closeHandler(c)
+		}
 	}
 	return nil
 }
@@ -109,7 +115,6 @@ func (c *MsgController) receive() {
 		}
 	}
 
-	close(c.acts)
 	c.Close()
 }
 
@@ -117,6 +122,9 @@ func (c *MsgController) receive() {
 func (c *MsgController) SyncSend(msg SyncMessage) (SyncMessage, error) {
 	if c.noSync {
 		return nil, errors.New("message controller is no sync")
+	}
+	if c.closed {
+		return nil, errors.New("msg controller closed")
 	}
 
 	id := NewID()
@@ -134,6 +142,12 @@ func (c *MsgController) SyncSend(msg SyncMessage) (SyncMessage, error) {
 }
 
 func (c *MsgController) setSyncListener(id ID) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("setSyncListener panic:", r)
+		}
+	}()
+
 	log.Println("register listener:", id)
 	wait := make(chan SyncMessage, 1)
 	sync := make(chan struct{})
