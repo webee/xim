@@ -9,7 +9,7 @@ const (
 	URIXChatLogin         = "xchat.user.login"
 	URIXChatSendMsg       = "xchat.user.msg.send"
 	URIXChatFetchChatList = "xchat.user.chat.list"
-	URIXChatFetchChatMsg  = "xchat.user.chat.msg"
+	URIXChatFetchChatMsgs = "xchat.user.chat.msgs"
 	// 用户接收消息
 	URIXChatUserMsg = "xchat.user.%d.msg"
 	// 用户发送消息的返回

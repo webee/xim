@@ -61,6 +61,10 @@ func (m *Mid) Start() {
 	if err := xchat.BasicRegister(URIXChatSendMsg, call(m.sendMsg)); err != nil {
 		log.Fatalf("Error register %s: %s\n", URIXChatSendMsg, err)
 	}
+
+	if err := xchat.BasicRegister(URIXChatFetchChatMsgs, call(m.fetchChatMsg)); err != nil {
+		log.Fatalf("Error register %s: %s\n", URIXChatFetchChatMsgs, err)
+	}
 }
 
 // 处理用户连接
@@ -76,11 +80,16 @@ func (m *Mid) onLeave(args []interface{}, kwargs map[string]interface{}) {
 	log.Printf("<%d> left\n", sessionID)
 }
 
+func getSessionFromDetails(d interface{}) (sessionID uint64, user string) {
+	details := d.(map[string]interface{})
+	sessionID = uint64(details["session"].(turnpike.ID))
+	user = details["user"].(string)
+	return
+}
+
 // 处理用户注册
 func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	details := kwargs["details"].(map[string]interface{})
-	sessionID := uint64(details["session"].(turnpike.ID))
-	user := details["user"].(string)
+	sessionID, user := getSessionFromDetails(kwargs["details"])
 	log.Println("login:", sessionID)
 	if err := m.xim.Register(sessionID, user); err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
@@ -91,17 +100,15 @@ func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *
 // 用户发送消息
 func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	log.Printf("[rpc]%s: %v, %+v\n", URIXChatSendMsg, args, kwargs)
-	details := kwargs["details"].(map[string]interface{})
-	user := details["user"].(string)
-	sessionID := uint64(details["session"].(turnpike.ID))
+	sessionID, user := getSessionFromDetails(kwargs["details"])
 
 	chatID := uint64(args[0].(float64))
-	msg := args[1]
 	channel, err := db.GetChannelByChatIDAndUser(chatID, user)
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
+	msg := args[1]
 	id, ts, err := m.xim.SendMsg(sessionID, channel, msg)
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
@@ -111,32 +118,50 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 }
 
 // 获取会话列表
-func (m *Mid) getChatList(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+func (m *Mid) fetchChatList(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChatList, args, kwargs)
-	// details := kwargs["details"].(map[string]interface{})
-	// user := details["user"].(string)
-	// sessionID := uint64(details["session"].(turnpike.ID))
+	//_, user := getSessionFromDetails(kwargs["details"])
+
 	//
 	// chatType := args[0].(string)
-	// chatTag := args[1].(string)
+	// chatTag := kwargs["tag"].(string)
 	// TODO
 
 	return nil
 }
 
 // 获取历史消息
-func (m *Mid) getChatMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChatMsg, args, kwargs)
-	// details := kwargs["details"].(map[string]interface{})
-	// user := details["user"].(string)
-	// sessionID := uint64(details["session"].(turnpike.ID))
-	//
-	// chatID := uint64(args[0].(float64))
-	// id1 := uint64(args[1].(float64))
-	// id2 := uint64(args[2].(float64))
-	// // TODO
+func (m *Mid) fetchChatMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChatMsgs, args, kwargs)
+	_, user := getSessionFromDetails(kwargs["details"])
+	chatID := uint64(args[0].(float64))
+	channel, err := db.GetChannelByChatIDAndUser(chatID, user)
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
 
-	return nil
+	var lid, rid uint64
+	var limit int
+	if kwargs["lid"] != nil {
+		lid = uint64(kwargs["lid"].(float64))
+	}
+	if kwargs["rid"] != nil {
+		rid = uint64(kwargs["rid"].(float64))
+	}
+	if kwargs["limit"] != nil {
+		limit = int(kwargs["limit"].(float64))
+	}
+
+	msgs, err := ximHTTPClient.FetchChannelMsgs(channel, lid, rid, limit)
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+
+	chatMsg := ChatMsgs{
+		ChatID: chatID,
+		Msgs:   msgs,
+	}
+	return &turnpike.CallResult{Args: []interface{}{true, chatMsg}}
 }
 
 func (m *Mid) handleMsg(msg msgutils.Message) {

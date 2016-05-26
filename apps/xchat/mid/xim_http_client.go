@@ -3,9 +3,11 @@ package mid
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 
@@ -15,7 +17,7 @@ import (
 // api uris.
 const (
 	URIAppNewToken      = "/xim/app.new_token"
-	URIFetchChannelMsgs = "/xim/app/channels/%s.msgs"
+	URIFetchChannelMsgs = "/xim/app/channels/%s.msgs?%s"
 )
 
 var (
@@ -29,6 +31,7 @@ func initXimHTTPClient(app, password, hostURL string) {
 // XIMHTTPClient is the xim http api client.
 type XIMHTTPClient struct {
 	sync.Mutex
+	client   *http.Client
 	app      string
 	password string
 	hostURL  string
@@ -40,13 +43,14 @@ type XIMHTTPClient struct {
 func NewXIMHTTPClient(app, password string, hostURL string) *XIMHTTPClient {
 	return &XIMHTTPClient{
 		app:      app,
+		client:   &http.Client{},
 		password: password,
 		hostURL:  hostURL,
 	}
 }
 
-func (c *XIMHTTPClient) url(uri string) string {
-	return c.hostURL + uri
+func (c *XIMHTTPClient) url(uri string, params ...interface{}) string {
+	return c.hostURL + fmt.Sprintf(uri, params...)
 }
 
 // NewToken request a new app token.
@@ -94,15 +98,37 @@ func (c *XIMHTTPClient) Token() string {
 	return c.token
 }
 
-// ChannelMsg is a channel's message.
-type ChannelMsg struct {
-	ID   uint64 `json:"id"`
-	User string `json:"user"`
-	Ts   int64  `json:"ts"`
-	Msg  []byte `json:"msg"`
-}
-
 // FetchChannelMsgs fetch channel's messages.
-func (c *XIMHTTPClient) FetchChannelMsgs(channel string, lid, rid uint64, limit int) []ChannelMsg {
-	return nil
+func (c *XIMHTTPClient) FetchChannelMsgs(channel string, lid, rid uint64, limit int) ([]UserMsg, error) {
+	params := url.Values{}
+	if lid > 0 {
+		params.Add("lid", strconv.FormatUint(lid, 10))
+	}
+	if rid > 0 {
+		params.Add("rid", strconv.FormatUint(rid, 10))
+	}
+	if limit > 0 {
+		params.Add("rid", strconv.Itoa(limit))
+	}
+
+	req, err := http.NewRequest("GET", c.url(URIFetchChannelMsgs, channel, params.Encode()), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+c.Token())
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, errors.New("request failed")
+	}
+	decoder := json.NewDecoder(resp.Body)
+	res := []UserMsg{}
+	if err := decoder.Decode(&res); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
