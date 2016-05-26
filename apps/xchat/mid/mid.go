@@ -89,8 +89,8 @@ func getSessionFromDetails(d interface{}) (sessionID uint64, user string) {
 
 // 处理用户注册
 func (m *Mid) login(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	log.Printf("[rpc]%s: %v, %+v\n", URIXChatLogin, args, kwargs)
 	sessionID, user := getSessionFromDetails(kwargs["details"])
-	log.Println("login:", sessionID)
 	if err := m.xim.Register(sessionID, user); err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -117,9 +117,35 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 	return &turnpike.CallResult{Args: []interface{}{true, id, ts}}
 }
 
+// 获取会话信息
+func (m *Mid) newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	log.Printf("[rpc]%s: %v, %+v\n", URIXChatNewChat, args, kwargs)
+	//_, user := getSessionFromDetails(kwargs["details"])
+
+	//
+	// chatType := args[0].(string)
+	// chatTag := kwargs["tag"].(string)
+	// TODO
+
+	return nil
+}
+
 // 获取会话列表
 func (m *Mid) fetchChatList(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChatList, args, kwargs)
+	log.Printf("[rpc]%s: %v, %+v\n", URIXChatChatList, args, kwargs)
+	//_, user := getSessionFromDetails(kwargs["details"])
+
+	//
+	// chatType := args[0].(string)
+	// chatTag := kwargs["tag"].(string)
+	// TODO
+
+	return nil
+}
+
+// 获取会话信息
+func (m *Mid) fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChat, args, kwargs)
 	//_, user := getSessionFromDetails(kwargs["details"])
 
 	//
