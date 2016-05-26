@@ -135,7 +135,7 @@ func (m *Mid) fetchChatMsg(args []interface{}, kwargs map[string]interface{}) (r
 	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChatMsgs, args, kwargs)
 	_, user := getSessionFromDetails(kwargs["details"])
 	chatID := uint64(args[0].(float64))
-	channel, err := db.GetChannelByChatIDAndUser(chatID, user)
+	memberInfo, err := db.GetMemberInfoByChatIDAndUser(chatID, user)
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -144,6 +144,9 @@ func (m *Mid) fetchChatMsg(args []interface{}, kwargs map[string]interface{}) (r
 	var limit int
 	if kwargs["lid"] != nil {
 		lid = uint64(kwargs["lid"].(float64))
+		if memberInfo.InitID > lid {
+			lid = memberInfo.InitID
+		}
 	}
 	if kwargs["rid"] != nil {
 		rid = uint64(kwargs["rid"].(float64))
@@ -152,7 +155,7 @@ func (m *Mid) fetchChatMsg(args []interface{}, kwargs map[string]interface{}) (r
 		limit = int(kwargs["limit"].(float64))
 	}
 
-	msgs, err := ximHTTPClient.FetchChannelMsgs(channel, lid, rid, limit)
+	msgs, err := ximHTTPClient.FetchChannelMsgs(memberInfo.Channel, lid, rid, limit)
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}

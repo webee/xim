@@ -6,3 +6,9 @@ type Chat struct {
 	Type    string
 	Channel string
 }
+
+// MemberInfo is chat's member info.
+type MemberInfo struct {
+	Channel string
+	InitID  uint64 `db:"init_id"`
+}
