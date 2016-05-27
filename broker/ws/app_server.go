@@ -109,22 +109,22 @@ func (ah *AppServerHandler) handleWebsocket() {
 			}
 		case *proto.Null:
 			for _, handler := range ah.handlers {
-				_ = handler.Handle(x)
+				go handler.Handle(x)
 			}
 			transeiver.Send(x)
 		case *proto.Ping:
 			for _, handler := range ah.handlers {
-				_ = handler.Handle(x)
+				go handler.Handle(x)
 			}
 			transeiver.Send(proto.PONG.New())
 		case *proto.Put:
 			if x.UID > 0 {
 				if handler, ok := ah.handlers[x.UID]; ok {
-					_ = handler.Handle(x)
+					go handler.Handle(x)
 				}
 			} else {
 				for _, handler := range ah.handlers {
-					_ = handler.Handle(x)
+					go handler.Handle(x)
 				}
 			}
 		default:

@@ -51,31 +51,23 @@ func (h *MsgLogic) Handle(msg msgutils.Message) bool {
 
 	switch x := msg.(type) {
 	case *proto.Null:
-		go func() {
-			h.register()
-			h.PushMsg(x)
-		}()
+		h.register()
+		h.PushMsg(x)
 	case *proto.Ping:
-		go func() {
-			h.register()
-			h.PushMsg(proto.PONG.New())
-		}()
+		h.register()
+		h.PushMsg(proto.PONG.New())
 	case *proto.Bye:
-		go func() {
-			h.PushMsg(x)
-		}()
+		h.PushMsg(x)
 		return false
 	case *proto.Put:
-		go func() {
-			// handle by logic
-			replyMsg, err := logic.PutMsg(h.user, x.Channel, x.Kind, x.Msg)
-			// TODO handle send error.
-			if err != nil {
-				_ = h.PushMsg(proto.NewErrorReply(x.GetID(), err.Error()))
-			} else if replyMsg != nil {
-				_ = h.PushMsg(proto.NewReply(x.GetID(), replyMsg))
-			}
-		}()
+		// handle by logic
+		replyMsg, err := logic.PutMsg(h.user, x.Channel, x.Kind, x.Msg)
+		// TODO handle send error.
+		if err != nil {
+			_ = h.PushMsg(proto.NewErrorReply(x.GetID(), err.Error()))
+		} else if replyMsg != nil {
+			_ = h.PushMsg(proto.NewReply(x.GetID(), replyMsg))
+		}
 	}
 	return true
 }
