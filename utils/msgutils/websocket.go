@@ -87,6 +87,11 @@ func IsCloseError(err error) bool {
 }
 
 func (c *WSTranseiver) run() {
+	defer func() {
+		if r := recover(); r != nil {
+		}
+	}()
+
 	var msgType int
 	var b []byte
 	var err error

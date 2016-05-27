@@ -47,6 +47,7 @@ func (c *msgChannelCache) getMsgChan(key string) *msgchan.MsgChannel {
 			item = c.new(key)
 			c.cache.Set(key, item)
 		})
+		item, _ = c.cache.Get(key)
 	}
 
 	return item.(*msgchan.MsgChannel)

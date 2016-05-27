@@ -29,7 +29,6 @@ func (ub *UserBoard) Register(user *userds.UserLocation, conn UserMsgBox) error 
 		instances map[uint32]UserMsgBox
 	)
 	ub.Lock()
-	defer ub.Unlock()
 
 	uid := &user.UserIdentity
 	instance := user.Instance
@@ -45,6 +44,8 @@ func (ub *UserBoard) Register(user *userds.UserLocation, conn UserMsgBox) error 
 	instances[instance] = conn
 	log.Println(uid, instance, "registered.")
 	// first touch.
+	ub.Unlock()
+
 	return userdb.UserOnline(user)
 }
 
@@ -56,7 +57,6 @@ func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
 		instances map[uint32]UserMsgBox
 	)
 	ub.Lock()
-	defer ub.Unlock()
 	uid := &user.UserIdentity
 	instance := user.Instance
 
@@ -75,6 +75,7 @@ func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
 			}
 		*/
 	}
+	ub.Unlock()
 	log.Println(uid, instance, "unregistered.")
 	return userdb.UserOffline(user)
 }

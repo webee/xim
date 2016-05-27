@@ -75,12 +75,21 @@ func (ah *AppServerHandler) handleWebsocket() {
 
 	r := transeiver.Receive()
 	var msg msgutils.Message
+	//var closed bool
 	var open bool
 	for {
 		msg, open = <-r
 		if !open {
 			return
 		}
+		/*
+			if !closed && transeiver.Closed() {
+				for _, handler := range ah.handlers {
+					handler.unregister()
+				}
+				closed = true
+			}
+		*/
 
 		switch x := msg.(type) {
 		case *proto.Bye:

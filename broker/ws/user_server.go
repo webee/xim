@@ -49,14 +49,19 @@ func (us *UserServer) handleWebsocket(s *WebsocketServer, user *userds.UserLocat
 	r := transeiver.Receive()
 
 	var msg msgutils.Message
+	//var closed bool
+	var open bool
 	for {
-		var open bool
 		msg, open = <-r
 		if !open {
 			return
 		}
-		// register.
-		handler.register()
+
+		/*
+			if !closed && transeiver.Closed() {
+				handler.unregister()
+			}
+		*/
 		if ok := handler.Handle(msg); !ok {
 			break
 		}
