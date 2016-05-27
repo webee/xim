@@ -25,10 +25,12 @@ func NewUserBoard() *UserBoard {
 
 // Register a user.
 func (ub *UserBoard) Register(user *userds.UserLocation, conn UserMsgBox) error {
+	ub.Lock()
 	instance := user.Instance
 	if _, ok := ub.mapping[instance]; !ok {
 		ub.mapping[instance] = conn
 	}
+	defer ub.Unlock()
 	log.Println(user, "registered.")
 
 	return userdb.UserOnline(user)
@@ -36,10 +38,12 @@ func (ub *UserBoard) Register(user *userds.UserLocation, conn UserMsgBox) error 
 
 // Unregister a user.
 func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
+	ub.Lock()
 	instance := user.Instance
 	if _, ok := ub.mapping[instance]; ok {
 		delete(ub.mapping, instance)
 	}
+	defer ub.Unlock()
 
 	log.Println(user, "unregistered.")
 	return userdb.UserOffline(user)
@@ -47,6 +51,8 @@ func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
 
 // GetUserMsgBox get the user's msg box.
 func (ub *UserBoard) GetUserMsgBox(user *userds.UserLocation) (UserMsgBox, error) {
+	ub.RLock()
+	defer ub.RUnlock()
 	instance := user.Instance
 	if conn, ok := ub.mapping[instance]; ok {
 		return conn, nil
