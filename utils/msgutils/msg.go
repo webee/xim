@@ -148,7 +148,6 @@ func (c *MsgController) setSyncListener(id ID) {
 		}
 	}()
 
-	log.Println("register listener:", id)
 	wait := make(chan SyncMessage, 1)
 	sync := make(chan struct{})
 	c.acts <- func() {

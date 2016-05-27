@@ -11,12 +11,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func getWSTranseiver(url, token string, msgBufSize int) (msgutils.Transeiver, error) {
+// GetWSTranseiver get a websocket transeiver.
+func GetWSTranseiver(url, token string, msgBufSize int) (msgutils.Transeiver, error) {
 	conn, err := getWSConn(url, token)
 	if err != nil {
 		return nil, err
 	}
-	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), msgBufSize, 0)
+	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), msgBufSize)
 
 	// waiting hello
 	msg, err := msgutils.GetMessageTimeout(transeiver, 2*time.Second)

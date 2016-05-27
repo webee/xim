@@ -172,7 +172,7 @@ func (c *XIMClient) recreateXimAppWsController() {
 
 func (c *XIMClient) newXimAppWsController() (*XIMAppWsController, error) {
 	token := ximHTTPClient.Token()
-	t, err := getWSTranseiver(c.config.XIMAppWsURL, token, 1024)
+	t, err := GetWSTranseiver(c.config.XIMAppWsURL, token, 1024)
 	if err != nil {
 		log.Println("get ws transeiver error:", err)
 		return nil, err

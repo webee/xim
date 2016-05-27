@@ -13,7 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"xim/apps/xchat/mid"
+	"xim/broker/proto"
+	"xim/utils/msgutils"
 )
 
 var (
@@ -22,8 +24,9 @@ var (
 	nums     = flag.Int("nums", 1, "online users on the same time.")
 	username = flag.String("username", "test", "username")
 	password = flag.String("password", "test1234", "password")
-	msg      = flag.String("msg", "{}", "msg to send.")
-	interval = flag.Duration("interval", 100*time.Microsecond, "msg send interval")
+	interval = flag.Duration("interval", 100*time.Millisecond, "msg send interval")
+	channel  = flag.String("channel", "NB845YNO", "channel to send")
+	msg      = flag.String("msg", "hello.", "msg to send.")
 )
 
 const (
@@ -100,53 +103,43 @@ func main() {
 func startClient(id int) {
 	u := url.URL{Scheme: "ws", Host: *addr, Path: "/ws"}
 
-	headers := http.Header{}
-	headers.Add("Authorization", "Bearer "+userToken)
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), headers)
+	t, err := mid.GetWSTranseiver(u.String(), userToken, 10)
 	if err != nil {
 		log.Printf("#%d\terror: %s\n", id, err.Error())
 		return
 	}
 	log.Printf("#%d\t connected.", id)
 
-	quit := make(chan bool, 1)
-	defer close(quit)
+	msgController := msgutils.NewMsgController(t, genMsgHandler(id), nil)
+	msgController.Start()
 
-	msgToSend := []byte(*msg)
-	heartbeat := time.After(30 * time.Second)
 	// writer
-	go func() {
-		for {
-			select {
-			case <-heartbeat:
-				err := c.WriteMessage(websocket.TextMessage, []byte("{}"))
-				if err != nil {
-					log.Printf("#%d\terror: %s\n", id, err.Error())
-					return
-				}
-				heartbeat = time.After(30 * time.Second)
-			case <-time.After(*interval):
-				err := c.WriteMessage(websocket.TextMessage, msgToSend)
-				if err != nil {
-					log.Printf("#%d\terror: %s\n", id, err.Error())
-					return
-				}
-			}
-			select {
-			case <-quit:
-				return
-			default:
-			}
-		}
-	}()
-
-	// reader
+	heartbeat := time.After(30 * time.Second)
 	for {
-		_, message, err := c.ReadMessage()
-		if err != nil {
-			log.Printf("#%d\terror: %s\n", id, err.Error())
-			return
+		select {
+		case <-heartbeat:
+			err := msgController.Send(proto.PING.New())
+			if err != nil {
+				log.Printf("#%d\terror: %s\n", id, err.Error())
+				return
+			}
+			heartbeat = time.After(30 * time.Second)
+		case <-time.After(*interval):
+			reply, err := msgController.SyncSend(&proto.Put{
+				Channel: *channel,
+				Msg:     *msg,
+			})
+			if err != nil {
+				log.Printf("#%d\terror: %s\n", id, err.Error())
+				return
+			}
+			log.Printf("#%d reply\t: %+v\n", id, reply)
 		}
-		log.Printf("#%d\t: %s\n", id, message)
+	}
+}
+
+func genMsgHandler(id int) msgutils.MessageHandler {
+	return func(msg msgutils.Message) {
+		log.Printf("#%d\t: %+v\n", id, msg)
 	}
 }
