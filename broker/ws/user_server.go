@@ -3,6 +3,7 @@ package ws
 import (
 	"log"
 	"net/http"
+	"time"
 	"xim/broker/proto"
 	"xim/broker/userboard"
 	"xim/broker/userds"
@@ -33,37 +34,35 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), s.config.MsgBufSize, s.config.HeartbeatTimeout)
-	defer transeiver.Close()
 
-	us.handleWebsocket(s, user, transeiver)
-}
-
-func (us *UserServer) handleWebsocket(s *WebsocketServer, user *userds.UserLocation, transeiver msgutils.Transeiver) {
+	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), s.config.MsgBufSize)
 	handler, err := NewMsgLogic(s.userBoard, user, transeiver, s.config.HeartbeatTimeout)
 	if err != nil {
 		return
 	}
 	defer handler.Close()
 
-	r := transeiver.Receive()
-
-	var msg msgutils.Message
-	//var closed bool
-	var open bool
+	t := time.After(s.config.HeartbeatTimeout)
+	rc := transeiver.Receive()
 	for {
-		msg, open = <-r
-		if !open {
-			return
-		}
-
-		/*
-			if !closed && transeiver.Closed() {
-				handler.unregister()
+		select {
+		case msg, open := <-rc:
+			if !open {
+				return
 			}
-		*/
-		if ok := handler.Handle(msg); !ok {
-			break
+
+			if transeiver.Closed() {
+				return
+			}
+
+			if ok := handler.Handle(msg); !ok {
+				return
+			}
+		case <-t:
+			if ok := handler.Handle(proto.PING.New()); !ok {
+				return
+			}
+			t = time.After(s.config.HeartbeatTimeout)
 		}
 	}
 }

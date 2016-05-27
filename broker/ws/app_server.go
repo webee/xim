@@ -45,10 +45,12 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 	ah := &AppServerHandler{
 		s:          s,
 		as:         as,
-		transeiver: msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), 1000*s.config.MsgBufSize, s.config.HeartbeatTimeout),
+		transeiver: msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), 1000*s.config.MsgBufSize),
 		app:        app,
 		handlers:   make(map[uint32]*MsgLogic),
 	}
+	defer ah.Close()
+
 	log.Printf("app: %s connected.", app)
 	defer func() {
 		log.Printf("app: %s disconnected.", app)
@@ -67,29 +69,21 @@ type AppServerHandler struct {
 }
 
 func (ah *AppServerHandler) handleWebsocket() {
-	defer ah.Close()
 	transeiver := ah.transeiver
 	if err := transeiver.Send(&proto.Hello{App: ah.app.App}); err != nil {
 		return
 	}
 
-	r := transeiver.Receive()
-	var msg msgutils.Message
-	//var closed bool
-	var open bool
+	rc := transeiver.Receive()
 	for {
-		msg, open = <-r
+		msg, open := <-rc
 		if !open {
 			return
 		}
-		/*
-			if !closed && transeiver.Closed() {
-				for _, handler := range ah.handlers {
-					handler.unregister()
-				}
-				closed = true
-			}
-		*/
+
+		if transeiver.Closed() {
+			return
+		}
 
 		switch x := msg.(type) {
 		case *proto.Bye:

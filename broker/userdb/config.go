@@ -14,7 +14,7 @@ var (
 	defaultConfig = &Config{
 		RedisNetAddr:  "tcp@localhost:6379",
 		RedisPassword: "",
-		UserTimeout:   12,
+		UserTimeout:   123,
 		Debug:         false,
 	}
 	config *Config

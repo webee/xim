@@ -18,9 +18,7 @@ type MsgLogic struct {
 	user             *userds.UserLocation
 	sender           msgutils.Sender
 	closed           bool
-	unregistered     bool
 	heartbeatTimeout time.Duration
-	lastRegisterTime time.Time
 }
 
 // NewMsgLogic create a msg logic.
@@ -30,7 +28,6 @@ func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, send
 		user:             user,
 		sender:           sender,
 		heartbeatTimeout: heartbeatTimeout,
-		lastRegisterTime: time.Now().Add(0 - heartbeatTimeout),
 	}
 	if err := h.register(); err != nil {
 		log.Println(err)
@@ -63,7 +60,6 @@ func (h *MsgLogic) Handle(msg msgutils.Message) bool {
 		h.PushMsg(x)
 		return false
 	case *proto.Put:
-		h.register()
 		// handle by logic
 		replyMsg, err := logic.PutMsg(h.user, x.Channel, x.Kind, x.Msg)
 		// TODO handle send error.
@@ -77,21 +73,7 @@ func (h *MsgLogic) Handle(msg msgutils.Message) bool {
 }
 
 func (h *MsgLogic) register() error {
-	n := time.Now()
-	if 4*n.Sub(h.lastRegisterTime) > h.heartbeatTimeout {
-		err := h.userBoard.Register(h.user, h)
-		h.lastRegisterTime = n
-		return err
-	}
-	return nil
-}
-
-func (h *MsgLogic) unregister() {
-	if !h.unregistered {
-		h.userBoard.Unregister(h.user)
-		h.user.Close()
-		h.unregistered = true
-	}
+	return h.userBoard.Register(h.user, h)
 }
 
 // PushMsg push msg to msgbox.
@@ -106,7 +88,8 @@ func (h *MsgLogic) PushMsg(msg msgutils.Message) (err error) {
 func (h *MsgLogic) Close() {
 	// unregister before finish.
 	if !h.closed {
-		h.unregister()
+		h.userBoard.Unregister(h.user)
+		h.user.Close()
 		h.closed = true
 		log.Println(h.user, "msg handler closed.")
 	}

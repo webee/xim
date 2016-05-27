@@ -29,7 +29,7 @@ func InitUserDB(c *Config) {
 
 // InitRedisConnection initialize the redis connection.
 func initRedisConnection(netAddr *netutils.NetAddr, password string) {
-	redisConnPool = dbutils.NewRedisConnPool(netAddr, password, 4, 8, time.Second)
+	redisConnPool = dbutils.NewRedisConnPool(netAddr, password, 32, 64, 30*time.Second)
 }
 
 func getUserKey(uid *userds.UserIdentity) string {

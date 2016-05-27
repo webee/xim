@@ -11,22 +11,19 @@ import (
 
 // WSTranseiver is a websocket connection.
 type WSTranseiver struct {
-	sync.Mutex
-	conn             *websocket.Conn
-	serializer       Serializer
-	messages         chan Message
-	closed           bool
-	sendMutex        sync.Mutex
-	heartbeatTimeout time.Duration
+	conn       *websocket.Conn
+	serializer Serializer
+	messages   chan Message
+	closed     bool
+	sendMutex  sync.Mutex
 }
 
 // NewWSTranseiver creates a new websocket Transeiver.
-func NewWSTranseiver(conn *websocket.Conn, serializer Serializer, chanSize int, heartbeatTimeout time.Duration) *WSTranseiver {
+func NewWSTranseiver(conn *websocket.Conn, serializer Serializer, chanSize int) *WSTranseiver {
 	c := &WSTranseiver{
-		conn:             conn,
-		serializer:       serializer,
-		messages:         make(chan Message, chanSize),
-		heartbeatTimeout: heartbeatTimeout,
+		conn:       conn,
+		serializer: serializer,
+		messages:   make(chan Message, chanSize),
 	}
 	go c.run()
 	return c
@@ -46,7 +43,7 @@ func (c *WSTranseiver) Send(msg Message) error {
 	defer c.sendMutex.Unlock()
 
 	// NOTE: send timeout.
-	c.conn.SetWriteDeadline(time.Now().Add(7 * time.Second))
+	c.conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
 	defer c.conn.SetWriteDeadline(time.Time{})
 
 	err = c.conn.WriteMessage(websocket.TextMessage, b)
@@ -65,8 +62,6 @@ func (c *WSTranseiver) Receive() <-chan Message {
 // Close closes the underlying websocket connection.
 func (c *WSTranseiver) Close() error {
 	if !c.closed {
-		c.Lock()
-		defer c.Unlock()
 		close(c.messages)
 		c.closed = true
 		log.Println("websocket transeiver closed.")
@@ -80,15 +75,10 @@ func (c *WSTranseiver) Closed() bool {
 	return c.closed
 }
 
-// IsCloseError checks if the error is a websocket closed error.
-func IsCloseError(err error) bool {
-	_, ok := err.(*websocket.CloseError)
-	return ok
-}
-
 func (c *WSTranseiver) run() {
 	defer func() {
 		if r := recover(); r != nil {
+			log.Println("transeiver panic:", r)
 		}
 	}()
 
@@ -96,14 +86,7 @@ func (c *WSTranseiver) run() {
 	var b []byte
 	var err error
 	for {
-		// NOTE: read timeout(heartbeat.)
-		if c.heartbeatTimeout > 0 {
-			c.conn.SetReadDeadline(time.Now().Add(c.heartbeatTimeout))
-			msgType, b, err = c.conn.ReadMessage()
-			c.conn.SetReadDeadline(time.Time{})
-		} else {
-			msgType, b, err = c.conn.ReadMessage()
-		}
+		msgType, b, err = c.conn.ReadMessage()
 
 		if err != nil {
 			log.Println("read error:", err)
