@@ -126,7 +126,7 @@ func startClient(id int) {
 			heartbeat = time.After(30 * time.Second)
 		case <-time.After(*interval):
 			reply, err := msgController.SyncSend(&proto.Put{
-				Channel: *channel,
+				Channel: fmt.Sprintf("c%d", id),
 				Msg:     *msg,
 			})
 			if err != nil {
