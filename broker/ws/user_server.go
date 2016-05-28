@@ -34,6 +34,7 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	conn.SetReadLimit(16 * 1024)
 
 	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), s.config.MsgBufSize)
 	handler, err := NewMsgLogic(s.userBoard, user, transeiver, s.config.HeartbeatTimeout)
@@ -55,12 +56,16 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 				return
 			}
 
-			if ok := handler.Handle(msg); !ok {
+			if _, ok := msg.(*proto.Bye); ok {
 				return
 			}
+
+			works <- func() {
+				handler.Handle(msg)
+			}
 		case <-t:
-			if ok := handler.Handle(proto.PING.New()); !ok {
-				return
+			works <- func() {
+				handler.Handle(proto.PING.New())
 			}
 			t = time.After(s.config.HeartbeatTimeout)
 		}

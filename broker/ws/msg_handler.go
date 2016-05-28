@@ -43,10 +43,10 @@ func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, send
 }
 
 // Handle handles the msg.
-func (h *MsgLogic) Handle(msg msgutils.Message) bool {
+func (h *MsgLogic) Handle(msg msgutils.Message) {
 	if h.closed {
 		log.Println("client closed")
-		return false
+		return
 	}
 
 	switch x := msg.(type) {
@@ -56,9 +56,6 @@ func (h *MsgLogic) Handle(msg msgutils.Message) bool {
 	case *proto.Ping:
 		h.register()
 		h.PushMsg(proto.PONG.New())
-	case *proto.Bye:
-		h.PushMsg(x)
-		return false
 	case *proto.Put:
 		// handle by logic
 		replyMsg, err := logic.PutMsg(h.user, x.Channel, x.Kind, x.Msg)
@@ -69,7 +66,6 @@ func (h *MsgLogic) Handle(msg msgutils.Message) bool {
 			_ = h.PushMsg(proto.NewReply(x.GetID(), replyMsg))
 		}
 	}
-	return true
 }
 
 func (h *MsgLogic) register() error {

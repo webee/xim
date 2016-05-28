@@ -42,6 +42,8 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	conn.SetReadLimit(16 * 1024)
+
 	ah := &AppServerHandler{
 		s:          s,
 		as:         as,
@@ -87,50 +89,71 @@ func (ah *AppServerHandler) handleWebsocket() {
 
 		switch x := msg.(type) {
 		case *proto.Bye:
-			transeiver.Send(x)
 			return
 		case *proto.Register:
 			user, err := ah.registerUser(x.User)
-			if err != nil {
-				log.Println("register user error:", err)
-				transeiver.Send(proto.NewErrorReply(x.GetID(), "register error"))
-				continue
+			works <- func() {
+				if err != nil {
+					log.Println("register user error:", err)
+					transeiver.Send(proto.NewErrorReply(x.GetID(), "register error"))
+					return
+				}
+				if user == nil {
+					transeiver.Send(proto.NewErrorReply(x.GetID(), "register failed"))
+					return
+				}
+				transeiver.Send(proto.NewAppReply(x.GetID(), user.Instance, nil))
 			}
-			if user == nil {
-				transeiver.Send(proto.NewErrorReply(x.GetID(), "register failed"))
-				continue
-			}
-			transeiver.Send(proto.NewAppReply(x.GetID(), user.Instance, nil))
 		case *proto.Unregister:
-			if ah.unregisterUser(x.UID) {
-				transeiver.Send(proto.NewAppReply(x.GetID(), x.UID, nil))
-			} else {
-				transeiver.Send(proto.NewAppErrorReply(x.GetID(), x.UID, "unregister failed"))
+			ok := ah.unregisterUser(x.UID)
+			works <- func() {
+				if ok {
+					transeiver.Send(proto.NewAppReply(x.GetID(), x.UID, nil))
+				} else {
+					transeiver.Send(proto.NewAppErrorReply(x.GetID(), x.UID, "unregister failed"))
+				}
 			}
 		case *proto.Null:
-			for _, handler := range ah.handlers {
-				go handler.Handle(x)
-			}
-			transeiver.Send(x)
-		case *proto.Ping:
-			for _, handler := range ah.handlers {
-				go handler.Handle(x)
-			}
-			transeiver.Send(proto.PONG.New())
-		case *proto.Put:
-			if x.UID > 0 {
-				if handler, ok := ah.handlers[x.UID]; ok {
-					go handler.Handle(x)
+			handlers := ah.getHandlers(0)
+			works <- func() {
+				for _, handler := range handlers {
+					handler.Handle(x)
 				}
-			} else {
-				for _, handler := range ah.handlers {
-					go handler.Handle(x)
+				transeiver.Send(x)
+			}
+		case *proto.Ping:
+			handlers := ah.getHandlers(0)
+			works <- func() {
+				for _, handler := range handlers {
+					handler.Handle(x)
+				}
+				transeiver.Send(proto.PONG.New())
+			}
+		case *proto.Put:
+			handlers := ah.getHandlers(x.UID)
+			works <- func() {
+				for _, handler := range handlers {
+					handler.Handle(x)
 				}
 			}
 		default:
 			log.Println("bad message type:", msg.MessageType())
 		}
 	}
+}
+
+func (ah *AppServerHandler) getHandlers(uid uint32) []*MsgLogic {
+	handlers := []*MsgLogic{}
+	if uid > 0 {
+		if handler, ok := ah.handlers[uid]; ok {
+			handlers = append(handlers, handler)
+		}
+	} else {
+		for _, handler := range ah.handlers {
+			handlers = append(handlers, handler)
+		}
+	}
+	return handlers
 }
 
 // Close close all resources.

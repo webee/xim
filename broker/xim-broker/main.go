@@ -22,7 +22,6 @@ func main() {
 	initUserboard()
 	initLogicRPC()
 	startRPCService()
-	startWebsocket()
-	startAppWebsocket()
+	initWebsocket()
 	setupSignal()
 }

@@ -12,14 +12,12 @@ import (
 type UserBoard struct {
 	sync.RWMutex
 	mapping map[uint32]UserMsgBox
-	acts    chan func()
 }
 
 // NewUserBoard creates a user board.
 func NewUserBoard() *UserBoard {
 	return &UserBoard{
 		mapping: make(map[uint32]UserMsgBox),
-		acts:    make(chan func()),
 	}
 }
 
@@ -33,7 +31,8 @@ func (ub *UserBoard) Register(user *userds.UserLocation, conn UserMsgBox) error 
 	defer ub.Unlock()
 	log.Println(user, "registered.")
 
-	return userdb.UserOnline(user)
+	userdb.UserOnline(user)
+	return nil
 }
 
 // Unregister a user.
@@ -46,7 +45,8 @@ func (ub *UserBoard) Unregister(user *userds.UserLocation) error {
 	defer ub.Unlock()
 
 	log.Println(user, "unregistered.")
-	return userdb.UserOffline(user)
+	userdb.UserOffline(user)
+	return nil
 }
 
 // GetUserMsgBox get the user's msg box.
