@@ -27,14 +27,6 @@ func PushMsg(user userds.UserLocation, msg *proto.Push) (err error) {
 	id, client, _ := clientPool.Get()
 	defer clientPool.Put(id)
 
-	err = client.Client.Call(types.RPCBrokerPushMsg, args, reply)
-	if err != nil {
-		log.Println("push err:", err)
-		client.Reconnect()
-		err = client.Client.Call(types.RPCBrokerPushMsg, args, reply)
-		if err != nil {
-			log.Println("retry push err:", err)
-		}
-	}
-	return err
+	_ = client.Client.Go(types.RPCBrokerPushMsg, args, reply, nil)
+	return nil
 }
