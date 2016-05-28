@@ -3,7 +3,6 @@ package ws
 import (
 	"log"
 	"net/http"
-	"time"
 	"xim/broker/proto"
 	"xim/broker/userboard"
 	"xim/broker/userds"
@@ -34,40 +33,29 @@ func (us *UserServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	conn.SetReadLimit(16 * 1024)
 
-	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), s.config.MsgBufSize)
-	handler, err := NewMsgLogic(s.userBoard, user, transeiver, s.config.HeartbeatTimeout)
+	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), s.config.MsgBufSize, s.config.HeartbeatTimeout, proto.PONG.New())
+	defer transeiver.Close()
+
+	handler, err := NewMsgLogic(s.userBoard, user, transeiver)
 	if err != nil {
 		return
 	}
 	defer handler.Close()
 
-	t := time.After(s.config.HeartbeatTimeout)
 	rc := transeiver.Receive()
 	for {
-		select {
-		case msg, open := <-rc:
-			if !open {
-				return
-			}
+		msg, open := <-rc
+		if !open {
+			return
+		}
 
-			if transeiver.Closed() {
-				return
-			}
+		if _, ok := msg.(*proto.Bye); ok {
+			return
+		}
 
-			if _, ok := msg.(*proto.Bye); ok {
-				return
-			}
-
-			works <- func() {
-				handler.Handle(msg)
-			}
-		case <-t:
-			works <- func() {
-				handler.Handle(proto.PING.New())
-			}
-			t = time.After(s.config.HeartbeatTimeout)
+		works <- func() {
+			handler.Handle(msg)
 		}
 	}
 }

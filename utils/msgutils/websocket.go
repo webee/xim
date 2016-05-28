@@ -1,9 +1,7 @@
 package msgutils
 
 import (
-	"errors"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -11,98 +9,140 @@ import (
 
 // WSTranseiver is a websocket connection.
 type WSTranseiver struct {
-	conn       *websocket.Conn
-	serializer Serializer
-	messages   chan Message
-	closed     bool
-	sendMutex  sync.Mutex
+	ws             *websocket.Conn
+	serializer     Serializer
+	messages       chan Message
+	toSendMessages chan Message
+	closed         bool
+	pongWait       time.Duration
+	pongMsg        Message
+	pingPeriod     time.Duration
 }
 
 // NewWSTranseiver creates a new websocket Transeiver.
-func NewWSTranseiver(conn *websocket.Conn, serializer Serializer, chanSize int) *WSTranseiver {
-	c := &WSTranseiver{
-		conn:       conn,
-		serializer: serializer,
-		messages:   make(chan Message, chanSize),
+func NewWSTranseiver(ws *websocket.Conn, serializer Serializer, chanSize int, pongWait time.Duration, pongMsg Message) *WSTranseiver {
+	t := &WSTranseiver{
+		ws:             ws,
+		serializer:     serializer,
+		messages:       make(chan Message, chanSize),
+		toSendMessages: make(chan Message, 10*chanSize),
+		pongWait:       pongWait,
+		pongMsg:        pongMsg,
+		pingPeriod:     (pongWait * 9) / 10,
 	}
-	go c.run()
-	return c
+	t.run()
+	return t
 }
 
-// Send send messages.
-func (c *WSTranseiver) Send(msg Message) error {
-	if c.closed {
-		return errors.New("transeiver closed")
-	}
-
-	b, err := c.serializer.Serialize(msg)
-	if err != nil {
-		return err
-	}
-	c.sendMutex.Lock()
-	defer c.sendMutex.Unlock()
-
-	// NOTE: send timeout.
-	c.conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
-	defer c.conn.SetWriteDeadline(time.Time{})
-
-	err = c.conn.WriteMessage(websocket.TextMessage, b)
-	if err != nil {
-		c.Close()
-	}
-
-	return err
+// Run starts transeiver run loops.
+func (c *WSTranseiver) run() {
+	go c.readPump()
+	go c.writePump()
 }
 
-// Receive get message channel.
+// Receive get receive message channel.
 func (c *WSTranseiver) Receive() <-chan Message {
 	return c.messages
+}
+
+// Send get send message channel.
+func (c *WSTranseiver) Send(msg Message) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("panic:", r)
+			err = TranseiverError("closed")
+		}
+	}()
+
+	if c.closed {
+		return TranseiverError("closed")
+	}
+	c.toSendMessages <- msg
+	return nil
+}
+
+func (c *WSTranseiver) write(mt int, payload []byte) error {
+	c.ws.SetWriteDeadline(time.Now().Add(10 * time.Second))
+	return c.ws.WriteMessage(mt, payload)
 }
 
 // Close closes the underlying websocket connection.
 func (c *WSTranseiver) Close() error {
 	if !c.closed {
-		close(c.messages)
 		c.closed = true
+		close(c.toSendMessages)
 		log.Println("websocket transeiver closed.")
-		return c.conn.Close()
+		c.write(websocket.CloseMessage, []byte{})
+		return c.ws.Close()
 	}
 	return nil
 }
 
-// Closed return wheather the transeiver is closed or not.
-func (c *WSTranseiver) Closed() bool {
-	return c.closed
-}
-
-func (c *WSTranseiver) run() {
+func (c *WSTranseiver) writePump() {
+	ticker := time.NewTicker(c.pingPeriod)
 	defer func() {
-		if r := recover(); r != nil {
-			log.Println("transeiver panic:", r)
-		}
+		ticker.Stop()
+		c.ws.Close()
 	}()
 
-	var msgType int
-	var b []byte
-	var err error
 	for {
-		msgType, b, err = c.conn.ReadMessage()
-
-		if err != nil {
-			log.Println("read error:", err)
-			c.Close()
-			break
-		} else if msgType == websocket.CloseMessage {
-			c.Close()
-			break
-		} else {
-			msg, err := c.serializer.Deserialize(b)
+		select {
+		case msg, ok := <-c.toSendMessages:
+			if !ok {
+				c.write(websocket.CloseMessage, []byte{})
+				return
+			}
+			b, err := c.serializer.Serialize(msg)
 			if err != nil {
-				log.Println("error deserializing message:", err)
+				log.Println("error serializing message:", err)
 				// TODO: handle error
-			} else {
-				c.messages <- msg
+				continue
+			}
+			if err := c.write(websocket.TextMessage, b); err != nil {
+				return
+			}
+		case <-ticker.C:
+			if err := c.write(websocket.PingMessage, []byte{}); err != nil {
+				return
 			}
 		}
+	}
+}
+
+func (c *WSTranseiver) readPump() {
+	defer func() {
+		close(c.messages)
+		c.ws.Close()
+	}()
+
+	// NOTE: limit to 16Kb.
+	c.ws.SetReadLimit(16 * 1024)
+	c.ws.SetReadDeadline(time.Now().Add(c.pongWait))
+	c.ws.SetPongHandler(func(string) error {
+		c.ws.SetReadDeadline(time.Now().Add(c.pongWait))
+		if c.pongMsg != nil {
+			c.messages <- c.pongMsg
+		}
+		return nil
+	})
+
+	for {
+		msgType, b, err := c.ws.ReadMessage()
+
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
+				log.Printf("ws error:%v", err)
+			}
+			break
+		} else if msgType == websocket.CloseMessage {
+			break
+		}
+		msg, err := c.serializer.Deserialize(b)
+		if err != nil {
+			log.Println("error deserializing message:", err)
+			// TODO: handle error
+			continue
+		}
+		c.messages <- msg
 	}
 }

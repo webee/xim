@@ -3,7 +3,6 @@ package ws
 import (
 	"errors"
 	"log"
-	"time"
 
 	"xim/broker/logic"
 	"xim/broker/proto"
@@ -14,20 +13,18 @@ import (
 
 // MsgLogic is handler of messages.
 type MsgLogic struct {
-	userBoard        *userboard.UserBoard
-	user             *userds.UserLocation
-	sender           msgutils.Sender
-	closed           bool
-	heartbeatTimeout time.Duration
+	userBoard *userboard.UserBoard
+	user      *userds.UserLocation
+	sender    msgutils.Sender
+	closed    bool
 }
 
 // NewMsgLogic create a msg logic.
-func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, sender msgutils.Sender, heartbeatTimeout time.Duration) (*MsgLogic, error) {
+func NewMsgLogic(userBoard *userboard.UserBoard, user *userds.UserLocation, sender msgutils.Sender) (*MsgLogic, error) {
 	h := &MsgLogic{
-		userBoard:        userBoard,
-		user:             user,
-		sender:           sender,
-		heartbeatTimeout: heartbeatTimeout,
+		userBoard: userBoard,
+		user:      user,
+		sender:    sender,
 	}
 	if err := h.register(); err != nil {
 		log.Println(err)
@@ -56,6 +53,8 @@ func (h *MsgLogic) Handle(msg msgutils.Message) {
 	case *proto.Ping:
 		h.register()
 		h.PushMsg(proto.PONG.New())
+	case *proto.Pong:
+		h.register()
 	case *proto.Put:
 		// handle by logic
 		replyMsg, err := logic.PutMsg(h.user, x.Channel, x.Kind, x.Msg)

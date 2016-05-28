@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+// TranseiverError is transeiver errors.
+type TranseiverError string
+
+func (t TranseiverError) Error() string {
+	return string(t)
+}
+
 // A Sender can send a message to its peer.
 //
 // For clients, this sends a message to the router, and for routers,
@@ -21,7 +28,6 @@ type Transeiver interface {
 	// Closes the peer connection and any channel returned from Receive().
 	// Multiple calls to Close() will have no effect.
 	Close() error
-	Closed() bool
 
 	// Receive returns a channel of messages coming from the peer.
 	Receive() <-chan Message

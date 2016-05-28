@@ -17,7 +17,7 @@ func GetWSTranseiver(url, token string, msgBufSize int) (msgutils.Transeiver, er
 	if err != nil {
 		return nil, err
 	}
-	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), msgBufSize)
+	transeiver := msgutils.NewWSClientTranseiver(conn, new(proto.JSONObjSerializer), msgBufSize)
 
 	// waiting hello
 	msg, err := msgutils.GetMessageTimeout(transeiver, 2*time.Second)

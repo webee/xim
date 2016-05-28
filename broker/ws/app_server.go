@@ -42,12 +42,13 @@ func (as *AppServer) HandleRequest(s *WebsocketServer, w http.ResponseWriter, r 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	conn.SetReadLimit(16 * 1024)
+	transeiver := msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), 1000*s.config.MsgBufSize, s.config.HeartbeatTimeout, proto.PONG.New())
+	defer transeiver.Close()
 
 	ah := &AppServerHandler{
 		s:          s,
 		as:         as,
-		transeiver: msgutils.NewWSTranseiver(conn, new(proto.JSONObjSerializer), 1000*s.config.MsgBufSize),
+		transeiver: transeiver,
 		app:        app,
 		handlers:   make(map[uint32]*MsgLogic),
 	}
@@ -80,10 +81,6 @@ func (ah *AppServerHandler) handleWebsocket() {
 	for {
 		msg, open := <-rc
 		if !open {
-			return
-		}
-
-		if transeiver.Closed() {
 			return
 		}
 
@@ -161,7 +158,6 @@ func (ah *AppServerHandler) Close() {
 	for _, handler := range ah.handlers {
 		handler.Close()
 	}
-	ah.transeiver.Close()
 }
 
 func (ah *AppServerHandler) registerUser(username string) (*userds.UserLocation, error) {
@@ -174,9 +170,7 @@ func (ah *AppServerHandler) registerUser(username string) (*userds.UserLocation,
 	}
 	user := userds.NewUserLocation(uid, ah.s.config.Broker)
 
-	handler, err := NewMsgLogic(ah.s.userBoard, user,
-		newAppUserSender(ah, user, ah.transeiver),
-		ah.s.config.HeartbeatTimeout)
+	handler, err := NewMsgLogic(ah.s.userBoard, user, newAppUserSender(ah, user, ah.transeiver))
 	if err != nil {
 		return nil, err
 	}

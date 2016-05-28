@@ -29,17 +29,9 @@ var (
 	msg      = flag.String("msg", "hello.", "msg to send.")
 )
 
-const (
-	rawHeaderLen = uint16(16)
-	heart        = 10 * time.Second
-)
-
 var (
-	sendTimes   int64
-	failedTimes int64
-	recvTimes   int64
-	token       string
-	userToken   string
+	token     string
+	userToken string
 )
 
 // Token is token.
@@ -111,19 +103,12 @@ func startClient(id int) {
 	log.Printf("#%d\t connected.", id)
 
 	msgController := msgutils.NewMsgController(t, genMsgHandler(id), nil)
+	defer msgController.Close()
 	msgController.Start()
 
 	// writer
-	heartbeat := time.After(30 * time.Second)
 	for {
 		select {
-		case <-heartbeat:
-			err := msgController.Send(proto.PING.New())
-			if err != nil {
-				log.Printf("#%d\terror: %s\n", id, err.Error())
-				return
-			}
-			heartbeat = time.After(30 * time.Second)
 		case <-time.After(*interval):
 			reply, err := msgController.SyncSend(&proto.Put{
 				Channel: fmt.Sprintf("c%d", id),
