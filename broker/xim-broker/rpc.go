@@ -12,6 +12,7 @@ func startRPCService() {
 		log.Fatalln(args.rpcNetAddr, err)
 	}
 
+	rpcservice.InitWorker(args.wsWorker * 3)
 	rpcservice.StartRPCServer(netAddr,
 		rpcservice.NewRPCBroker(userBoard),
 	)

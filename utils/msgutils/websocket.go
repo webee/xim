@@ -72,7 +72,6 @@ func (c *WSTranseiver) Close() error {
 		c.closed = true
 		close(c.toSendMessages)
 		log.Println("websocket transeiver closed.")
-		c.write(websocket.CloseMessage, []byte{})
 		return c.ws.Close()
 	}
 	return nil

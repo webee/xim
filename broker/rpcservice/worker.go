@@ -1,4 +1,4 @@
-package ws
+package rpcservice
 
 var (
 	works chan func()
@@ -6,7 +6,7 @@ var (
 
 // InitWorker init workers.
 func InitWorker(count int) {
-	works = make(chan func(), count*4)
+	works = make(chan func(), count*128)
 	for i := 0; i < count; i++ {
 		go worker(works)
 	}

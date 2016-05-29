@@ -126,6 +126,13 @@ func (ah *AppServerHandler) handleWebsocket() {
 				}
 				transeiver.Send(proto.PONG.New())
 			}
+		case *proto.Pong:
+			handlers := ah.getHandlers(0)
+			works <- func() {
+				for _, handler := range handlers {
+					handler.Handle(x)
+				}
+			}
 		case *proto.Put:
 			handlers := ah.getHandlers(x.UID)
 			works <- func() {

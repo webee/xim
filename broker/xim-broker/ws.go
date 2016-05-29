@@ -8,7 +8,7 @@ import (
 func initWebsocket() {
 	startWebsocket()
 	startAppWebsocket()
-	ws.InitWorker(8, 1024)
+	ws.InitWorker(args.wsWorker)
 }
 
 func startWebsocket() {

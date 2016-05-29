@@ -11,6 +11,7 @@ import (
 type Args struct {
 	addr                 string
 	appAddr              string
+	wsWorker             int
 	testing              bool
 	debug                bool
 	logicRPCNetAddr      string
@@ -34,6 +35,7 @@ func init() {
 	env := envutils.GetEnvDefault("XIM_ENV", "dev")
 	flag.StringVar(&args.addr, "addr", "localhost:2880", "address to serv user websocket.")
 	flag.StringVar(&args.appAddr, "app-addr", "localhost:2980", "address to serv app websocket.")
+	flag.IntVar(&args.wsWorker, "ws-worker", 100, "websocket worker count.")
 	flag.BoolVar(&args.testing, "testing", false, "whether to serv a testing page.")
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
 	flag.StringVar(&args.logicRPCNetAddr, "logic-rpc-net-addr", "tcp@localhost:6780", "logic rpc network address to listen.")
