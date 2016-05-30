@@ -13,3 +13,11 @@ type ChatMsgs struct {
 	ChatID uint64    `json:"chat_id"`
 	Msgs   []UserMsg `json:"msgs"`
 }
+
+// Chat is a chat.
+type Chat struct {
+	Type  string `json:"type"`
+	ID    uint64 `json:"id"`
+	Title string `json:"title"`
+	Tag   string `json:"tag"`
+}

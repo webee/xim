@@ -4,7 +4,8 @@ package db
 type Chat struct {
 	ID      uint64 `db:"id"`
 	Type    string
-	Channel string
+	Channel string `json:"channel,omitempty"`
+	Title   string `json:"title,omitempty"`
 }
 
 // MemberInfo is chat's member info.

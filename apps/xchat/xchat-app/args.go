@@ -25,7 +25,8 @@ type Args struct {
 	dbDriverName     string
 	dbDatasourceName string
 	XimArgs
-	userKeyPath string
+	userKeyPath  string
+	XChatHostURL string
 }
 
 var (
@@ -47,4 +48,5 @@ func init() {
 	flag.StringVar(&args.addr, "addr", "127.0.0.1:48080", "wamp router websocket listen addr.")
 	flag.StringVar(&args.endpoint, "endpoint", "/ws", "wamp router websocket url endpoint.")
 	flag.StringVar(&args.testWebDir, "test-web-dir", "apps/xchat/xchat-app/web", "test web dir.")
+	flag.StringVar(&args.XChatHostURL, "xchat-host-url", "http://localhost:9980", "xchat api host url.")
 }

@@ -27,6 +27,7 @@ var (
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	initXimHTTPClient(config.XIMApp, config.XIMPassword, config.XIMHostURL)
+	initXChatHTTPClient(config.Key, config.XChatHostURL)
 
 	xchat, err := xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
@@ -64,6 +65,14 @@ func (m *Mid) Start() {
 
 	if err := xchat.BasicRegister(URIXChatFetchChatMsgs, call(m.fetchChatMsg)); err != nil {
 		log.Fatalf("Error register %s: %s\n", URIXChatFetchChatMsgs, err)
+	}
+
+	if err := xchat.BasicRegister(URIXChatNewChat, call(m.newChat)); err != nil {
+		log.Fatalf("Error register %s: %s\n", URIXChatNewChat, err)
+	}
+
+	if err := xchat.BasicRegister(URIXChatFetchChatList, call(m.fetchChatList)); err != nil {
+		log.Fatalf("Error register %s: %s\n", URIXChatNewChat, err)
 	}
 }
 
@@ -120,27 +129,34 @@ func (m *Mid) sendMsg(args []interface{}, kwargs map[string]interface{}) (result
 // 获取会话信息
 func (m *Mid) newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	log.Printf("[rpc]%s: %v, %+v\n", URIXChatNewChat, args, kwargs)
-	//_, user := getSessionFromDetails(kwargs["details"])
+	_, user := getSessionFromDetails(kwargs["details"])
 
-	//
-	// chatType := args[0].(string)
-	// chatTag := kwargs["tag"].(string)
-	// TODO
+	chatType := args[0].(string)
+	users := []string{user}
+	for _, u := range args[1].([]interface{}) {
+		users = append(users, u.(string))
+	}
+	title := args[2].(string)
 
-	return nil
+	chatID, err := xchatHTTPClient.NewChat(chatType, users, title)
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+
+	return &turnpike.CallResult{Args: []interface{}{true, chatID}}
 }
 
 // 获取会话列表
 func (m *Mid) fetchChatList(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	log.Printf("[rpc]%s: %v, %+v\n", URIXChatChatList, args, kwargs)
-	//_, user := getSessionFromDetails(kwargs["details"])
+	_, user := getSessionFromDetails(kwargs["details"])
 
-	//
-	// chatType := args[0].(string)
-	// chatTag := kwargs["tag"].(string)
-	// TODO
+	chats, err := xchatHTTPClient.FetchUserChats(user, "", "")
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
 
-	return nil
+	return &turnpike.CallResult{Args: []interface{}{true, chats}}
 }
 
 // 获取会话信息
