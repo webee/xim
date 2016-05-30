@@ -159,19 +159,6 @@ func (m *Mid) fetchChatList(args []interface{}, kwargs map[string]interface{}) (
 	return &turnpike.CallResult{Args: []interface{}{true, chats}}
 }
 
-// 获取会话信息
-func (m *Mid) fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChat, args, kwargs)
-	//_, user := getSessionFromDetails(kwargs["details"])
-
-	//
-	// chatType := args[0].(string)
-	// chatTag := kwargs["tag"].(string)
-	// TODO
-
-	return nil
-}
-
 // 获取历史消息
 func (m *Mid) fetchChatMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	log.Printf("[rpc]%s: %v, %+v\n", URIXChatFetchChatMsgs, args, kwargs)
