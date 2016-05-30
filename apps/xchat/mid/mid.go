@@ -208,6 +208,8 @@ func (m *Mid) handleMsg(msg msgutils.Message) {
 		if chat, err := db.GetChatByChannel(channel); err == nil {
 			chatMsg := ChatMsgs{
 				ChatID: chat.ID,
+				Type:   chat.Type,
+				Title:  chat.Title,
 				Msgs: []UserMsg{
 					UserMsg{
 						User: x.User,

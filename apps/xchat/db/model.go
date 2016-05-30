@@ -6,6 +6,7 @@ type Chat struct {
 	Type    string
 	Channel string `json:"channel,omitempty"`
 	Title   string `json:"title,omitempty"`
+	Tag     string `json:"tag,omitempty"`
 }
 
 // MemberInfo is chat's member info.

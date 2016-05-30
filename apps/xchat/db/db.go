@@ -20,7 +20,7 @@ func InitDB(driverName, dataSourceName string) {
 // GetChatByChannel get chat by channel name.
 func GetChatByChannel(channel string) (*Chat, error) {
 	chat := Chat{}
-	if err := db.Get(&chat, `SELECT id, type, channel FROM xchat_chat where channel=$1`, channel); err != nil {
+	if err := db.Get(&chat, `SELECT id, type, channel, tag, title FROM xchat_chat where channel=$1`, channel); err != nil {
 		return nil, err
 	}
 	return &chat, nil
