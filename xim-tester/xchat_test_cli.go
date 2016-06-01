@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
+	"strconv"
 	"sync/atomic"
 	"time"
 	"xim/apps/xchat/mid"
@@ -44,10 +46,20 @@ func main() {
 	}()
 	exit := make(chan bool, *concurrent)
 
+	host, _, err := net.SplitHostPort(*addr)
+	if err != nil {
+		log.Fatalln("split addr failed", err)
+	}
+	port := 20000
+	i := 0
 	for {
 		if atomic.LoadInt64(&connected)+atomic.LoadInt64(&pending) < *concurrent && atomic.LoadInt64(&pending) < maxPending {
+			if i > 0 && i%50000 == 0 {
+				port++
+			}
 			atomic.AddInt64(&pending, 1)
-			go newClient(1, exit)
+			go newClient(1, exit, host+":"+strconv.Itoa(port))
+			i++
 		} else {
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -58,8 +70,8 @@ func main() {
 	}
 }
 
-func newClient(id int, exit chan bool) {
-	c, err := turnpike.NewWebsocketClient(turnpike.JSON, "ws://"+*addr+"/ws", nil)
+func newClient(id int, exit chan bool, addr string) {
+	c, err := turnpike.NewWebsocketClient(turnpike.JSON, "ws://"+addr+"/ws", nil)
 	if err != nil {
 		log.Println(id, "new websocket client failed.", err)
 		atomic.AddInt64(&pending, -1)

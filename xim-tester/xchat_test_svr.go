@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"syscall"
 	"xim/utils/pprofutils"
 
@@ -38,19 +40,29 @@ func main() {
 		log.Fatalln("create xchat channel failed.")
 	}
 
-	xchat, err := xchatRouter.GetLocalClient("xchat", nil)
+	_, err = xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
 		log.Fatalln("create xchat failed.", err)
 	}
 
-	Start(xchat)
-
-	startRouter(xchatRouter)
+	//	Start(xchat)
+	h, _, err := net.SplitHostPort(*addr)
+	if err != nil {
+		log.Fatalln("wrong addr", err)
+	}
+	//	port, err := strconv.Atoi(p)
+	//	if err != nil {
+	//		log.Fatalln("wrong addr", err)
+	//	}
+	port := 20000
+	for i := 0; i < 1000; i++ {
+		startRouter(xchatRouter, h+":"+strconv.Itoa(port+i))
+	}
 
 	setupSignal()
 }
 
-func startRouter(r *XChatRouter) {
+func startRouter(r *XChatRouter, addr string) {
 	go func() {
 		httpServeMux := http.NewServeMux()
 		//		if testing {
@@ -59,7 +71,7 @@ func startRouter(r *XChatRouter) {
 		httpServeMux.Handle(*endpoint, r)
 		httpServer := &http.Server{
 			Handler: httpServeMux,
-			Addr:    *addr,
+			Addr:    addr,
 		}
 		log.Println("http listen on: ", addr)
 		log.Fatalln(httpServer.ListenAndServe())
