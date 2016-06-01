@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"strconv"
 	"sync/atomic"
+	"syscall"
 	"time"
 	"xim/apps/xchat/mid"
 
@@ -21,6 +24,7 @@ var (
 	connected int64
 	pending   int64
 	failed    int64
+	run       bool = true
 )
 var userkey = flag.String("userkey", "userkey", "user key")
 var realm = flag.String("realm", "xchat", "realm")
@@ -53,7 +57,7 @@ func main() {
 	port := 20000
 	i := 0
 	for {
-		if atomic.LoadInt64(&connected)+atomic.LoadInt64(&pending) < *concurrent && atomic.LoadInt64(&pending) < maxPending {
+		if atomic.LoadInt64(&connected)+atomic.LoadInt64(&pending) < *concurrent && atomic.LoadInt64(&pending) < maxPending && run {
 			if i > 0 && i%50000 == 0 {
 				port++
 			}
@@ -64,6 +68,8 @@ func main() {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
+
+	setupSignal()
 
 	for i := int64(0); i < *concurrent; i++ {
 		<-exit
@@ -92,7 +98,7 @@ func newClient(id int, exit chan bool, addr string) {
 		return
 	}
 	log.Println(id, "client joined")
-	for i := 0; i < *times; i++ {
+	for i := 0; i < *times && run; i++ {
 		err = c.Publish(mid.URIWAMPSessionOnJoin, []interface{}{id}, nil)
 		if err != nil {
 			log.Println("Error Sending message", err)
@@ -112,3 +118,20 @@ func newClient(id int, exit chan bool, addr string) {
 //	details := args[0].(interface{})
 //	log.Println("recvMsg: ", details)
 //}
+
+// setupSignal register signals handler and waiting for.
+func setupSignal() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	for {
+		s := <-c
+		log.Println("get a signal: ", s.String())
+		switch s {
+		case os.Interrupt, syscall.SIGTERM:
+			run = false
+			return
+		default:
+			return
+		}
+	}
+}
