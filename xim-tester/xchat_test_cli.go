@@ -28,6 +28,10 @@ var (
 	run       bool = true
 	start     time.Time
 	end       time.Time
+	max       float64 = 0.0
+	min       float64 = 1000000.0
+	sum       float64 = 0
+	ltimes    int32   = 0
 )
 var userkey = flag.String("userkey", "userkey", "user key")
 var realm = flag.String("realm", "xchat", "realm")
@@ -132,7 +136,17 @@ func OnRecvMsg(args []interface{}, kwargs map[string]interface{}) {
 
 func OnRecvLatencyMsg(args []interface{}, kwargs map[string]interface{}) {
 	end = time.Now()
-	fmt.Printf("...................................latency %0.2fms\n", end.Sub(start).Seconds()*1000)
+	diff := end.Sub(start).Seconds() * 1000 //ms
+	if diff > max {
+		max = diff
+	}
+	if diff < min {
+		min = diff
+	}
+	sum += diff
+	ltimes++
+	fmt.Printf("..latency: %0.2fms max: %0.2fms min: %0.2fms avg: %0.2fms(%0.2f/%d)\n",
+		diff, max, min, sum/float64(ltimes), sum, ltimes)
 	details := args[0].(interface{})
 	log.Println("recvMsg: ", details)
 }
