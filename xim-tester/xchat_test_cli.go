@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
-	"xim/apps/xchat/mid"
 
 	"gopkg.in/jcelliott/turnpike.v2"
 )
@@ -74,7 +73,7 @@ func main() {
 				port++
 			}
 			atomic.AddInt64(&pending, 1)
-			go newClient(1, exit, host+":"+strconv.Itoa(port))
+			go newClient(i, exit, host+":"+strconv.Itoa(port))
 			i++
 		} else {
 			time.Sleep(100 * time.Millisecond)
@@ -108,10 +107,11 @@ func newClient(id int, exit chan bool, addr string) {
 		atomic.AddInt64(&failed, 1)
 		return
 	}
-	recvMsg(c)
+	topic := "topic:" + strconv.Itoa(id)
+	recvMsg(topic, c)
 	//log.Println(id, "client joined")
 	for i := 0; i < *times && run; i++ {
-		err = c.Publish(mid.URIWAMPSessionOnJoin, []interface{}{id}, nil)
+		err = c.Publish(topic, []interface{}{id}, nil)
 		if err != nil {
 			log.Println("Error Sending message", err)
 			break
@@ -125,8 +125,8 @@ func newClient(id int, exit chan bool, addr string) {
 	exit <- true
 }
 
-func recvMsg(c *turnpike.Client) {
-	c.Subscribe(mid.URIWAMPSessionOnJoin, OnRecvMsg)
+func recvMsg(topic string, c *turnpike.Client) {
+	c.Subscribe(topic, OnRecvMsg)
 }
 
 func OnRecvMsg(args []interface{}, kwargs map[string]interface{}) {
