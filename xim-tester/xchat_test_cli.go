@@ -42,6 +42,7 @@ var times = flag.Int("times", 10, "send msg times")
 var concurrent = flag.Int64("concurrent", 1, "concurrent users")
 var timeout = flag.Duration("timeout", 30*time.Second, "timeout for recv")
 var duration = flag.Duration("duration", 5*time.Second, "duration between msgs")
+var rate = flag.Int("rate", 1, "the rate between user and channel")
 
 func main() {
 	flag.Parse()
@@ -73,7 +74,7 @@ func main() {
 				port++
 			}
 			atomic.AddInt64(&pending, 1)
-			go newClient(i, exit, host+":"+strconv.Itoa(port))
+			go newClient(i/(*rate), exit, host+":"+strconv.Itoa(port))
 			i++
 		} else {
 			time.Sleep(100 * time.Millisecond)
