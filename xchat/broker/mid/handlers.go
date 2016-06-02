@@ -1,48 +1,53 @@
 package mid
 
 import (
+	"xim/xchat/logic/db"
 	"xim/xchat/logic/service"
 
 	"gopkg.in/jcelliott/turnpike.v2"
 )
 
+func getSessionFromDetails(d interface{}) *Session {
+	details := d.(map[string]interface{})
+	return &Session{
+		ID:   SessionID(details["session"].(turnpike.ID)),
+		User: details["user"].(string),
+	}
+}
+
 // 处理用户连接
 func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	details := args[0].(map[string]interface{})
-	l.Debug("join: %+v", details)
+	s := getSessionFromDetails(details)
+	AddSession(s)
+	l.Debug("join: %s", s)
 }
 
 // 处理用户断开注销
 func onLeave(args []interface{}, kwargs map[string]interface{}) {
-	sessionID := uint64(args[0].(turnpike.ID))
-	l.Debug("<%d> left\n", sessionID)
-}
-
-func getSessionFromDetails(d interface{}) (sessionID uint64, user string) {
-	details := d.(map[string]interface{})
-	sessionID = uint64(details["session"].(turnpike.ID))
-	user = details["user"].(string)
-	return
+	id := SessionID(args[0].(turnpike.ID))
+	s := RemoveSession(id)
+	l.Debug("left: %s", s)
 }
 
 // 用户发送消息
 func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	l.Debug("[rpc]%s: %v, %+v\n", URIXChatSendMsg, args, kwargs)
-	_, user := getSessionFromDetails(kwargs["details"])
+	s := getSessionFromDetails(kwargs["details"])
 
 	chatID := uint64(args[0].(float64))
 	msg := args[1].(string)
 	res, err := xchatDC.Call(service.XChat.MethodSendMsg, &service.SendMsgRequest{
 		ChatID: chatID,
-		User:   user,
+		User:   s.User,
 		Msg:    msg,
 	})
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
-	reply := (res).(*service.SendMsgReply)
+	message := (res).(*db.Message)
 
-	return &turnpike.CallResult{Args: []interface{}{true, reply.MsgID, reply.Ts.Unix()}}
+	return &turnpike.CallResult{Args: []interface{}{true, message.MsgID, message.Ts.Unix()}}
 }
 
 // 获取会话信息

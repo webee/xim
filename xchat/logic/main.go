@@ -35,6 +35,7 @@ func main() {
 	}
 
 	db.InitDB(args.dbDriverName, args.dbDatasourceName)
+	service.Init()
 
 	d := service.NewServiceDispatcher()
 	s := gorpc.NewTCPServer(args.addr, d.NewHandlerFunc())

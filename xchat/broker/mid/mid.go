@@ -4,7 +4,6 @@ import (
 	"log"
 	"xim/xchat/broker/logger"
 	"xim/xchat/broker/router"
-	"xim/xchat/logic/service"
 
 	ol "github.com/go-ozzo/ozzo-log"
 	"github.com/valyala/gorpc"
@@ -28,12 +27,8 @@ func Init() {
 }
 
 // Setup initialze mid.
-func Setup(config *Config, xchatRouter *router.XChatRouter) {
-	c := gorpc.NewTCPClient(config.LogicRPCAddr)
-	c.Start()
-	d := service.NewServiceDispatcher()
-	xchatDC = d.NewServiceClient(service.XChat.Name, c)
-
+func Setup(config *Config, xchatRouter *router.XChatRouter, dc *gorpc.DispatcherClient) {
+	xchatDC = dc
 	xchat, err := xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
 		log.Fatalf("create xchat error: %s", err)

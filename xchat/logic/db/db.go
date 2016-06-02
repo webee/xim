@@ -19,6 +19,13 @@ func InitDB(driverName, dataSourceName string) {
 	db.SetMaxOpenConns(100)
 }
 
+// GetChatMembers returns chat's members.
+func GetChatMembers(chatID uint64) (members []Member, err error) {
+	members = []Member{}
+	err = db.Select(&members, `SELECT chat_id, user, created, init_id, cur_id FROM xchat_member where chat_id=$1`, chatID)
+	return
+}
+
 // AddGroupMembers add users to group.
 func AddGroupMembers(chatID uint64, users []string) error {
 	chat := Chat{}
@@ -38,7 +45,7 @@ func IsChatMember(chatID uint64, user string) (t bool, err error) {
 }
 
 // NewMsg insert a new message.
-func NewMsg(chatID uint64, user string, msg string) (message Message, err error) {
+func NewMsg(chatID uint64, user string, msg string) (message *Message, err error) {
 	// 判断是否为会话成员
 	t, err := IsChatMember(chatID, user)
 	if err != nil {
@@ -55,11 +62,17 @@ func NewMsg(chatID uint64, user string, msg string) (message Message, err error)
 		return
 	}
 
-	if err = tx.Get(&message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 RETURNING msg_id`, chatID); err != nil {
+	message = &Message{
+		ChatID: chatID,
+		User:   user,
+		Msg:    msg,
+	}
+
+	if err = tx.Get(message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 RETURNING msg_id`, chatID); err != nil {
 		return
 	}
 
-	if err = tx.Get(&message, `INSERT INTO xchat_message(chat_id, msg_id, uid, ts, msg) values($1, $2, $3, now(), $4) RETURNING ts`, chatID, message.MsgID, user, msg); err != nil {
+	if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, msg_id, uid, ts, msg) values($1, $2, $3, now(), $4) RETURNING ts`, chatID, message.MsgID, user, msg); err != nil {
 		return
 	}
 	if err = tx.Commit(); err != nil {
@@ -67,7 +80,5 @@ func NewMsg(chatID uint64, user string, msg string) (message Message, err error)
 			return
 		}
 	}
-	message.ChatID = chatID
-	message.User = user
 	return
 }
