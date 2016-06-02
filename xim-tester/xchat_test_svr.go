@@ -12,13 +12,20 @@ import (
 	"syscall"
 	"xim/utils/pprofutils"
 
+	"xim/apps/xchat/mid"
+
 	"gopkg.in/jcelliott/turnpike.v2"
+	"time"
 )
 
 // XChatRouter is a wamp router for xchat.
 type XChatRouter struct {
 	*turnpike.WebsocketServer
 }
+
+const (
+	latencyTopic = "latency"
+)
 
 var userkey = flag.String("userkey", "userkey", "app user key")
 var debug = flag.Bool("debug", true, "debug mode")
@@ -40,20 +47,17 @@ func main() {
 		log.Fatalln("create xchat channel failed.")
 	}
 
-	_, err = xchatRouter.GetLocalClient("xchat", nil)
+	xchat, err := xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
 		log.Fatalln("create xchat failed.", err)
 	}
 
-	//	Start(xchat)
+	Start(xchat)
 	h, _, err := net.SplitHostPort(*addr)
 	if err != nil {
 		log.Fatalln("wrong addr", err)
 	}
-	//	port, err := strconv.Atoi(p)
-	//	if err != nil {
-	//		log.Fatalln("wrong addr", err)
-	//	}
+
 	port := 20000
 	for i := 0; i < 1000; i++ {
 		startRouter(xchatRouter, h+":"+strconv.Itoa(port+i))
@@ -65,9 +69,6 @@ func main() {
 func startRouter(r *XChatRouter, addr string) {
 	go func() {
 		httpServeMux := http.NewServeMux()
-		//		if testing {
-		//			httpServeMux.Handle("/", http.FileServer(http.Dir(args.testWebDir)))
-		//		}
 		httpServeMux.Handle(*endpoint, r)
 		httpServer := &http.Server{
 			Handler: httpServeMux,
@@ -85,41 +86,22 @@ func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	}
 }
 
-func onLeave(args []interface{}, kwargs map[string]interface{}) {
-	sessionID := uint64(args[0].(turnpike.ID))
-	//	m.xim.Unregister(sessionID)
-	log.Printf("<%d> left\n", sessionID)
+func onLatencyJoin(args []interface{}, kwargs map[string]interface{}) {
+	for _, v := range args {
+		details := v.(interface{})
+		log.Println("Latenctyjoin: ", details)
+	}
 }
 
 // Start starts the mid.
 func Start(xchat *turnpike.Client) {
-	//	if err := xchat.Subscribe(mid.URIWAMPSessionOnJoin, onJoin); err != nil {
-	//		log.Fatalf("Error subscribing to %s: %s\n", mid.URIWAMPSessionOnJoin, err)
-	//	}
+	if err := xchat.Subscribe(mid.URIWAMPSessionOnJoin, onJoin); err != nil {
+		log.Fatalf("Error subscribing to %s: %s\n", mid.URIWAMPSessionOnJoin, err)
+	}
 
-	//	if err := xchat.Subscribe(mid.URIWAMPSessionOnLeave, onLeave); err != nil {
-	//		log.Fatalf("Error subscribing to %s: %s\n", mid.URIWAMPSessionOnLeave, err)
-	//	}
-
-	//	if err := xchat.BasicRegister(URIXChatLogin, call(m.login)); err != nil {
-	//		log.Fatalf("Error register %s: %s\n", URIXChatLogin, err)
-	//	}
-
-	//	if err := xchat.BasicRegister(URIXChatSendMsg, call(m.sendMsg)); err != nil {
-	//		log.Fatalf("Error register %s: %s\n", URIXChatSendMsg, err)
-	//	}
-
-	//	if err := xchat.BasicRegister(URIXChatFetchChatMsgs, call(m.fetchChatMsg)); err != nil {
-	//		log.Fatalf("Error register %s: %s\n", URIXChatFetchChatMsgs, err)
-	//	}
-
-	//	if err := xchat.BasicRegister(URIXChatNewChat, call(m.newChat)); err != nil {
-	//		log.Fatalf("Error register %s: %s\n", URIXChatNewChat, err)
-	//	}
-
-	//	if err := xchat.BasicRegister(URIXChatFetchChatList, call(m.fetchChatList)); err != nil {
-	//		log.Fatalf("Error register %s: %s\n", URIXChatNewChat, err)
-	//	}
+	if err := xchat.Subscribe(latencyTopic, onLatencyJoin); err != nil {
+		log.Fatalf("Error subscribing to %s: %s\n", mid.URIWAMPSessionOnJoin, err)
+	}
 }
 
 // setupSignal register signals handler and waiting for.
@@ -144,13 +126,7 @@ func NewXChatRouter(userKey []byte, debug, testing bool) (*XChatRouter, error) {
 		turnpike.Debug()
 	}
 	realms := map[string]turnpike.Realm{
-		"xchat": {
-		//				Authorizer:  NewUserRoleAuthorizer(nil),
-		//				Interceptor: NewDetailsInterceptor(roleIsUser, nil, "details"),
-		//				CRAuthenticators: map[string]turnpike.CRAuthenticator{
-		//					"jwt": &jwtAuth{key: userKey},
-		//				},
-		},
+		"xchat": {},
 	}
 	if testing {
 		realms["realm1"] = turnpike.Realm{}
@@ -168,4 +144,15 @@ func NewXChatRouter(userKey []byte, debug, testing bool) (*XChatRouter, error) {
 	return &XChatRouter{
 		WebsocketServer: s,
 	}, nil
+}
+
+func sendMsg(c *turnpike.Client) {
+	for {
+		err := c.Publish(latencyTopic, []interface{}{1}, nil)
+		if err != nil {
+			log.Println("latency publish failed.", err)
+		}
+
+		time.Sleep(1 * time.Minute)
+	}
 }

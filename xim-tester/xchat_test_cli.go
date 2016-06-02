@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	maxPending = 1024
+	maxPending   = 1024
+	latencyTopic = "latency"
 )
 
 var (
@@ -25,6 +26,8 @@ var (
 	pending   int64
 	failed    int64
 	run       bool = true
+	start     time.Time
+	end       time.Time
 )
 var userkey = flag.String("userkey", "userkey", "user key")
 var realm = flag.String("realm", "xchat", "realm")
@@ -56,6 +59,8 @@ func main() {
 	}
 	port := 20000
 	i := 0
+	go latency(host + ":" + strconv.Itoa(port))
+	go latency(host + ":" + strconv.Itoa(port))
 	for {
 		if atomic.LoadInt64(&connected)+atomic.LoadInt64(&pending) < *concurrent && atomic.LoadInt64(&pending) < maxPending && run {
 			if i > 0 && i%50000 == 0 {
@@ -97,13 +102,14 @@ func newClient(id int, exit chan bool, addr string) {
 		atomic.AddInt64(&failed, 1)
 		return
 	}
+	recvMsg(c)
 	log.Println(id, "client joined")
 	for i := 0; i < *times && run; i++ {
-		err = c.Publish(mid.URIWAMPSessionOnJoin, []interface{}{id}, nil)
-		if err != nil {
-			log.Println("Error Sending message", err)
-			break
-		}
+		/*	err = c.Publish(mid.URIWAMPSessionOnJoin, []interface{}{id}, nil)
+			if err != nil {
+				log.Println("Error Sending message", err)
+				break
+			}*/
 		time.Sleep(*duration)
 	}
 	atomic.AddInt64(&connected, -1)
@@ -111,13 +117,23 @@ func newClient(id int, exit chan bool, addr string) {
 	log.Println(id, "client exit")
 	c.Close()
 	exit <- true
-	//	c.Subscribe(mid.URIWAMPSessionOnJoin, RecvMsg)
 }
 
-//func RecvMsg(args []interface{}, kwargs map[string]interface{}) {
-//	details := args[0].(interface{})
-//	log.Println("recvMsg: ", details)
-//}
+func recvMsg(c *turnpike.Client) {
+	c.Subscribe(mid.URIWAMPSessionOnJoin, OnRecvMsg)
+}
+
+func OnRecvMsg(args []interface{}, kwargs map[string]interface{}) {
+	//details := args[0].(interface{})
+	//	log.Println("recvMsg: ", details)
+}
+
+func OnRecvLatencyMsg(args []interface{}, kwargs map[string]interface{}) {
+	end = time.Now()
+	log.Printf("...................................latency %0.2fms\n", end.Sub(start).Seconds()*1000)
+	details := args[0].(interface{})
+	log.Println("recvMsg: ", details)
+}
 
 // setupSignal register signals handler and waiting for.
 func setupSignal() {
@@ -133,5 +149,30 @@ func setupSignal() {
 		default:
 			return
 		}
+	}
+}
+
+func latency(addr string) {
+	c, err := turnpike.NewWebsocketClient(turnpike.JSON, "ws://"+addr+"/ws", nil)
+	if err != nil {
+		log.Println("latency websocket client failed.", err)
+		return
+	}
+	c.ReceiveTimeout = *timeout
+
+	_, err = c.JoinRealm(*realm, nil)
+	if err != nil {
+		log.Println("latency join realm failed.", err)
+		return
+	}
+
+	c.Subscribe(latencyTopic, OnRecvLatencyMsg)
+	for {
+		err := c.Publish(latencyTopic, []interface{}{1}, nil)
+		if err != nil {
+			log.Println("latency publish failed.", err)
+		}
+		start = time.Now()
+		time.Sleep(10 * time.Second)
 	}
 }
