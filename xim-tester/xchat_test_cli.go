@@ -28,6 +28,10 @@ var (
 	run       bool = true
 	start     time.Time
 	end       time.Time
+	max       float64 = 0.0
+	min       float64 = 1000000.0
+	sum       float64 = 0
+	ltimes    int32   = 0
 )
 var userkey = flag.String("userkey", "userkey", "user key")
 var realm = flag.String("realm", "xchat", "realm")
@@ -57,12 +61,15 @@ func main() {
 	if err != nil {
 		log.Fatalln("split addr failed", err)
 	}
+
 	port := 20000
 	i := 0
-	go latency(host + ":" + strconv.Itoa(port))
-	go latency(host + ":" + strconv.Itoa(port))
+
+	go latencySub(host + ":" + strconv.Itoa(port))
+	go latencyPub(host + ":" + strconv.Itoa(port))
 	for {
-		if atomic.LoadInt64(&connected)+atomic.LoadInt64(&pending) < *concurrent && atomic.LoadInt64(&pending) < maxPending && run {
+		if atomic.LoadInt64(&connected)+atomic.LoadInt64(&pending) < *concurrent &&
+			atomic.LoadInt64(&pending) < maxPending && run {
 			if i > 0 && i%50000 == 0 {
 				port++
 			}
@@ -97,19 +104,18 @@ func newClient(id int, exit chan bool, addr string) {
 	_, err = c.JoinRealm(*realm, nil)
 	if err != nil {
 		log.Println(id, "join realm failed.", err)
-		//		atomic.AddInt64(&pending, -1)
 		atomic.AddInt64(&connected, -1)
 		atomic.AddInt64(&failed, 1)
 		return
 	}
 	recvMsg(c)
-	log.Println(id, "client joined")
+	//log.Println(id, "client joined")
 	for i := 0; i < *times && run; i++ {
-		/*	err = c.Publish(mid.URIWAMPSessionOnJoin, []interface{}{id}, nil)
-			if err != nil {
-				log.Println("Error Sending message", err)
-				break
-			}*/
+		err = c.Publish(mid.URIWAMPSessionOnJoin, []interface{}{id}, nil)
+		if err != nil {
+			log.Println("Error Sending message", err)
+			break
+		}
 		time.Sleep(*duration)
 	}
 	atomic.AddInt64(&connected, -1)
@@ -130,7 +136,17 @@ func OnRecvMsg(args []interface{}, kwargs map[string]interface{}) {
 
 func OnRecvLatencyMsg(args []interface{}, kwargs map[string]interface{}) {
 	end = time.Now()
-	log.Printf("...................................latency %0.2fms\n", end.Sub(start).Seconds()*1000)
+	diff := end.Sub(start).Seconds() * 1000 //ms
+	if diff > max {
+		max = diff
+	}
+	if diff < min {
+		min = diff
+	}
+	sum += diff
+	ltimes++
+	fmt.Printf("..latency: %0.2fms max: %0.2fms min: %0.2fms avg: %0.2fms(%0.2f/%d)\n",
+		diff, max, min, sum/float64(ltimes), sum, ltimes)
 	details := args[0].(interface{})
 	log.Println("recvMsg: ", details)
 }
@@ -152,7 +168,7 @@ func setupSignal() {
 	}
 }
 
-func latency(addr string) {
+func latencyPub(addr string) {
 	c, err := turnpike.NewWebsocketClient(turnpike.JSON, "ws://"+addr+"/ws", nil)
 	if err != nil {
 		log.Println("latency websocket client failed.", err)
@@ -166,7 +182,6 @@ func latency(addr string) {
 		return
 	}
 
-	c.Subscribe(latencyTopic, OnRecvLatencyMsg)
 	for {
 		err := c.Publish(latencyTopic, []interface{}{1}, nil)
 		if err != nil {
@@ -174,5 +189,25 @@ func latency(addr string) {
 		}
 		start = time.Now()
 		time.Sleep(10 * time.Second)
+	}
+}
+
+func latencySub(addr string) {
+	c, err := turnpike.NewWebsocketClient(turnpike.JSON, "ws://"+addr+"/ws", nil)
+	if err != nil {
+		log.Println("latency websocket client failed.", err)
+		return
+	}
+	c.ReceiveTimeout = *timeout
+
+	_, err = c.JoinRealm(*realm, nil)
+	if err != nil {
+		log.Println("latency join realm failed.", err)
+		return
+	}
+
+	err = c.Subscribe(latencyTopic, OnRecvLatencyMsg)
+	if err != nil {
+		log.Println("latency subscribe failed.", err)
 	}
 }
