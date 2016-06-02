@@ -1,6 +1,8 @@
 package db
 
 import (
+	"fmt"
+
 	"github.com/jmoiron/sqlx"
 	// use pg driver
 	_ "github.com/lib/pq"
@@ -13,29 +15,59 @@ var (
 // InitDB init the db.
 func InitDB(driverName, dataSourceName string) {
 	db = sqlx.MustConnect(driverName, dataSourceName)
-	db.SetMaxIdleConns(3)
+	db.SetMaxIdleConns(1)
 	db.SetMaxOpenConns(100)
 }
 
-// GetChatByChannel get chat by channel name.
-func GetChatByChannel(channel string) (*Chat, error) {
+// AddGroupMembers add users to group.
+func AddGroupMembers(chatID uint64, users []string) error {
 	chat := Chat{}
-	if err := db.Get(&chat, `SELECT id, type, channel, tag, title FROM xchat_chat where channel=$1`, channel); err != nil {
-		return nil, err
+	if err := db.Get(&chat, `SELECT msg_id FROM xchat_chat where id=$1 and type='group'`, chatID); err != nil {
+		return err
 	}
-	return &chat, nil
+
+	for _, user := range users {
+		db.Exec(`INSERT INTO xchat_member(chat_id, "user", created, init_id, cur_id) VALUES($1, $2, now(), $3, $4)`, chatID, user, chat.MsgID, chat.MsgID)
+	}
+	return nil
 }
 
-// GetChannelByChatIDAndUser get channel by chat id and user.
-func GetChannelByChatIDAndUser(chatID uint64, user string) (string, error) {
-	var channel string
-	err := db.Get(&channel, `SELECT c.channel FROM xchat_chat c left join xchat_member m on c.id = m.chat_id left join xchat_user u on u.id = m.user_id where c.id=$1 and u.user=$2`, chatID, user)
-	return channel, err
+// IsChatMember judges whether user in a chat member.
+func IsChatMember(chatID uint64, user string) (t bool, err error) {
+	return t, db.Get(&t, `SELECT EXISTS(SELECT 1 FROM xchat_member where chat_id=$1 and "user"=$2)`, chatID, user)
 }
 
-// GetMemberInfoByChatIDAndUser get member info by chat id and user.
-func GetMemberInfoByChatIDAndUser(chatID uint64, user string) (*MemberInfo, error) {
-	info := MemberInfo{}
-	err := db.Get(&info, `SELECT c.channel, m.init_id FROM xchat_chat c left join xchat_member m on c.id = m.chat_id left join xchat_user u on u.id = m.user_id where c.id=$1 and u.user=$2`, chatID, user)
-	return &info, err
+// NewMsg insert a new message.
+func NewMsg(chatID uint64, user string, msg string) (message Message, err error) {
+	// 判断是否为会话成员
+	t, err := IsChatMember(chatID, user)
+	if err != nil {
+		return
+	}
+	if !t {
+		err = fmt.Errorf("no permission")
+		return
+	}
+
+	// 插入消息
+	tx, err := db.Beginx()
+	if err != nil {
+		return
+	}
+
+	if err = tx.Get(&message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 RETURNING msg_id`, chatID); err != nil {
+		return
+	}
+
+	if err = tx.Get(&message, `INSERT INTO xchat_message(chat_id, msg_id, uid, ts, msg) values($1, $2, $3, now(), $4) RETURNING ts`, chatID, message.MsgID, user, msg); err != nil {
+		return
+	}
+	if err = tx.Commit(); err != nil {
+		if err = tx.Rollback(); err != nil {
+			return
+		}
+	}
+	message.ChatID = chatID
+	message.User = user
+	return
 }

@@ -6,6 +6,7 @@ import "flag"
 type Args struct {
 	testing          bool
 	debug            bool
+	addr             string
 	pprofAddr        string
 	dbDriverName     string
 	dbDatasourceName string
@@ -16,6 +17,7 @@ var (
 )
 
 func init() {
+	flag.StringVar(&args.addr, "addr", "localhost:16780", "rpc listen addr.")
 	flag.BoolVar(&args.testing, "testing", false, "whether to serv a testing page.")
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6061", "debug pprof http address.")
