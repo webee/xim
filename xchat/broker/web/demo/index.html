@@ -45,19 +45,6 @@
         console.log("session:", session);
         console.log("details:", details);
 
-        function onReply (args, kwargs) {
-          console.log(">>>>reply:", args, kwargs)
-        }
-        session.subscribe('xchat.user.' + session.id + '.reply', onReply).then(
-          function (sub) {
-            reply_sub = sub;
-            console.log('subscribed to topic');
-          },
-          function (err) {
-            console.log('failed to subscribe to topic', err);
-          }
-        );
-
         function onMsg (args, kwargs) {
           console.log(">>>>msg:", args, kwargs);
           var msg_div = document.getElementById("msg");

@@ -1,29 +1,30 @@
 package service
 
 import (
-	"time"
-
 	"xim/xchat/logic/db"
+	"xim/xchat/logic/logger"
+
+	ol "github.com/go-ozzo/ozzo-log"
 
 	"github.com/valyala/gorpc"
 )
 
-// services.
+// variables
 var (
+	l     *ol.Logger
 	XChat = NewXChatService()
 )
+
+// Init setup router.
+func Init() {
+	l = logger.Logger.GetLogger("service")
+}
 
 // SendMsgRequest is the send message method parameter.
 type SendMsgRequest struct {
 	ChatID uint64
 	User   string
 	Msg    string
-}
-
-// SendMsgReply is the send message method reply.
-type SendMsgReply struct {
-	MsgID uint64
-	Ts    time.Time
 }
 
 // NewServiceDispatcher creates the services dispatcher.
@@ -55,7 +56,8 @@ func (s *XChatService) Echo(msg string) string {
 }
 
 // SendMsg sends message.
-func (s *XChatService) SendMsg(req *SendMsgRequest) (*SendMsgReply, error) {
+func (s *XChatService) SendMsg(clientAddr string, req *SendMsgRequest) (*db.Message, error) {
+	l.Debug("%s send message", clientAddr)
 	message, err := db.NewMsg(req.ChatID, req.User, req.Msg)
 	if err != nil {
 		return nil, err
@@ -63,8 +65,5 @@ func (s *XChatService) SendMsg(req *SendMsgRequest) (*SendMsgReply, error) {
 
 	// publish
 
-	return &SendMsgReply{
-		MsgID: message.MsgID,
-		Ts:    message.Ts,
-	}, nil
+	return message, nil
 }

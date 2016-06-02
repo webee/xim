@@ -2,6 +2,9 @@ package main
 
 import (
 	"xim/xchat/broker/logger"
+	"xim/xchat/logic/service"
+
+	"github.com/valyala/gorpc"
 
 	"flag"
 	"log"
@@ -29,14 +32,21 @@ func main() {
 
 	setupKeys()
 
+	// router
 	router.Init()
 	xchatRouter, err := router.NewXChatRouter(userKey, args.debug, args.testing)
 	if err != nil {
 		log.Fatalln("create xchat router failed:", err)
 	}
 
-	setupMid(xchatRouter)
+	// xchat rpc service
+	c := gorpc.NewTCPClient(args.logicRPCAddr)
+	c.Start()
+	defer c.Stop()
+	d := service.NewServiceDispatcher()
+	dc := d.NewServiceClient(service.XChat.Name, c)
 
+	setupMid(xchatRouter, dc)
 	startRouter(xchatRouter)
 	setupSignal()
 }
