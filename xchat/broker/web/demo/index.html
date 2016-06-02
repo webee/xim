@@ -72,7 +72,7 @@
             console.log('subscribed to topic');
           },
           function (err) {
-            console.log('failed to subscribe to topic', err);
+            console.error('failed to subscribe to topic', err);
           }
         );
     };

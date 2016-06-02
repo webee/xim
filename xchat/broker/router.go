@@ -17,7 +17,7 @@ func startRouter(r *router.XChatRouter) {
 			Handler: httpServeMux,
 			Addr:    args.addr,
 		}
-		log.Println("http listen on: ", args.addr)
+		l.Info("http listen on: %s", args.addr)
 		log.Fatalln(httpServer.ListenAndServe())
 	}()
 }

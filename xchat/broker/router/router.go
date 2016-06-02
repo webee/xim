@@ -2,12 +2,24 @@ package router
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"xim/utils/jwtutils"
 
+	"xim/xchat/broker/logger"
+
+	ol "github.com/go-ozzo/ozzo-log"
+
 	"gopkg.in/jcelliott/turnpike.v2"
 )
+
+var (
+	l *ol.Logger
+)
+
+// Init setup router.
+func Init() {
+	l = logger.Logger.GetLogger("router")
+}
 
 // jwt authentication.
 type jwtAuth struct {
@@ -15,12 +27,12 @@ type jwtAuth struct {
 }
 
 func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interface{}, error) {
-	log.Println("challenge:", details)
+	l.Debug("challenge: %+v", details)
 	return details, nil
 }
 
 func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[string]interface{}, error) {
-	log.Println("Authenticate:", c)
+	l.Debug("Authenticate: %+v", c)
 	token, err := jwtutils.ParseToken(signature, e.key)
 	if err != nil {
 		return nil, fmt.Errorf("parse token error: %s", err)
@@ -50,6 +62,7 @@ func NewXChatRouter(userKey []byte, debug, testing bool) (*XChatRouter, error) {
 	if debug {
 		turnpike.Debug()
 	}
+
 	realms := map[string]turnpike.Realm{
 		"xchat": {
 			Authorizer:  new(XChatAuthorizer),

@@ -6,12 +6,13 @@ import (
 )
 
 func setupMid(xchatRouter *router.XChatRouter) {
-	config := mid.NewConfig(
-		&mid.Config{
-			Debug:   args.debug,
-			Testing: args.testing,
-			Key:     userKey,
-		})
+	config := mid.NewConfig(&mid.Config{
+		Debug:        args.debug,
+		Testing:      args.testing,
+		Key:          userKey,
+		LogicRPCAddr: args.logicRPCAddr,
+	})
 
+	mid.Init()
 	mid.Setup(config, xchatRouter)
 }
