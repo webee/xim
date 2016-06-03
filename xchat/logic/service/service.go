@@ -36,17 +36,19 @@ func NewServiceDispatcher() *gorpc.Dispatcher {
 
 // XChatService provide xchat services.
 type XChatService struct {
-	Name          string
-	MethodEcho    string
-	MethodSendMsg string
+	Name                   string
+	MethodEcho             string
+	MethodFetchChatMembers string
+	MethodSendMsg          string
 }
 
 // NewXChatService creates a xchat service instance.
 func NewXChatService() *XChatService {
 	return &XChatService{
-		Name:          "XChat",
-		MethodEcho:    "Echo",
-		MethodSendMsg: "SendMsg",
+		Name:                   "XChat",
+		MethodEcho:             "Echo",
+		MethodFetchChatMembers: "FetchChatMembers",
+		MethodSendMsg:          "SendMsg",
 	}
 }
 
@@ -55,15 +57,17 @@ func (s *XChatService) Echo(msg string) string {
 	return msg
 }
 
+// FetchChatMembers fetch chat's members.
+func (s *XChatService) FetchChatMembers(chatID uint64) ([]db.Member, error) {
+	return db.GetChatMembers(chatID)
+}
+
 // SendMsg sends message.
-func (s *XChatService) SendMsg(clientAddr string, req *SendMsgRequest) (*db.Message, error) {
-	l.Debug("%s send message", clientAddr)
+func (s *XChatService) SendMsg(req *SendMsgRequest) (*db.Message, error) {
 	message, err := db.NewMsg(req.ChatID, req.User, req.Msg)
 	if err != nil {
 		return nil, err
 	}
-
-	// publish
 
 	return message, nil
 }

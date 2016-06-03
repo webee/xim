@@ -50,7 +50,7 @@
           var msg_div = document.getElementById("msg");
           var p = document.createElement("p");
           var msg = args[0];
-          p.innerHTML = msg.chat_id + ":" + msg.msgs[0].msg;
+          p.innerHTML = msg.ts + "->" + msg.chat_id + ", " + msg.user + "#" + msg.msg_id + ": " + msg.msg;
           msg_div.appendChild(p);
         }
         session.subscribe('xchat.user.' + session.id + '.msg', onMsg).then(

@@ -28,8 +28,9 @@ func Init() {
 
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter, dc *gorpc.DispatcherClient) {
+	var err error
 	xchatDC = dc
-	xchat, err := xchatRouter.GetLocalClient("xchat", nil)
+	xchat, err = xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
 		log.Fatalf("create xchat error: %s", err)
 	}

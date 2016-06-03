@@ -10,8 +10,11 @@ type SessionID uint64
 
 // Session is a user connection.
 type Session struct {
+	sync.Mutex
 	ID   SessionID
 	User string
+	// only push msg which id > PushMsgID.
+	PushMsgID uint64
 }
 
 func (s *Session) String() string {

@@ -1,6 +1,7 @@
 package mid
 
 import (
+	"fmt"
 	"xim/xchat/logic/db"
 	"xim/xchat/logic/service"
 
@@ -46,6 +47,26 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 	message := (res).(*db.Message)
+
+	// push
+	go func() {
+		res, err := xchatDC.Call(service.XChat.MethodFetchChatMembers, chatID)
+		if err != nil {
+			l.Warning("fetch chat[%d] members error: %s", chatID, err)
+			return
+		}
+		members := (res).([]db.Member)
+		toPushMsg := NewMessageFromDBMsg(message)
+		for _, member := range members {
+			ss := GetUserSessions(member.User)
+			for _, x := range ss {
+				if x.ID == s.ID {
+					continue
+				}
+				_ = xchat.Publish(fmt.Sprintf(URIXChatUserMsg, x.ID), []interface{}{toPushMsg}, emptyKwargs)
+			}
+		}
+	}()
 
 	return &turnpike.CallResult{Args: []interface{}{true, message.MsgID, message.Ts.Unix()}}
 }
