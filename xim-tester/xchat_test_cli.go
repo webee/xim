@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"gopkg.in/jcelliott/turnpike.v2"
+	"math/rand"
 )
 
 const (
@@ -41,11 +42,12 @@ var addr = flag.String("addr", "localhost:3699", "wamp server addr")
 var times = flag.Int("times", 10, "send msg times")
 var concurrent = flag.Int64("concurrent", 1, "concurrent users")
 var timeout = flag.Duration("timeout", 30*time.Second, "timeout for recv")
-var duration = flag.Duration("duration", 5*time.Second, "duration between msgs")
+var duration = flag.Int("duration", 120, "random duration seconds between msgs")
 var rate = flag.Int("rate", 1, "the rate between user and channel")
 
 func main() {
 	flag.Parse()
+	rand.Seed(int64(time.Now().Second()))
 	go func() {
 		start := time.Now()
 		for {
@@ -89,6 +91,8 @@ func main() {
 }
 
 func newClient(id int, exit chan bool, addr string) {
+	// 避免同时发起连接
+	time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
 	c, err := turnpike.NewWebsocketClient(turnpike.JSON, "ws://"+addr+"/ws", nil)
 	if err != nil {
 		log.Println(id, "new websocket client failed.", err)
@@ -110,14 +114,14 @@ func newClient(id int, exit chan bool, addr string) {
 	}
 	topic := "topic:" + strconv.Itoa(id)
 	recvMsg(topic, c)
-	//log.Println(id, "client joined")
 	for i := 0; i < *times && run; i++ {
 		err = c.Publish(topic, []interface{}{id}, nil)
 		if err != nil {
 			log.Println("Error Sending message", err)
 			break
 		}
-		time.Sleep(*duration)
+		// 避免同时发送
+		time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
 	}
 	atomic.AddInt64(&connected, -1)
 	atomic.AddInt64(&failed, 1)
