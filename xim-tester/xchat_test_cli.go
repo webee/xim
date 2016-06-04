@@ -19,6 +19,7 @@ import (
 const (
 	maxPending   = 1024
 	latencyTopic = "latency"
+	procedure    = "procedure"
 )
 
 var (
@@ -32,12 +33,12 @@ var (
 	min       float64 = 1000000.0
 	sum       float64 = 0
 	ltimes    int32   = 0
+	index     int32   = 1
 )
-var userkey = flag.String("userkey", "userkey", "user key")
+
 var realm = flag.String("realm", "xchat", "realm")
 var debug = flag.Bool("debug", true, "debug mode")
 var testing = flag.Bool("testing", true, "testing mode")
-var endpoint = flag.String("endpoint", "/ws", "wamp router websocket url endpoint.")
 var addr = flag.String("addr", "localhost:3699", "wamp server addr")
 var times = flag.Int("times", 10, "send msg times")
 var concurrent = flag.Int64("concurrent", 1, "concurrent users")
@@ -67,7 +68,7 @@ func main() {
 	port := 20000
 	i := 0
 
-	go latencySub(host + ":" + strconv.Itoa(port))
+	//go latencySub(host + ":" + strconv.Itoa(port))
 	go latencyPub(host + ":" + strconv.Itoa(port))
 	for {
 		if atomic.LoadInt64(&connected)+atomic.LoadInt64(&pending) < *concurrent &&
@@ -92,7 +93,7 @@ func main() {
 
 func newClient(id int, exit chan bool, addr string) {
 	// 避免同时发起连接
-	time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
+	time.Sleep(time.Duration(rand.Intn(*duration)) * time.Microsecond)
 	c, err := turnpike.NewWebsocketClient(turnpike.JSON, "ws://"+addr+"/ws", nil)
 	if err != nil {
 		log.Println(id, "new websocket client failed.", err)
@@ -115,13 +116,14 @@ func newClient(id int, exit chan bool, addr string) {
 	topic := "topic:" + strconv.Itoa(id)
 	recvMsg(topic, c)
 	for i := 0; i < *times && run; i++ {
-		err = c.Publish(topic, []interface{}{id}, nil)
+		// 避免同时发送
+		time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
+		_, err := c.Call(procedure, []interface{}{strconv.Itoa(id)}, nil)
 		if err != nil {
 			log.Println("Error Sending message", err)
 			break
 		}
-		// 避免同时发送
-		time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
+		log.Println("rpc called")
 	}
 	atomic.AddInt64(&connected, -1)
 	atomic.AddInt64(&failed, 1)
@@ -131,16 +133,20 @@ func newClient(id int, exit chan bool, addr string) {
 }
 
 func recvMsg(topic string, c *turnpike.Client) {
+	log.Printf("sub topic{%s}\n", topic)
 	c.Subscribe(topic, OnRecvMsg)
 }
 
 func OnRecvMsg(args []interface{}, kwargs map[string]interface{}) {
-	//details := args[0].(interface{})
-	//	log.Println("recvMsg: ", details)
+	details := args[0].(interface{})
+	log.Println("recvMsg: ", details)
 }
 
 func OnRecvLatencyMsg(args []interface{}, kwargs map[string]interface{}) {
 	end = time.Now()
+	details := args[0].(string)
+	fmt.Println("  endTime:", end, details)
+
 	diff := end.Sub(start).Seconds() * 1000 //ms
 	if diff > max {
 		max = diff
@@ -150,10 +156,7 @@ func OnRecvLatencyMsg(args []interface{}, kwargs map[string]interface{}) {
 	}
 	sum += diff
 	ltimes++
-	fmt.Printf("..latency: %0.2fms max: %0.2fms min: %0.2fms avg: %0.2fms(%0.2f/%d)\n",
-		diff, max, min, sum/float64(ltimes), sum, ltimes)
-	details := args[0].(interface{})
-	log.Println("recvMsg: ", details)
+	fmt.Printf("..latency: %0.2fms max: %0.2fms min: %0.2fms avg: %0.2fms(%0.2f/%d)\n", diff, max, min, sum/float64(ltimes), sum, ltimes)
 }
 
 // setupSignal register signals handler and waiting for.
@@ -187,32 +190,20 @@ func latencyPub(addr string) {
 		return
 	}
 
-	for {
-		err := c.Publish(latencyTopic, []interface{}{1}, nil)
-		if err != nil {
-			log.Println("latency publish failed.", err)
-		}
-		start = time.Now()
-		time.Sleep(10 * time.Second)
-	}
-}
-
-func latencySub(addr string) {
-	c, err := turnpike.NewWebsocketClient(turnpike.JSON, "ws://"+addr+"/ws", nil)
-	if err != nil {
-		log.Println("latency websocket client failed.", err)
-		return
-	}
-	c.ReceiveTimeout = *timeout
-
-	_, err = c.JoinRealm(*realm, nil)
-	if err != nil {
-		log.Println("latency join realm failed.", err)
-		return
-	}
-
 	err = c.Subscribe(latencyTopic, OnRecvLatencyMsg)
 	if err != nil {
 		log.Println("latency subscribe failed.", err)
+	}
+
+	var i int = 1
+	for {
+		start = time.Now()
+		fmt.Println("startTime:", start, i)
+		_, err := c.Call(procedure, []interface{}{latencyTopic + strconv.Itoa(i)}, nil)
+		if err != nil {
+			log.Println("latency publish failed.", err)
+		}
+		i++
+		time.Sleep(10 * time.Second)
 	}
 }
