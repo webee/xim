@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"xim/utils/pprofutils"
 
-	"xim/apps/xchat/mid"
-
 	"gopkg.in/jcelliott/turnpike.v2"
+	"strings"
 	"time"
+	"xim/apps/xchat/mid"
 )
 
 // XChatRouter is a wamp router for xchat.
@@ -25,6 +25,7 @@ type XChatRouter struct {
 
 const (
 	latencyTopic = "latency"
+	procedure    = "procedure"
 )
 
 var userkey = flag.String("userkey", "userkey", "app user key")
@@ -33,6 +34,8 @@ var testing = flag.Bool("testing", true, "testing mode")
 var endpoint = flag.String("endpoint", "/ws", "wamp router websocket url endpoint.")
 var addr = flag.String("addr", "localhost:3699", "wamp server addr")
 var pprofAddr = flag.String("pprofaddr", "0.0.0.0:3688", "pprof addr")
+var topics map[int]string
+var xchat *turnpike.Client
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -47,7 +50,7 @@ func main() {
 		log.Fatalln("create xchat channel failed.")
 	}
 
-	xchat, err := xchatRouter.GetLocalClient("xchat", nil)
+	xchat, err = xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
 		log.Fatalln("create xchat failed.", err)
 	}
@@ -81,8 +84,9 @@ func startRouter(r *XChatRouter, addr string) {
 
 func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	for _, v := range args {
-		details := v.(interface{})
-		log.Println("join: ", details)
+		if id, ok := v.(int); ok {
+			topics[id] = "topic:" + strconv.Itoa(id)
+		}
 	}
 }
 
@@ -98,10 +102,36 @@ func Start(xchat *turnpike.Client) {
 	if err := xchat.Subscribe(mid.URIWAMPSessionOnJoin, onJoin); err != nil {
 		log.Fatalf("Error subscribing to %s: %s\n", mid.URIWAMPSessionOnJoin, err)
 	}
+	//
+	//if err := xchat.Subscribe(latencyTopic, onLatencyJoin); err != nil {
+	//	log.Fatalf("Error subscribing to %s: %s\n", mid.URIWAMPSessionOnJoin, err)
+	//}
 
-	if err := xchat.Subscribe(latencyTopic, onLatencyJoin); err != nil {
-		log.Fatalf("Error subscribing to %s: %s\n", mid.URIWAMPSessionOnJoin, err)
+	if err := xchat.BasicRegister(procedure, MethodHandler); err != nil {
+		log.Fatalf("Error basic register failed. %s", procedure)
 	}
+}
+
+func MethodHandler(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	log.Println("rpc called")
+	var err error
+
+	for _, v := range args {
+		if id, ok := v.(string); ok {
+			log.Printf("....................publish topic{%s} %T\n", id, id)
+			if strings.HasPrefix(id, latencyTopic) {
+				err = xchat.Publish(latencyTopic, []interface{}{id}, nil)
+			} else {
+				err = xchat.Publish("topic:"+id, []interface{}{"replyFromServer: " + id}, nil)
+			}
+			if err != nil {
+				log.Println("xchat publish failed.", err)
+			}
+		} else {
+			log.Println("interface query failed.")
+		}
+	}
+	return &turnpike.CallResult{Args: []interface{}{true}}
 }
 
 // setupSignal register signals handler and waiting for.
