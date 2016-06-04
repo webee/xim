@@ -27,7 +27,7 @@ var RPCSendTimeout = 3 * time.Second
 type Client struct {
 	sync.Mutex
 	*rpc.Client
-	addr          string
+	addrs         []string
 	connectedTime time.Time
 }
 
@@ -59,20 +59,20 @@ func (r *Client) reconnect() {
 	}
 
 	r.Client.Close()
-	r.Client = newGoRPCClient(r.addr)
+	r.Client = newGoRPCClient(r.addrs)
 	r.connectedTime = time.Now()
 }
 
 // NewClient return s rpc client dial to addr.
-func NewClient(addr string) *Client {
+func NewClient(addrs []string) *Client {
 	return &Client{
-		Client:        newGoRPCClient(addr),
-		addr:          addr,
+		Client:        newGoRPCClient(addrs),
+		addrs:         addrs,
 		connectedTime: time.Now(),
 	}
 }
 
-func newGoRPCClient(addr string) *rpc.Client {
+func newGoRPCClient(addrs []string) *rpc.Client {
 	s, err := req.NewSocket()
 	if err != nil {
 		log.Fatal("failed to open socket:", err)
@@ -81,10 +81,12 @@ func newGoRPCClient(addr string) *rpc.Client {
 	s.SetOption(mangos.OptionRaw, true)
 	s.AddTransport(tcp.NewTransport())
 	s.AddTransport(ipc.NewTransport())
-	if err := s.Dial(addr); err != nil {
-		log.Fatal("can't dial on socket:", err)
+	for _, addr := range addrs {
+		if err := s.Dial(addr); err != nil {
+			log.Fatal("can't dial on socket:", err)
+		}
+		log.Printf("rpc dial to: %s\n", addr)
 	}
-	log.Printf("rpc dial to: %s\n", addr)
 
 	if err := s.SetOption(mangos.OptionSendDeadline, RPCSendTimeout); err != nil {
 		log.Panic(err)
@@ -94,15 +96,19 @@ func newGoRPCClient(addr string) *rpc.Client {
 }
 
 // StartRPCServer starts rpc server with register rcvrs.
-func StartRPCServer(addr string, dial bool, rcvrs ...interface{}) {
+func StartRPCServer(addrs []string, dial bool, rcvrs ...interface{}) (close func()) {
 	for _, rcvr := range rcvrs {
 		rpc.Register(rcvr)
 	}
-	s := getReplySocket(addr, dial)
-	go rpc.ServeCodec(NewNanoGobServerCodec(s))
+	s := getReplySocket(addrs, dial)
+	codec := NewNanoGobServerCodec(s)
+	go rpc.ServeCodec(codec)
+	return func() {
+		codec.Close()
+	}
 }
 
-func getReplySocket(addr string, dial bool) mangos.Socket {
+func getReplySocket(addrs []string, dial bool) mangos.Socket {
 	s, err := rep.NewSocket()
 	if err != nil {
 		log.Fatal("failed to open reply socket:", err)
@@ -114,16 +120,21 @@ func getReplySocket(addr string, dial bool) mangos.Socket {
 
 	if dial {
 		// dial to load balancing rep/req proxy.
-		if err := s.Dial(addr); err != nil {
-			log.Fatal("can't dial on request socket:", err)
+		for _, addr := range addrs {
+			if err := s.Dial(addr); err != nil {
+				log.Fatal("can't dial on request socket:", err)
+			}
+			log.Printf("rpc dial to: %s\n", addr)
+
 		}
-		log.Printf("rpc dial to: %s\n", addr)
 	} else {
 		// serve
-		if err := s.Listen(addr); err != nil {
-			log.Fatal("can't listen on reply socket:", err)
+		for _, addr := range addrs {
+			if err := s.Listen(addr); err != nil {
+				log.Fatal("can't listen on reply socket:", err)
+			}
+			log.Printf("rpc listen on: %s\n", addr)
 		}
-		log.Printf("rpc listen on: %s\n", addr)
 	}
 	if err := s.SetOption(mangos.OptionSendDeadline, RPCSendTimeout); err != nil {
 		log.Panic(err)

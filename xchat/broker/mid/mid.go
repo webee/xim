@@ -28,7 +28,7 @@ func init() {
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	var err error
-	xchatLogic = nanorpc.NewClient(config.LogicRPCAddr)
+	xchatLogic = nanorpc.NewClient(config.LogicRPCAddrs)
 	xchat, err = xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
 		log.Fatalf("create xchat error: %s", err)

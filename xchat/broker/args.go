@@ -3,23 +3,26 @@ package main
 import (
 	"flag"
 	"path"
+	"xim/utils/argsutils"
 	"xim/utils/envutils"
 )
 
 // Args is app's arguments.
 type Args struct {
-	addr         string
-	endpoint     string
-	testWebDir   string
-	testing      bool
-	debug        bool
-	pprofAddr    string
-	userKeyPath  string
-	logicRPCAddr string
+	addr          string
+	endpoint      string
+	testWebDir    string
+	testing       bool
+	debug         bool
+	pprofAddr     string
+	userKeyPath   string
+	logicRPCAddrs *argsutils.StringSlice
 }
 
 var (
-	args Args
+	args = Args{
+		logicRPCAddrs: argsutils.NewStringSlice("tcp://localhost:16787", "ipc:///tmp/xchat.logic.sock"),
+	}
 )
 
 func init() {
@@ -31,5 +34,5 @@ func init() {
 	flag.StringVar(&args.addr, "addr", "127.0.0.1:48080", "wamp router websocket listen addr.")
 	flag.StringVar(&args.endpoint, "endpoint", "/ws", "wamp router websocket url endpoint.")
 	flag.StringVar(&args.testWebDir, "test-web-dir", "xchat/broker/web", "test web dir.")
-	flag.StringVar(&args.logicRPCAddr, "logic-rpc-addr", "tcp://localhost:16787", "logic rpc address.")
+	flag.Var(args.logicRPCAddrs, "logic-rpc-addr", "logic rpc addresses.")
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"runtime"
 	"xim/xchat/logic/logger"
 	"xim/xchat/logic/rpcservice"
@@ -18,6 +19,7 @@ var (
 
 func main() {
 	flag.Parse()
+	log.Println("addrs: ", args.addrs)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	if !args.debug {
 		l.MaxLevel = 6
@@ -29,7 +31,7 @@ func main() {
 	}
 
 	db.InitDB(args.dbDriverName, args.dbDatasourceName)
-	nanorpc.StartRPCServer(args.addr, args.dial, new(rpcservice.RPCXChat))
+	defer nanorpc.StartRPCServer(args.addrs.List(), args.dial, new(rpcservice.RPCXChat))()
 
 	setupSignal()
 }

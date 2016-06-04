@@ -4,10 +4,10 @@ import "github.com/imdario/mergo"
 
 // Config is the configs for http api server.
 type Config struct {
-	Debug        bool
-	Testing      bool
-	Key          []byte
-	LogicRPCAddr string
+	Debug         bool
+	Testing       bool
+	Key           []byte
+	LogicRPCAddrs []string
 }
 
 var (

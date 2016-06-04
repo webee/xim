@@ -19,8 +19,8 @@ func main() {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
 
-	startPubSubProxy()
-	startReqRepProxy()
+	defer startPubSubProxy()()
+	defer startReqRepProxy()()
 
 	setupSignal()
 }

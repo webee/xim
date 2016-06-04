@@ -10,17 +10,19 @@ import (
 	"github.com/go-mangos/mangos/transport/tcp"
 )
 
-func startPubSubProxy() {
+func startPubSubProxy() (close func()) {
 	sPub, err := pub.NewSocket()
 	if err != nil {
 		log.Fatal("failed to open publish socket:", err)
 	}
 	sPub.AddTransport(tcp.NewTransport())
 	sPub.AddTransport(ipc.NewTransport())
-	if err := sPub.Listen(args.pubAddr); err != nil {
-		log.Fatal("can't listen on publish socket:", err)
+	for _, addr := range args.pubAddrs.List() {
+		if err := sPub.Listen(addr); err != nil {
+			log.Fatal("can't listen on publish socket:", err)
+		}
+		l.Info("publish listen on: %s", addr)
 	}
-	l.Info("publish listen on: %s", args.pubAddr)
 
 	sSub, err := sub.NewSocket()
 	if err != nil {
@@ -28,10 +30,12 @@ func startPubSubProxy() {
 	}
 	sSub.AddTransport(tcp.NewTransport())
 	sSub.AddTransport(ipc.NewTransport())
-	if err := sSub.Listen(args.subAddr); err != nil {
-		log.Fatal("can't listen on subscribe socket:", err)
+	for _, addr := range args.subAddrs.List() {
+		if err := sSub.Listen(addr); err != nil {
+			log.Fatal("can't listen on subscribe socket:", err)
+		}
+		l.Info("subscribe listen on: %s", addr)
 	}
-	l.Info("subscribe listen on: %s", args.subAddr)
 	err = sSub.SetOption(mangos.OptionSubscribe, []byte(""))
 	if err != nil {
 		log.Fatal("subscribe all messages error:", err)
@@ -41,4 +45,9 @@ func startPubSubProxy() {
 		log.Fatal("start pub/sub proxy error:", err)
 	}
 	l.Info("pub/sub proxy started.")
+
+	return func() {
+		sPub.Close()
+		sSub.Close()
+	}
 }

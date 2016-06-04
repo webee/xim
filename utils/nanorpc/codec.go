@@ -4,34 +4,34 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"math"
 	"math/rand"
 	"net/rpc"
-	"sync"
 	"time"
 
 	"github.com/go-mangos/mangos"
 )
 
-const (
-	maxID int64 = 1 << 53
-)
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // NewID generates a random request ID.
 func NewID() uint64 {
-	return uint64(rand.Int63n(maxID))
+	return uint64(rand.Int63n(math.MaxInt64))
 }
 
 type request struct {
 	msg *mangos.Message
-	id  uint32
+	seq uint64
 }
 
 type nanoGobServerCodec struct {
-	sync.Mutex
 	s      mangos.Socket
 	reqs   map[uint64]*request
 	dec    *gob.Decoder
 	closed bool
+	acts   chan func()
 }
 
 type pipe interface {
@@ -46,31 +46,42 @@ type pipe interface {
 // connection, and it calls WriteResponse to write a response back. The
 // server calls Close when finished with the connection.
 func NewNanoGobServerCodec(s mangos.Socket) rpc.ServerCodec {
-	return &nanoGobServerCodec{
+	c := &nanoGobServerCodec{
 		s:    s,
 		reqs: make(map[uint64]*request),
+		acts: make(chan func()),
+	}
+	go c.run()
+	return c
+}
+
+func (c *nanoGobServerCodec) run() {
+	for act := range c.acts {
+		act()
 	}
 }
 
 func (c *nanoGobServerCodec) ReadRequestHeader(r *rpc.Request) error {
+	id := NewID()
 	msg, err := c.s.RecvMsg()
-	// FIXME: this must be a pipe.
 	if err != nil {
 		return err
 	}
 	dec := gob.NewDecoder(bytes.NewBuffer(msg.Body))
 	err = dec.Decode(r)
 	if err != nil {
-		r.Seq = NewID()
+		r.Seq = id
 	} else {
 		c.dec = dec
 	}
-	id := interface{}(msg.Port).(pipe).GetID()
-	r.Seq = r.Seq ^ (uint64(id) << 32)
-
-	c.Lock()
-	c.reqs[r.Seq] = &request{msg, id}
-	c.Unlock()
+	//log.Printf("id: %d, seq: %d, %+v\n", id, r.Seq, msg.Header)
+	sync := make(chan struct{})
+	c.acts <- func() {
+		c.reqs[id] = &request{msg, r.Seq}
+		sync <- struct{}{}
+	}
+	<-sync
+	r.Seq = id
 
 	return err
 }
@@ -85,15 +96,23 @@ func (c *nanoGobServerCodec) ReadRequestBody(body interface{}) error {
 }
 
 func (c *nanoGobServerCodec) WriteResponse(r *rpc.Response, body interface{}) (err error) {
-	c.Lock()
-	req, ok := c.reqs[r.Seq]
-	delete(c.reqs, r.Seq)
-	c.Unlock()
+	var (
+		req *request
+		ok  bool
+	)
+	sync := make(chan struct{})
+	c.acts <- func() {
+		req, ok = c.reqs[r.Seq]
+		delete(c.reqs, r.Seq)
+		sync <- struct{}{}
+	}
+	<-sync
+
 	if !ok {
 		return fmt.Errorf("request missing")
 	}
 
-	r.Seq = r.Seq ^ (uint64(req.id) << 32)
+	r.Seq = req.seq
 
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
@@ -112,33 +131,47 @@ func (c *nanoGobServerCodec) Close() error {
 		// Only call c.rwc.Close once; otherwise the semantics are undefined.
 		return nil
 	}
+	close(c.acts)
 	c.closed = true
 	return c.s.Close()
 }
 
 type nanoGobClientCodec struct {
-	sync.Mutex
 	s      mangos.Socket
 	dec    *gob.Decoder
 	closed bool
 	nextid uint32
+	acts   chan func()
 }
 
 func (c *nanoGobClientCodec) nextID() uint32 {
-	c.Lock()
-	defer c.Unlock()
-	// The high order bit is "special", and must always be set.  (This is
-	// how the peer will detect the end of the backtrace.)
-	v := c.nextid | 0x80000000
-	c.nextid++
+	var v uint32
+	sync := make(chan struct{})
+	c.acts <- func() {
+		// The high order bit is "special", and must always be set.  (This is
+		// how the peer will detect the end of the backtrace.)
+		v = c.nextid | 0x80000000
+		c.nextid++
+		sync <- struct{}{}
+	}
+	<-sync
 	return v
 }
 
 // NewNanoGobClientCodec returns a new rpc.ClientCodec.
 func NewNanoGobClientCodec(s mangos.Socket) rpc.ClientCodec {
-	return &nanoGobClientCodec{
+	c := &nanoGobClientCodec{
 		s:      s,
 		nextid: uint32(time.Now().UnixNano()),
+		acts:   make(chan func()),
+	}
+	go c.run()
+	return c
+}
+
+func (c *nanoGobClientCodec) run() {
+	for act := range c.acts {
+		act()
 	}
 }
 
@@ -155,6 +188,8 @@ func (c *nanoGobClientCodec) WriteRequest(r *rpc.Request, body interface{}) (err
 	v := c.nextID()
 	msg.Header = append(msg.Header, byte(v>>24), byte(v>>16), byte(v>>8), byte(v))
 	msg.Body = append(msg.Body, buf.Bytes()...)
+
+	//log.Printf("seq: %d, %+v\n", r.Seq, msg.Header)
 	return c.s.SendMsg(msg)
 }
 
@@ -182,5 +217,10 @@ func (c *nanoGobClientCodec) ReadResponseBody(body interface{}) error {
 }
 
 func (c *nanoGobClientCodec) Close() error {
+	if c.closed {
+		return nil
+	}
+	close(c.acts)
+	c.closed = true
 	return c.s.Close()
 }

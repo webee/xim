@@ -7,10 +7,10 @@ import (
 
 func setupMid(xchatRouter *router.XChatRouter) {
 	config := mid.NewConfig(&mid.Config{
-		Debug:        args.debug,
-		Testing:      args.testing,
-		Key:          userKey,
-		LogicRPCAddr: args.logicRPCAddr,
+		Debug:         args.debug,
+		Testing:       args.testing,
+		Key:           userKey,
+		LogicRPCAddrs: args.logicRPCAddrs.List(),
 	})
 
 	mid.Setup(config, xchatRouter)

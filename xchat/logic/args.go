@@ -1,25 +1,30 @@
 package main
 
-import "flag"
+import (
+	"flag"
+	"xim/utils/argsutils"
+)
 
 // Args is app's arguments.
 type Args struct {
 	testing          bool
 	debug            bool
 	dial             bool
-	addr             string
+	addrs            *argsutils.StringSlice
 	pprofAddr        string
 	dbDriverName     string
 	dbDatasourceName string
 }
 
 var (
-	args Args
+	args = Args{
+		addrs: argsutils.NewStringSlice("tcp://localhost:16787", "ipc:///tmp/xchat.logic.sock"),
+	}
 )
 
 func init() {
 	flag.BoolVar(&args.dial, "dial", false, "rpc service dial to addr(rep/req proxy)")
-	flag.StringVar(&args.addr, "addr", "tcp://localhost:16787", "rpc listen/dial addr.")
+	flag.Var(args.addrs, "addr", "rpc listen/dial addresses.")
 	flag.BoolVar(&args.testing, "testing", false, "whether to serv a testing page.")
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6061", "debug pprof http address.")
