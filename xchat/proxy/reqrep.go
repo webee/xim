@@ -6,6 +6,7 @@ import (
 	"github.com/go-mangos/mangos"
 	"github.com/go-mangos/mangos/protocol/rep"
 	"github.com/go-mangos/mangos/protocol/req"
+	"github.com/go-mangos/mangos/transport/ipc"
 	"github.com/go-mangos/mangos/transport/tcp"
 )
 
@@ -15,6 +16,7 @@ func startReqRepProxy() {
 		log.Fatal("failed to open reply socket:", err)
 	}
 	sRep.AddTransport(tcp.NewTransport())
+	sRep.AddTransport(ipc.NewTransport())
 	if err := sRep.Listen(args.repAddr); err != nil {
 		log.Fatal("can't listen on reply socket:", err)
 	}
@@ -26,6 +28,7 @@ func startReqRepProxy() {
 	}
 
 	sReq.AddTransport(tcp.NewTransport())
+	sReq.AddTransport(ipc.NewTransport())
 	if err := sReq.Listen(args.reqAddr); err != nil {
 		log.Fatal("can't listen on request socket:", err)
 	}

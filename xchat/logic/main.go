@@ -2,25 +2,20 @@ package main
 
 import (
 	"flag"
-	"io"
+	"net/rpc"
 	"runtime"
+	"xim/xchat/logic/logger"
+	"xim/xchat/logic/rpcservice"
+
 	"xim/utils/pprofutils"
-	"xim/xchat/logic/service"
 
 	"xim/xchat/logic/db"
-	"xim/xchat/logic/logger"
-
-	"github.com/valyala/gorpc"
+	"xim/xchat/logic/nanorpc"
 )
 
 var (
 	l = logger.Logger
 )
-
-func onConnect(remoteAddr string, rwc io.ReadWriteCloser) (io.ReadWriteCloser, error) {
-	l.Debug("client connected: [%s]", remoteAddr)
-	return rwc, nil
-}
 
 func main() {
 	flag.Parse()
@@ -35,15 +30,11 @@ func main() {
 	}
 
 	db.InitDB(args.dbDriverName, args.dbDatasourceName)
-	service.Init()
 
-	d := service.NewServiceDispatcher()
-	s := gorpc.NewTCPServer(args.addr, d.NewHandlerFunc())
-	s.OnConnect = onConnect
-	if err := s.Start(); err != nil {
-		l.Critical("failed to start rpc service: [%s]", err)
-	}
-	defer s.Stop()
+	rpc.Register(new(rpcservice.RPCXChat))
+	s := getReplySocket()
+	go rpc.ServeCodec(nanorpc.NewNanoGobServerCodec(s))
+	//startRPCServer()
 
 	setupSignal()
 }
