@@ -10,3 +10,5 @@ xchat-app
 xchat-broker
 xchat-logic
 xchat-proxy
+examples/*
+!examples/*.go
