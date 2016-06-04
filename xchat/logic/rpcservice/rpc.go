@@ -1,7 +1,6 @@
 package rpcservice
 
 import (
-	"time"
 	"xim/xchat/logic/db"
 	"xim/xchat/logic/logger"
 	"xim/xchat/logic/rpcservice/types"
@@ -25,7 +24,7 @@ type RPCXChat struct {
 // Echo send msg back.
 func (r *RPCXChat) Echo(s string, reply *string) (err error) {
 	//l.Info("echo: %s", s)
-	time.Sleep(1 * time.Millisecond)
+	//time.Sleep(1 * time.Millisecond)
 	*reply = s
 	return nil
 }
