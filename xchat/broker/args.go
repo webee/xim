@@ -31,5 +31,5 @@ func init() {
 	flag.StringVar(&args.addr, "addr", "127.0.0.1:48080", "wamp router websocket listen addr.")
 	flag.StringVar(&args.endpoint, "endpoint", "/ws", "wamp router websocket url endpoint.")
 	flag.StringVar(&args.testWebDir, "test-web-dir", "xchat/broker/web", "test web dir.")
-	flag.StringVar(&args.logicRPCAddr, "logic-rpc-addr", "localhost:16780", "logic rpc address.")
+	flag.StringVar(&args.logicRPCAddr, "logic-rpc-addr", "tcp://localhost:16787", "logic rpc address.")
 }

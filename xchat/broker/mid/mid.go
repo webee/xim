@@ -2,11 +2,11 @@ package mid
 
 import (
 	"log"
+	"xim/utils/nanorpc"
 	"xim/xchat/broker/logger"
 	"xim/xchat/broker/router"
 
 	ol "github.com/go-ozzo/ozzo-log"
-	"github.com/valyala/gorpc"
 	"gopkg.in/jcelliott/turnpike.v2"
 )
 
@@ -15,31 +15,30 @@ var (
 )
 
 var (
-	xchatDC     *gorpc.DispatcherClient
+	xchatLogic  *nanorpc.Client
 	xchat       *turnpike.Client
 	emptyArgs   = []interface{}{}
 	emptyKwargs = make(map[string]interface{})
 )
 
-// Init setup router.
-func Init() {
+func init() {
 	l = logger.Logger.GetLogger("mid")
 }
 
 // Setup initialze mid.
-func Setup(config *Config, xchatRouter *router.XChatRouter, dc *gorpc.DispatcherClient) {
+func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	var err error
-	xchatDC = dc
+	xchatLogic = nanorpc.NewClient(config.LogicRPCAddr)
 	xchat, err = xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
 		log.Fatalf("create xchat error: %s", err)
 	}
 
-	if err := xchat.Subscribe(URIWAMPSessionOnJoin, onJoin); err != nil {
+	if err := xchat.Subscribe(URIWAMPSessionOnJoin, sub(onJoin)); err != nil {
 		log.Fatalf("Error subscribing to %s: %s", URIWAMPSessionOnJoin, err)
 	}
 
-	if err := xchat.Subscribe(URIWAMPSessionOnLeave, onLeave); err != nil {
+	if err := xchat.Subscribe(URIWAMPSessionOnLeave, sub(onLeave)); err != nil {
 		log.Fatalf("Error subscribing to %s: %s", URIWAMPSessionOnLeave, err)
 	}
 

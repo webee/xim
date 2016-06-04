@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/rpc"
 	"sync"
@@ -22,7 +21,7 @@ func NewID() uint64 {
 	return uint64(rand.Int63n(maxID))
 }
 
-type req struct {
+type request struct {
 	msg *mangos.Message
 	id  uint32
 }
@@ -30,7 +29,7 @@ type req struct {
 type nanoGobServerCodec struct {
 	sync.Mutex
 	s      mangos.Socket
-	reqs   map[uint64]*req
+	reqs   map[uint64]*request
 	dec    *gob.Decoder
 	closed bool
 }
@@ -47,12 +46,9 @@ type pipe interface {
 // connection, and it calls WriteResponse to write a response back. The
 // server calls Close when finished with the connection.
 func NewNanoGobServerCodec(s mangos.Socket) rpc.ServerCodec {
-	if err := s.SetOption(mangos.OptionSendDeadline, 3*time.Second); err != nil {
-		log.Panic(err)
-	}
 	return &nanoGobServerCodec{
 		s:    s,
-		reqs: make(map[uint64]*req),
+		reqs: make(map[uint64]*request),
 	}
 }
 
@@ -73,7 +69,7 @@ func (c *nanoGobServerCodec) ReadRequestHeader(r *rpc.Request) error {
 	r.Seq = r.Seq ^ (uint64(id) << 32)
 
 	c.Lock()
-	c.reqs[r.Seq] = &req{msg, id}
+	c.reqs[r.Seq] = &request{msg, id}
 	c.Unlock()
 
 	return err
@@ -140,12 +136,6 @@ func (c *nanoGobClientCodec) nextID() uint32 {
 
 // NewNanoGobClientCodec returns a new rpc.ClientCodec.
 func NewNanoGobClientCodec(s mangos.Socket) rpc.ClientCodec {
-	if err := s.SetOption(mangos.OptionSendDeadline, 3*time.Second); err != nil {
-		log.Panic(err)
-	}
-	if err := s.SetOption(mangos.OptionRecvDeadline, 5*time.Second); err != nil {
-		log.Panic(err)
-	}
 	return &nanoGobClientCodec{
 		s:      s,
 		nextid: uint32(time.Now().UnixNano()),

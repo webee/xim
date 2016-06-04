@@ -1,14 +1,11 @@
 package main
 
 import (
-	"xim/xchat/broker/logger"
-	"xim/xchat/logic/service"
-
-	"github.com/valyala/gorpc"
-
 	"flag"
 	"log"
 	"runtime"
+	"xim/xchat/broker/logger"
+
 	"xim/utils/pprofutils"
 	"xim/xchat/broker/router"
 )
@@ -39,14 +36,8 @@ func main() {
 		log.Fatalln("create xchat router failed:", err)
 	}
 
-	// xchat rpc service
-	c := gorpc.NewTCPClient(args.logicRPCAddr)
-	c.Start()
-	defer c.Stop()
-	d := service.NewServiceDispatcher()
-	dc := d.NewServiceClient(service.XChat.Name, c)
-
-	setupMid(xchatRouter, dc)
+	setupMid(xchatRouter)
 	startRouter(xchatRouter)
+
 	setupSignal()
 }

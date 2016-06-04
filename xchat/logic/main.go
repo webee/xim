@@ -2,15 +2,14 @@ package main
 
 import (
 	"flag"
-	"net/rpc"
 	"runtime"
 	"xim/xchat/logic/logger"
 	"xim/xchat/logic/rpcservice"
 
+	"xim/utils/nanorpc"
 	"xim/utils/pprofutils"
 
 	"xim/xchat/logic/db"
-	"xim/xchat/logic/nanorpc"
 )
 
 var (
@@ -30,11 +29,7 @@ func main() {
 	}
 
 	db.InitDB(args.dbDriverName, args.dbDatasourceName)
-
-	rpc.Register(new(rpcservice.RPCXChat))
-	s := getReplySocket()
-	go rpc.ServeCodec(nanorpc.NewNanoGobServerCodec(s))
-	//startRPCServer()
+	nanorpc.StartRPCServer(args.addr, args.dial, new(rpcservice.RPCXChat))
 
 	setupSignal()
 }

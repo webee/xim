@@ -9,6 +9,7 @@ type SendMsgArgs struct {
 
 // XChatService methods.
 const (
-	RPCXChatEcho    = "RPCXChat.Echo"
-	RPCXChatSendMsg = "RPCXChat.SendMsg"
+	RPCXChatEcho             = "RPCXChat.Echo"
+	RPCXChatSendMsg          = "RPCXChat.SendMsg"
+	RPCXChatFetchChatMembers = "RPCXChat.FetchChatMembers"
 )

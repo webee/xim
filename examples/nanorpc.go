@@ -4,15 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/rpc"
 	"time"
-	"xim/xchat/logic/nanorpc"
+	"xim/utils/nanorpc"
 	"xim/xchat/logic/rpcservice/types"
-
-	"github.com/go-mangos/mangos"
-	"github.com/go-mangos/mangos/protocol/req"
-	"github.com/go-mangos/mangos/transport/ipc"
-	"github.com/go-mangos/mangos/transport/tcp"
 )
 
 var (
@@ -32,20 +26,7 @@ func init() {
 func main() {
 	flag.Parse()
 
-	s, err := req.NewSocket()
-	if err != nil {
-		log.Fatal("failed to open socket:", err)
-	}
-
-	s.SetOption(mangos.OptionRaw, true)
-	s.AddTransport(tcp.NewTransport())
-	s.AddTransport(ipc.NewTransport())
-	// dial to load balancing rep/req proxy.
-	if err := s.Dial(addr); err != nil {
-		log.Fatal("can't dial on socket:", err)
-	}
-
-	client := rpc.NewClientWithCodec(nanorpc.NewNanoGobClientCodec(s))
+	client := nanorpc.NewClient(addr)
 	t0 := time.Now()
 	for i := 0; i < count; i++ {
 		var reply string

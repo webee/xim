@@ -3,7 +3,7 @@ package mid
 import (
 	"fmt"
 	"xim/xchat/logic/db"
-	"xim/xchat/logic/service"
+	"xim/xchat/logic/rpcservice/types"
 
 	"gopkg.in/jcelliott/turnpike.v2"
 )
@@ -38,24 +38,24 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 
 	chatID := uint64(args[0].(float64))
 	msg := args[1].(string)
-	res, err := xchatDC.Call(service.XChat.MethodSendMsg, &service.SendMsgRequest{
+
+	var message *db.Message
+	if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
 		ChatID: chatID,
 		User:   s.User,
 		Msg:    msg,
-	})
-	if err != nil {
+	}, &message); err != nil {
+		l.Warning("error: %s", err)
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
-	message := (res).(*db.Message)
 
 	// push
 	go func() {
-		res, err := xchatDC.Call(service.XChat.MethodFetchChatMembers, chatID)
-		if err != nil {
+		var members []db.Member
+		if err := xchatLogic.Call(types.RPCXChatFetchChatMembers, chatID, &members); err != nil {
 			l.Warning("fetch chat[%d] members error: %s", chatID, err)
 			return
 		}
-		members := (res).([]db.Member)
 		toPushMsg := NewMessageFromDBMsg(message)
 		for _, member := range members {
 			ss := GetUserSessions(member.User)
@@ -91,6 +91,17 @@ func fetchChatMsg(args []interface{}, kwargs map[string]interface{}) (result *tu
 	return nil
 	// _, user := getSessionFromDetails(kwargs["details"])
 	// chatID := uint64(args[0].(float64))
+}
+
+func sub(handler turnpike.EventHandler) turnpike.EventHandler {
+	return func(args []interface{}, kargs map[string]interface{}) {
+		defer func() {
+			if r := recover(); r != nil {
+				l.Emergency("sub error: %s", r)
+			}
+		}()
+		handler(args, kargs)
+	}
 }
 
 func call(handler turnpike.BasicMethodHandler) turnpike.BasicMethodHandler {
