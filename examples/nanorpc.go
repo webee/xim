@@ -5,20 +5,19 @@ import (
 	"fmt"
 	"log"
 	"time"
-	"xim/utils/argsutils"
 	"xim/utils/nanorpc"
-	"xim/xchat/logic/rpcservice/types"
+	"xim/xchat/logic/service/types"
 )
 
 var (
-	addrs = argsutils.NewStringSlice("tcp://localhost:16787", "ipc:///tmp/xchat.logic.sock")
+	addr  string
 	txt   string
 	count int
 	print bool
 )
 
 func init() {
-	flag.Var(addrs, "addr", "rpc service addresses")
+	flag.StringVar(&addr, "addr", "tcp://:16787", "rpc service addresses")
 	flag.StringVar(&txt, "txt", "TEST", "text to echo")
 	flag.IntVar(&count, "c", 1, "count to call")
 	flag.BoolVar(&print, "p", false, "print reply")
@@ -27,7 +26,7 @@ func init() {
 func main() {
 	flag.Parse()
 
-	client := nanorpc.NewClient(addrs.List())
+	client := nanorpc.NewClient(addr)
 	defer client.Close()
 	t0 := time.Now()
 	for i := 0; i < count; i++ {

@@ -1,21 +1,10 @@
-package rpcservice
+package service
 
 import (
 	"xim/xchat/logic/db"
-	"xim/xchat/logic/logger"
-	"xim/xchat/logic/rpcservice/types"
-
-	ol "github.com/go-ozzo/ozzo-log"
+	pubtypes "xim/xchat/logic/pub/types"
+	"xim/xchat/logic/service/types"
 )
-
-// variables
-var (
-	l *ol.Logger
-)
-
-func init() {
-	l = logger.Logger.GetLogger("service")
-}
 
 // RPCXChat provide xchat rpc services.
 type RPCXChat struct {
@@ -25,13 +14,13 @@ type RPCXChat struct {
 func (r *RPCXChat) Echo(s string, reply *string) (err error) {
 	//l.Info("echo: %s", s)
 	//time.Sleep(1 * time.Millisecond)
-	*reply = s
+	*reply = Echo(s)
 	return nil
 }
 
 // FetchChatMembers fetch chat's members.
 func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err error) {
-	members, err := db.GetChatMembers(chatID)
+	members, err := FetchChatMembers(chatID)
 	if err != nil {
 		return err
 	}
@@ -40,12 +29,12 @@ func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err erro
 }
 
 // SendMsg sends message.
-func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply **db.Message) (err error) {
-	message, err := db.NewMsg(args.ChatID, args.User, args.Msg)
+func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply **pubtypes.Message) (err error) {
+	msg, err := SendMsg(args.ChatID, args.User, args.Msg)
 	if err != nil {
 		return err
 	}
 
-	*reply = message
+	*reply = msg
 	return nil
 }

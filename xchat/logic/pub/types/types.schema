@@ -1,0 +1,7 @@
+struct Message {
+	ChatID uint64
+	MsgID  uint64
+	User   string
+	Ts     int64
+	Msg    string
+}

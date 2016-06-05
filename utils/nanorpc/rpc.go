@@ -27,7 +27,7 @@ var RPCSendTimeout = 3 * time.Second
 type Client struct {
 	sync.Mutex
 	*rpc.Client
-	addrs         []string
+	addr          string
 	connectedTime time.Time
 }
 
@@ -59,20 +59,20 @@ func (r *Client) reconnect() {
 	}
 
 	r.Client.Close()
-	r.Client = newGoRPCClient(r.addrs)
+	r.Client = newGoRPCClient(r.addr)
 	r.connectedTime = time.Now()
 }
 
 // NewClient return s rpc client dial to addr.
-func NewClient(addrs []string) *Client {
+func NewClient(addr string) *Client {
 	return &Client{
-		Client:        newGoRPCClient(addrs),
-		addrs:         addrs,
+		Client:        newGoRPCClient(addr),
+		addr:          addr,
 		connectedTime: time.Now(),
 	}
 }
 
-func newGoRPCClient(addrs []string) *rpc.Client {
+func newGoRPCClient(addr string) *rpc.Client {
 	s, err := req.NewSocket()
 	if err != nil {
 		log.Fatal("failed to open socket:", err)
@@ -81,12 +81,10 @@ func newGoRPCClient(addrs []string) *rpc.Client {
 	s.SetOption(mangos.OptionRaw, true)
 	s.AddTransport(tcp.NewTransport())
 	s.AddTransport(ipc.NewTransport())
-	for _, addr := range addrs {
-		if err := s.Dial(addr); err != nil {
-			log.Fatal("can't dial on socket:", err)
-		}
-		log.Printf("rpc dial to: %s\n", addr)
+	if err := s.Dial(addr); err != nil {
+		log.Fatal("can't dial on socket:", err)
 	}
+	log.Printf("rpc dial to: %s\n", addr)
 
 	if err := s.SetOption(mangos.OptionSendDeadline, RPCSendTimeout); err != nil {
 		log.Panic(err)

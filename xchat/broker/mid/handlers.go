@@ -1,9 +1,8 @@
 package mid
 
 import (
-	"fmt"
-	"xim/xchat/logic/db"
-	"xim/xchat/logic/rpcservice/types"
+	pubtypes "xim/xchat/logic/pub/types"
+	"xim/xchat/logic/service/types"
 
 	"gopkg.in/jcelliott/turnpike.v2"
 )
@@ -39,7 +38,7 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	chatID := uint64(args[0].(float64))
 	msg := args[1].(string)
 
-	var message *db.Message
+	var message *pubtypes.Message
 	if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
 		ChatID: chatID,
 		User:   s.User,
@@ -48,27 +47,9 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		l.Warning("error: %s", err)
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
+	// update sending id.
 
-	// push
-	go func() {
-		var members []db.Member
-		if err := xchatLogic.Call(types.RPCXChatFetchChatMembers, chatID, &members); err != nil {
-			l.Warning("fetch chat[%d] members error: %s", chatID, err)
-			return
-		}
-		toPushMsg := NewMessageFromDBMsg(message)
-		for _, member := range members {
-			ss := GetUserSessions(member.User)
-			for _, x := range ss {
-				if x.ID == s.ID {
-					continue
-				}
-				_ = xchat.Publish(fmt.Sprintf(URIXChatUserMsg, x.ID), []interface{}{toPushMsg}, emptyKwargs)
-			}
-		}
-	}()
-
-	return &turnpike.CallResult{Args: []interface{}{true, message.MsgID, message.Ts.Unix()}}
+	return &turnpike.CallResult{Args: []interface{}{true, message.MsgID, message.Ts}}
 }
 
 // 获取会话信息

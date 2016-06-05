@@ -5,6 +5,7 @@ import (
 	"xim/utils/nanorpc"
 	"xim/xchat/broker/logger"
 	"xim/xchat/broker/router"
+	"xim/xchat/logic/pub"
 
 	ol "github.com/go-ozzo/ozzo-log"
 	"gopkg.in/jcelliott/turnpike.v2"
@@ -16,6 +17,7 @@ var (
 
 var (
 	xchatLogic  *nanorpc.Client
+	xchatSub    *pub.Subscriber
 	xchat       *turnpike.Client
 	emptyArgs   = []interface{}{}
 	emptyKwargs = make(map[string]interface{})
@@ -28,7 +30,8 @@ func init() {
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	var err error
-	xchatLogic = nanorpc.NewClient(config.LogicRPCAddrs)
+	xchatLogic = nanorpc.NewClient(config.LogicRPCAddr)
+
 	xchat, err = xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
 		log.Fatalf("create xchat error: %s", err)
@@ -57,4 +60,7 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	if err := xchat.BasicRegister(URIXChatFetchChatList, call(fetchChatList)); err != nil {
 		log.Fatalf("Error register %s: %s", URIXChatNewChat, err)
 	}
+
+	xchatSub = pub.NewSubscriber(config.LogicPubAddr, 128)
+	go handleMsg(xchatSub.Msgs())
 }

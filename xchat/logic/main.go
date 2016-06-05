@@ -5,7 +5,8 @@ import (
 	"log"
 	"runtime"
 	"xim/xchat/logic/logger"
-	"xim/xchat/logic/rpcservice"
+	"xim/xchat/logic/pub"
+	"xim/xchat/logic/service"
 
 	"xim/utils/nanorpc"
 	"xim/utils/pprofutils"
@@ -30,8 +31,9 @@ func main() {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
 
-	db.InitDB(args.dbDriverName, args.dbDatasourceName)
-	defer nanorpc.StartRPCServer(args.addrs.List(), args.dial, new(rpcservice.RPCXChat))()
+	defer db.InitDB(args.dbDriverName, args.dbDatasourceName)()
+	defer pub.StartPublisher(args.pubAddrs.List(), args.dial)()
+	defer nanorpc.StartRPCServer(args.addrs.List(), args.dial, new(service.RPCXChat))()
 
 	setupSignal()
 }

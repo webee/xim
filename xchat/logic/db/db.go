@@ -13,10 +13,13 @@ var (
 )
 
 // InitDB init the db.
-func InitDB(driverName, dataSourceName string) {
+func InitDB(driverName, dataSourceName string) (close func()) {
 	db = sqlx.MustConnect(driverName, dataSourceName)
 	db.SetMaxIdleConns(1)
 	db.SetMaxOpenConns(100)
+	return func() {
+		db.Close()
+	}
 }
 
 // GetChatMembers returns chat's members.
