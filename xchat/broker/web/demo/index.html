@@ -7,6 +7,9 @@
 <body>
 <h1>XChat</h1>
 <p>Open JavaScript console to watch output.</p>
+<form onsubmit="return false">
+<input id="send" size="75" type="text"></input><input type="submit" onclick="sendMsg()" value="发送"></input>
+</form>
 <div id="msg"></div>
 <script>AUTOBAHN_DEBUG = true;</script>
 <script src="http://autobahn.s3.amazonaws.com/autobahnjs/latest/autobahn.min.jgz"></script>
@@ -38,6 +41,38 @@
     var reply_sub = null;
     var msg_sub = null;
 
+    function sendMsg() {
+      if (!session) {
+        return
+      }
+
+      var txt = document.getElementById("send");
+      var content = txt.value;
+      session.call('xchat.user.msg.send', [1, content]).then(
+        function(res) {
+          console.log("res:", res);
+          var args = res.args;
+          if (args[0]) {
+            newMsg({chat_id: 1, user:"*test*", msg_id: args[1], ts: args[2], msg: content});
+            txt.value = "";
+          } else {
+            alert("error:", args[2]);
+          }
+        },
+        function(err) {
+          console.error("err:", err);
+          alert("send error");
+        }
+      );
+    }
+
+    function newMsg(msg) {
+        var msg_div = document.getElementById("msg");
+        var p = document.createElement("p");
+        p.innerHTML = msg.ts + "->" + msg.chat_id + ", " + msg.user + "#" + msg.msg_id + ": " + msg.msg;
+        msg_div.appendChild(p);
+    }
+
     // fired when connection is established and session attached
     connection.onopen = function (newSession, details) {
         session = newSession;
@@ -47,13 +82,9 @@
 
         function onMsg (args, kwargs) {
           console.log(">>>>msg:", args, kwargs);
-          var msg_div = document.getElementById("msg");
-          var p = document.createElement("p");
           var msgs = args[0];
           for (i=0; i < msgs.length; i++) {
-            var msg = msgs[i];
-            p.innerHTML = msg.ts + "->" + msg.chat_id + ", " + msg.user + "#" + msg.msg_id + ": " + msg.msg;
-            msg_div.appendChild(p);
+            newMsg(msgs[i]);
           }
         }
         session.subscribe('xchat.user.' + session.id + '.msg', onMsg).then(

@@ -28,7 +28,7 @@ type Member struct {
 type Message struct {
 	ChatID uint64 `db:"chat_id"`
 	MsgID  uint64 `db:"msg_id"`
-	User   string
+	User   string `db:"uid"`
 	Ts     time.Time
 	Msg    string
 }

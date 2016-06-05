@@ -51,7 +51,7 @@ func push(msg *pubtypes.Message) {
 		return
 	}
 
-	pushSessesMsgs(xsesses, minLastID, msg)
+	pushSessesMsgs(xsesses, minLastID, msg, true, true)
 }
 
 func pushSessMsg(x *Session, msg *pubtypes.Message) {
@@ -66,10 +66,10 @@ func pushSessMsg(x *Session, msg *pubtypes.Message) {
 	}
 
 	xsesses := []*xsess{&xsess{x, lastID, seq}}
-	pushSessesMsgs(xsesses, lastID, msg)
+	pushSessesMsgs(xsesses, lastID, msg, false, false)
 }
 
-func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message) {
+func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, include bool, async bool) {
 	l.Info("minLastID: %d, count: %d", minLastID, len(xsesses))
 	var msgs []pubtypes.Message
 	if minLastID != math.MaxUint64 && minLastID < msg.MsgID-1 {
@@ -83,7 +83,9 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message) {
 			l.Warning("fetch chat[%d] messages error: %s", msg.ChatID, err)
 		}
 	}
-	msgs = append(msgs, *msg)
+	if include {
+		msgs = append(msgs, *msg)
+	}
 
 	toPushMsgs := []*Message{}
 	for _, msg := range msgs {
@@ -104,17 +106,23 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message) {
 
 		// TODO: check
 		//
-		go func(seq uint64, s *Session) {
-			l.Info("push sess: %d, %d:%d, pushed: %d", s.ID, seq, s.curSeq, s.pushMsgID)
-			if ok := s.Sending(seq); !ok {
-				return
-			}
-			defer s.DoneSending(seq)
+		if async {
+			go doPush(xs.seq, xs.s, toPush)
+		} else {
+			doPush(xs.seq, xs.s, toPush)
+		}
+	}
+}
 
-			err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, s.ID), []interface{}{toPush}, emptyKwargs)
-			if err != nil {
-				l.Warning("publish msg error:", err)
-			}
-		}(xs.seq, xs.s)
+func doPush(seq uint64, s *Session, toPushMsgs []*Message) {
+	l.Info("push sess: %d, %d:%d, pushed: %d", s.ID, seq, s.curSeq, s.pushMsgID)
+	if ok := s.Sending(seq); !ok {
+		return
+	}
+	defer s.DoneSending(seq)
+
+	err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, s.ID), []interface{}{toPushMsgs}, emptyKwargs)
+	if err != nil {
+		l.Warning("publish msg error:", err)
 	}
 }
