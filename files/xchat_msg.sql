@@ -16,3 +16,6 @@ WITH (
 );
 ALTER TABLE xchat_message
   OWNER TO xchat;
+
+
+CREATE INDEX xchat_message_ts ON xchat_message USING btree(ts);
