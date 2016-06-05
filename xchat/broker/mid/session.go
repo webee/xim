@@ -8,28 +8,22 @@ import (
 // SessionID is uniqe session id.
 type SessionID uint64
 
-// Session is a user connection.
-type Session struct {
+type pushState struct {
 	sync.RWMutex
-	ID   SessionID
-	User string
 	// only push msg which id > PushMsgID.
 	pushMsgID uint64
 	seq       uint64
 	curSeq    uint64
-	sending   chan struct{}
+	pushing   chan struct{}
+	s         *Session
 }
 
-func (s *Session) String() string {
-	return fmt.Sprintf("[%d]->%s", s.ID, s.User)
+// Pushing starts push.
+func (s *pushState) Pushing(seq uint64) bool {
+	return s.doPushing(seq, false)
 }
 
-// Sending starts sending.
-func (s *Session) Sending(seq uint64) bool {
-	return s.doSending(seq, false)
-}
-
-func (s *Session) doSending(seq uint64, yield bool) bool {
+func (s *pushState) doPushing(seq uint64, yield bool) bool {
 	// TODO: use RWLock.
 	s.RLock()
 	curSeq := s.curSeq
@@ -46,30 +40,30 @@ func (s *Session) doSending(seq uint64, yield bool) bool {
 
 	if yield {
 		select {
-		case s.sending <- struct{}{}:
+		case s.pushing <- struct{}{}:
 		default:
 		}
 	}
 
-	<-s.sending
+	<-s.pushing
 
-	return s.doSending(seq, true)
+	return s.doPushing(seq, true)
 }
 
 /* debug lock.
  */
-func (s *Session) Lock() {
-	l.Info("%d: LOCK, %d", s.ID, s.curSeq)
+func (s *pushState) Lock() {
+	l.Info("%d: LOCK, %d", s.s.ID, s.curSeq)
 	s.RWMutex.Lock()
 }
 
-func (s *Session) Unlock() {
-	l.Info("%d: UNLOCK, %d", s.ID, s.curSeq)
+func (s *pushState) Unlock() {
+	l.Info("%d: UNLOCK, %d", s.s.ID, s.curSeq)
 	s.RWMutex.Unlock()
 }
 
-// DoneSending done sending.
-func (s *Session) DoneSending(seq uint64) {
+// DonePushing done push.
+func (s *pushState) DonePushing(seq uint64) {
 	s.Lock()
 	if s.curSeq == seq {
 		s.curSeq++
@@ -77,27 +71,55 @@ func (s *Session) DoneSending(seq uint64) {
 	s.Unlock()
 
 	select {
-	case s.sending <- struct{}{}:
+	case s.pushing <- struct{}{}:
 	default:
 	}
 }
 
+// Session is a user connection.
+type Session struct {
+	sync.Mutex
+	ID         SessionID
+	User       string
+	pushStates map[uint64]*pushState
+}
+
+func (s *Session) String() string {
+	return fmt.Sprintf("[%d]->%s", s.ID, s.User)
+}
+
+func newSession(id SessionID, user string) *Session {
+	return &Session{
+		ID:         id,
+		User:       user,
+		pushStates: make(map[uint64]*pushState),
+	}
+}
+
 // GetSetPushID get last push id if not pushed, and set current id and get a push seq id.
-func (s *Session) GetSetPushID(id uint64) (uint64, uint64, bool) {
+func (s *Session) GetSetPushID(chatID uint64, id uint64) (*pushState, uint64, uint64, bool) {
 	s.Lock()
 	defer s.Unlock()
-
-	if id <= s.pushMsgID {
-		return 0, 0, false
+	p, ok := s.pushStates[chatID]
+	if !ok {
+		p = &pushState{
+			pushing: make(chan struct{}),
+			s:       s,
+		}
+		s.pushStates[chatID] = p
 	}
 
-	seq := s.seq
-	s.seq++
+	if id <= p.pushMsgID {
+		return nil, 0, 0, false
+	}
 
-	lastID := s.pushMsgID
-	s.pushMsgID = id
+	seq := p.seq
+	p.seq++
 
-	return seq, lastID, true
+	lastID := p.pushMsgID
+	p.pushMsgID = id
+
+	return p, seq, lastID, true
 }
 
 var (

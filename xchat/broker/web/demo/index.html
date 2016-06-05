@@ -8,6 +8,7 @@
 <h1>XChat</h1>
 <p>Open JavaScript console to watch output.</p>
 <form onsubmit="return false">
+  <input id="chat_id" size=6 type="text" value="1"></input>
 <input id="send" size="75" type="text"></input><input type="submit" onclick="sendMsg()" value="发送"></input>
 </form>
 <div id="msg"></div>
@@ -46,17 +47,23 @@
         return
       }
 
+      var chat_id = parseInt(document.getElementById("chat_id").value);
       var txt = document.getElementById("send");
       var content = txt.value;
-      session.call('xchat.user.msg.send', [1, content]).then(
+      if (content.length === 0) {
+        alert("消息不能为空");
+        return
+      }
+
+      session.call('xchat.user.msg.send', [chat_id, content]).then(
         function(res) {
           console.log("res:", res);
           var args = res.args;
           if (args[0]) {
-            newMsg({chat_id: 1, user:"*test*", msg_id: args[1], ts: args[2], msg: content});
+            newMsg({chat_id: chat_id, user:"*test*", msg_id: args[1], ts: args[2], msg: content});
             txt.value = "";
           } else {
-            alert("error:", args[2]);
+            alert("error:" + args[2]);
           }
         },
         function(err) {
@@ -69,7 +76,7 @@
     function newMsg(msg) {
         var msg_div = document.getElementById("msg");
         var p = document.createElement("p");
-        p.innerHTML = msg.ts + "->" + msg.chat_id + ", " + msg.user + "#" + msg.msg_id + ": " + msg.msg;
+        p.innerHTML = msg.ts + "->#" + msg.chat_id + "#" + msg.msg_id + "#" + msg.user+ ": " + msg.msg;
         msg_div.appendChild(p);
     }
 

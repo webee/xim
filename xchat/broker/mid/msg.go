@@ -19,7 +19,7 @@ func handleMsg(ms <-chan interface{}) {
 }
 
 type xsess struct {
-	s      *Session
+	p      *pushState
 	lastID uint64
 	seq    uint64
 }
@@ -36,7 +36,7 @@ func push(msg *pubtypes.Message) {
 	for _, member := range members {
 		ss := GetUserSessions(member.User)
 		for _, x := range ss {
-			seq, lastID, ok := x.GetSetPushID(msg.MsgID)
+			p, seq, lastID, ok := x.GetSetPushID(msg.ChatID, msg.MsgID)
 			if !ok {
 				// already send.
 				continue
@@ -44,7 +44,7 @@ func push(msg *pubtypes.Message) {
 			if lastID > 0 && lastID < minLastID {
 				minLastID = lastID
 			}
-			xsesses = append(xsesses, &xsess{x, lastID, seq})
+			xsesses = append(xsesses, &xsess{p, lastID, seq})
 		}
 	}
 	if len(xsesses) < 1 {
@@ -55,17 +55,17 @@ func push(msg *pubtypes.Message) {
 }
 
 func pushSessMsg(x *Session, msg *pubtypes.Message) {
-	seq, lastID, ok := x.GetSetPushID(msg.MsgID)
+	p, seq, lastID, ok := x.GetSetPushID(msg.ChatID, msg.MsgID)
 	if !ok {
 		return
 	}
 	if lastID == 0 || lastID+1 == msg.MsgID {
 		// already send.
-		x.DoneSending(seq)
+		p.DonePushing(seq)
 		return
 	}
 
-	xsesses := []*xsess{&xsess{x, lastID, seq}}
+	xsesses := []*xsess{&xsess{p, lastID, seq}}
 	pushSessesMsgs(xsesses, lastID, msg, false, false)
 }
 
@@ -107,21 +107,21 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, i
 		// TODO: check
 		//
 		if async {
-			go doPush(xs.seq, xs.s, toPush)
+			go doPush(xs.seq, xs.p, toPush)
 		} else {
-			doPush(xs.seq, xs.s, toPush)
+			doPush(xs.seq, xs.p, toPush)
 		}
 	}
 }
 
-func doPush(seq uint64, s *Session, toPushMsgs []*Message) {
-	l.Info("push sess: %d, %d:%d, pushed: %d", s.ID, seq, s.curSeq, s.pushMsgID)
-	if ok := s.Sending(seq); !ok {
+func doPush(seq uint64, p *pushState, toPushMsgs []*Message) {
+	l.Info("push sess: %d, %d:%d, pushed: %d", p.s.ID, seq, p.curSeq, p.pushMsgID)
+	if ok := p.Pushing(seq); !ok {
 		return
 	}
-	defer s.DoneSending(seq)
+	defer p.DonePushing(seq)
 
-	err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, s.ID), []interface{}{toPushMsgs}, emptyKwargs)
+	err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, p.s.ID), []interface{}{toPushMsgs}, emptyKwargs)
 	if err != nil {
 		l.Warning("publish msg error:", err)
 	}

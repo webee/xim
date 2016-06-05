@@ -16,11 +16,7 @@ func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
 		}
 	}
 
-	return &Session{
-		ID:      id,
-		User:    details["user"].(string),
-		sending: make(chan struct{}, 1),
-	}
+	return newSession(id, details["user"].(string))
 }
 
 // 处理用户连接
