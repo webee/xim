@@ -28,13 +28,23 @@ func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err erro
 	return nil
 }
 
+// FetchChatMessages fetch chat's messages between sID and eID.
+func (r *RPCXChat) FetchChatMessages(args *types.FetchChatMessagesArgs, reply *[]pubtypes.Message) (err error) {
+	msgs, err := FetchChatMessages(args.ChatID, args.SID, args.EID)
+	if err != nil {
+		return err
+	}
+	*reply = msgs
+	return nil
+}
+
 // SendMsg sends message.
-func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply **pubtypes.Message) (err error) {
+func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.Message) (err error) {
 	msg, err := SendMsg(args.ChatID, args.User, args.Msg)
 	if err != nil {
 		return err
 	}
 
-	*reply = msg
+	*reply = *msg
 	return nil
 }

@@ -49,9 +49,12 @@
           console.log(">>>>msg:", args, kwargs);
           var msg_div = document.getElementById("msg");
           var p = document.createElement("p");
-          var msg = args[0];
-          p.innerHTML = msg.ts + "->" + msg.chat_id + ", " + msg.user + "#" + msg.msg_id + ": " + msg.msg;
-          msg_div.appendChild(p);
+          var msgs = args[0];
+          for (i=0; i < msgs.length; i++) {
+            var msg = msgs[i];
+            p.innerHTML = msg.ts + "->" + msg.chat_id + ", " + msg.user + "#" + msg.msg_id + ": " + msg.msg;
+            msg_div.appendChild(p);
+          }
         }
         session.subscribe('xchat.user.' + session.id + '.msg', onMsg).then(
           function (sub) {

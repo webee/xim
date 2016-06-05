@@ -14,11 +14,88 @@ type Session struct {
 	ID   SessionID
 	User string
 	// only push msg which id > PushMsgID.
-	PushMsgID uint64
+	pushMsgID uint64
+	seq       uint64
+	curSeq    uint64
+	sending   chan struct{}
 }
 
 func (s *Session) String() string {
 	return fmt.Sprintf("[%d]->%s", s.ID, s.User)
+}
+
+// Sending starts sending.
+func (s *Session) Sending(seq uint64) bool {
+	return s.doSending(seq, false)
+}
+
+func (s *Session) doSending(seq uint64, yield bool) bool {
+	// TODO: use RWLock.
+	s.Lock()
+	curSeq := s.curSeq
+	s.Unlock()
+
+	if curSeq == seq {
+		return true
+	}
+	if curSeq > seq {
+		return false
+	}
+
+	if yield {
+		select {
+		case s.sending <- struct{}{}:
+		default:
+		}
+	}
+
+	<-s.sending
+
+	return s.doSending(seq, true)
+}
+
+/* debug lock.
+func (s *Session) Lock() {
+	l.Info("%d: LOCK, %d", s.ID, s.curSeq)
+	s.Mutex.Lock()
+}
+
+func (s *Session) Unlock() {
+	l.Info("%d: UNLOCK, %d", s.ID, s.curSeq)
+	s.Mutex.Unlock()
+}
+*/
+
+// DoneSending done sending.
+func (s *Session) DoneSending(seq uint64) {
+	s.Lock()
+	if s.curSeq == seq {
+		s.curSeq++
+	}
+	s.Unlock()
+
+	select {
+	case s.sending <- struct{}{}:
+	default:
+	}
+}
+
+// GetSetPushID get last push id if not pushed, and set current id and get a push seq id.
+func (s *Session) GetSetPushID(id uint64) (uint64, uint64, bool) {
+	s.Lock()
+	defer s.Unlock()
+
+	if id <= s.pushMsgID {
+		return 0, 0, false
+	}
+
+	seq := s.seq
+	s.seq++
+
+	lastID := s.pushMsgID
+	s.pushMsgID = id
+
+	return seq, lastID, true
 }
 
 var (

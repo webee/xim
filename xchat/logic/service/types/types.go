@@ -7,9 +7,17 @@ type SendMsgArgs struct {
 	Msg    string
 }
 
+// FetchChatMessagesArgs is the arguments of FetchChatMessages
+type FetchChatMessagesArgs struct {
+	ChatID uint64
+	SID    uint64
+	EID    uint64
+}
+
 // XChatService methods.
 const (
-	RPCXChatEcho             = "RPCXChat.Echo"
-	RPCXChatSendMsg          = "RPCXChat.SendMsg"
-	RPCXChatFetchChatMembers = "RPCXChat.FetchChatMembers"
+	RPCXChatEcho              = "RPCXChat.Echo"
+	RPCXChatSendMsg           = "RPCXChat.SendMsg"
+	RPCXChatFetchChatMessages = "RPCXChat.FetchChatMessages"
+	RPCXChatFetchChatMembers  = "RPCXChat.FetchChatMembers"
 )

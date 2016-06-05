@@ -7,18 +7,26 @@ import (
 	"gopkg.in/jcelliott/turnpike.v2"
 )
 
-func getSessionFromDetails(d interface{}) *Session {
+func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
 	details := d.(map[string]interface{})
+	id := SessionID(details["session"].(turnpike.ID))
+	if !forceCreate {
+		if s, ok := GetSession(id); ok {
+			return s
+		}
+	}
+
 	return &Session{
-		ID:   SessionID(details["session"].(turnpike.ID)),
-		User: details["user"].(string),
+		ID:      id,
+		User:    details["user"].(string),
+		sending: make(chan struct{}, 1),
 	}
 }
 
 // 处理用户连接
 func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	details := args[0].(map[string]interface{})
-	s := getSessionFromDetails(details)
+	s := getSessionFromDetails(details, true)
 	AddSession(s)
 	l.Debug("join: %s", s)
 }
@@ -33,12 +41,12 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 // 用户发送消息
 func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	l.Debug("[rpc]%s: %v, %+v\n", URIXChatSendMsg, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"])
+	s := getSessionFromDetails(kwargs["details"], false)
 
 	chatID := uint64(args[0].(float64))
 	msg := args[1].(string)
 
-	var message *pubtypes.Message
+	var message pubtypes.Message
 	if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
 		ChatID: chatID,
 		User:   s.User,
@@ -48,6 +56,7 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 	// update sending id.
+	pushSessMsg(s, &message)
 
 	return &turnpike.CallResult{Args: []interface{}{true, message.MsgID, message.Ts}}
 }

@@ -46,6 +46,12 @@ func IsChatMember(chatID uint64, user string) (t bool, err error) {
 	return t, db.Get(&t, `SELECT EXISTS(SELECT 1 FROM xchat_member where chat_id=$1 and "user"=$2)`, chatID, user)
 }
 
+// GetChatMessages get chat messages between sID and eID.
+func GetChatMessages(chatID uint64, sID, eID uint64) (msgs []Message, err error) {
+	err = db.Select(&msgs, `SELECT chat_id, msg_id, user, ts, msg FROM xchat_message where chat_id=$1 and msg_id > sID and msg_id < eID order by msg_id`, chatID)
+	return
+}
+
 // NewMsg insert a new message.
 func NewMsg(chatID uint64, user string, msg string) (message *Message, err error) {
 	// 判断是否为会话成员
