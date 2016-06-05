@@ -41,31 +41,38 @@ func push(msg *pubtypes.Message) {
 				// already send.
 				continue
 			}
-			if lastID < minLastID {
+			if lastID > 0 && lastID < minLastID {
 				minLastID = lastID
 			}
 			xsesses = append(xsesses, &xsess{x, lastID, seq})
 		}
 	}
-	pushSessesMsgs(xsesses, minLastID, msg, true)
+	if len(xsesses) < 1 {
+		return
+	}
+
+	pushSessesMsgs(xsesses, minLastID, msg)
 }
 
 func pushSessMsg(x *Session, msg *pubtypes.Message) {
 	seq, lastID, ok := x.GetSetPushID(msg.MsgID)
 	if !ok {
+		return
+	}
+	if lastID == 0 || lastID+1 == msg.MsgID {
 		// already send.
+		x.DoneSending(seq)
 		return
 	}
 
 	xsesses := []*xsess{&xsess{x, lastID, seq}}
-
-	pushSessesMsgs(xsesses, lastID, msg, false)
+	pushSessesMsgs(xsesses, lastID, msg)
 }
 
-func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, include bool) {
+func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message) {
 	l.Info("minLastID: %d, count: %d", minLastID, len(xsesses))
 	var msgs []pubtypes.Message
-	if minLastID > 0 && minLastID+1 < msg.MsgID {
+	if minLastID != math.MaxUint64 && minLastID < msg.MsgID-1 {
 		// fetch late messages.
 		args := &types.FetchChatMessagesArgs{
 			ChatID: msg.ChatID,
@@ -73,15 +80,10 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, i
 			EID:    msg.MsgID,
 		}
 		if err := xchatLogic.Call(types.RPCXChatFetchChatMessages, args, &msgs); err != nil {
-			l.Warning("fetch chat[%d] members error: %s", msg.ChatID, err)
+			l.Warning("fetch chat[%d] messages error: %s", msg.ChatID, err)
 		}
 	}
-	if include {
-		msgs = append(msgs, *msg)
-	}
-	if len(msgs) < 1 {
-		return
-	}
+	msgs = append(msgs, *msg)
 
 	toPushMsgs := []*Message{}
 	for _, msg := range msgs {
@@ -100,12 +102,13 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, i
 			}
 		}
 
+		// TODO: check
+		//
 		go func(seq uint64, s *Session) {
 			l.Info("push sess: %d, %d:%d, pushed: %d", s.ID, seq, s.curSeq, s.pushMsgID)
 			if ok := s.Sending(seq); !ok {
 				return
 			}
-
 			defer s.DoneSending(seq)
 
 			err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, s.ID), []interface{}{toPush}, emptyKwargs)

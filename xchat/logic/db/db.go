@@ -48,7 +48,7 @@ func IsChatMember(chatID uint64, user string) (t bool, err error) {
 
 // GetChatMessages get chat messages between sID and eID.
 func GetChatMessages(chatID uint64, sID, eID uint64) (msgs []Message, err error) {
-	err = db.Select(&msgs, `SELECT chat_id, msg_id, user, ts, msg FROM xchat_message where chat_id=$1 and msg_id > sID and msg_id < eID order by msg_id`, chatID)
+	err = db.Select(&msgs, `SELECT chat_id, msg_id, user, ts, msg FROM xchat_message where chat_id=$1 and msg_id > $2 and msg_id < $3 order by msg_id`, chatID, sID, eID)
 	return
 }
 

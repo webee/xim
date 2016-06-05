@@ -10,7 +10,7 @@ type SessionID uint64
 
 // Session is a user connection.
 type Session struct {
-	sync.Mutex
+	sync.RWMutex
 	ID   SessionID
 	User string
 	// only push msg which id > PushMsgID.
@@ -31,14 +31,16 @@ func (s *Session) Sending(seq uint64) bool {
 
 func (s *Session) doSending(seq uint64, yield bool) bool {
 	// TODO: use RWLock.
-	s.Lock()
+	s.RLock()
 	curSeq := s.curSeq
-	s.Unlock()
+	s.RUnlock()
 
 	if curSeq == seq {
 		return true
 	}
 	if curSeq > seq {
+		// impossible!!!
+		l.Emergency("current seq: %d, seq: %d", curSeq, seq)
 		return false
 	}
 
@@ -55,16 +57,16 @@ func (s *Session) doSending(seq uint64, yield bool) bool {
 }
 
 /* debug lock.
+ */
 func (s *Session) Lock() {
 	l.Info("%d: LOCK, %d", s.ID, s.curSeq)
-	s.Mutex.Lock()
+	s.RWMutex.Lock()
 }
 
 func (s *Session) Unlock() {
 	l.Info("%d: UNLOCK, %d", s.ID, s.curSeq)
-	s.Mutex.Unlock()
+	s.RWMutex.Unlock()
 }
-*/
 
 // DoneSending done sending.
 func (s *Session) DoneSending(seq uint64) {

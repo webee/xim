@@ -50,7 +50,8 @@ func SendMsg(chatID uint64, user string, msg string) (*types.Message, error) {
 		Ts:     message.Ts.Unix(),
 		Msg:    message.Msg,
 	}
-	pub.PublishMessage(m)
+	// FIXME: goroutine pool?
+	go pub.PublishMessage(m)
 
 	return m, err
 }
