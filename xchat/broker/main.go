@@ -31,7 +31,7 @@ func main() {
 
 	// router
 	router.Init()
-	xchatRouter, err := router.NewXChatRouter(userKey, args.debug, args.testing)
+	xchatRouter, err := router.NewXChatRouter(userKey, args.brokerDebug, args.testing)
 	if err != nil {
 		log.Fatalln("create xchat router failed:", err)
 	}
