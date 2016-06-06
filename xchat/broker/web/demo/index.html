@@ -60,7 +60,7 @@
           console.log("res:", res);
           var args = res.args;
           if (args[0]) {
-            newMsg({chat_id: chat_id, user:"*test*", msg_id: args[1], ts: args[2], msg: content});
+            newMsg(chat_id, {user:"*test*", id: args[1], ts: args[2], msg: content});
             txt.value = "";
           } else {
             alert("error:" + args[2]);
@@ -73,10 +73,10 @@
       );
     }
 
-    function newMsg(msg) {
+    function newMsg(chat_id, msg) {
         var msg_div = document.getElementById("msg");
         var p = document.createElement("p");
-        p.innerHTML = msg.ts + "->#" + msg.chat_id + "#" + msg.msg_id + "#" + msg.user+ ": " + msg.msg;
+        p.innerHTML = msg.ts + "->#" + chat_id + "#" + msg.id + "#" + msg.user+ ": " + msg.msg;
         msg_div.appendChild(p);
     }
 
@@ -89,9 +89,11 @@
 
         function onMsg (args, kwargs) {
           console.log(">>>>msg:", args, kwargs);
-          var msgs = args[0];
+          var chatMsgs = args[0];
+          var chat_id = chatMsgs.chat_id;
+          var msgs = chatMsgs.msgs;
           for (i=0; i < msgs.length; i++) {
-            newMsg(msgs[i]);
+            newMsg(chat_id, msgs[i]);
           }
         }
         session.subscribe('xchat.user.' + session.id + '.msg', onMsg).then(

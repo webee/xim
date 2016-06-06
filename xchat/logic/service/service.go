@@ -16,6 +16,11 @@ func FetchChatMembers(chatID uint64) ([]db.Member, error) {
 	return db.GetChatMembers(chatID)
 }
 
+// FetchChat fetch chat's members.
+func FetchChat(chatID uint64) (*db.Chat, error) {
+	return db.GetChat(chatID)
+}
+
 // FetchChatMessages fetch chat's messages between sID and eID.
 func FetchChatMessages(chatID uint64, sID, eID uint64) ([]types.Message, error) {
 	msgs, err := db.GetChatMessages(chatID, sID, eID)
@@ -25,11 +30,10 @@ func FetchChatMessages(chatID uint64, sID, eID uint64) ([]types.Message, error) 
 	ms := []types.Message{}
 	for _, msg := range msgs {
 		ms = append(ms, types.Message{
-			ChatID: msg.ChatID,
-			MsgID:  msg.MsgID,
-			User:   msg.User,
-			Ts:     msg.Ts.Unix(),
-			Msg:    msg.Msg,
+			ID:   msg.ID,
+			User: msg.User,
+			Ts:   msg.Ts.Unix(),
+			Msg:  msg.Msg,
 		})
 	}
 	return ms, nil
@@ -45,7 +49,7 @@ func SendMsg(chatID uint64, user string, msg string) (*types.Message, error) {
 	// publish
 	m := &types.Message{
 		ChatID: message.ChatID,
-		MsgID:  message.MsgID,
+		ID:     message.ID,
 		User:   message.User,
 		Ts:     message.Ts.Unix(),
 		Msg:    message.Msg,

@@ -52,6 +52,12 @@ func GetChatMessages(chatID uint64, sID, eID uint64) (msgs []Message, err error)
 	return
 }
 
+// GetChat returns chat.
+func GetChat(chatID uint64) (chat *Chat, err error) {
+	chat = &Chat{}
+	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, is_deleted, created FROM xchat_chat where id=$1`, chatID)
+}
+
 // NewMsg insert a new message.
 func NewMsg(chatID uint64, user string, msg string) (message *Message, err error) {
 	// 判断是否为会话成员
@@ -76,11 +82,11 @@ func NewMsg(chatID uint64, user string, msg string) (message *Message, err error
 		Msg:    msg,
 	}
 
-	if err = tx.Get(message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 RETURNING msg_id`, chatID); err != nil {
+	if err = tx.Get(message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 RETURNING msg_id as id`, chatID); err != nil {
 		return
 	}
 
-	if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, msg_id, uid, ts, msg) values($1, $2, $3, now(), $4) RETURNING ts`, chatID, message.MsgID, user, msg); err != nil {
+	if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, id, uid, ts, msg) values($1, $2, $3, now(), $4) RETURNING ts`, chatID, message.ID, user, msg); err != nil {
 		return
 	}
 	if err = tx.Commit(); err != nil {

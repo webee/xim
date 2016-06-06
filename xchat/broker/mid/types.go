@@ -14,22 +14,29 @@ func (t Timestamp) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("%d", time.Time(t).Unix())), nil
 }
 
-// Message is chat message.
+// Message is a chat message.
 type Message struct {
-	ChatID uint64 `json:"chat_id"`
-	User   string `json:"user"`
-	MsgID  uint64 `json:"msg_id"`
-	Ts     int64  `json:"ts"`
-	Msg    string `json:"msg"`
+	User string `json:"user"`
+	ID   uint64 `json:"id"`
+	Ts   int64  `json:"ts"`
+	Msg  string `json:"msg"`
+}
+
+// ChatMessages is chat's many messages.
+type ChatMessages struct {
+	ChatID uint64     `json:"chat_id"`
+	Type   string     `json:"type"`
+	Tag    string     `json:"tag"`
+	Title  string     `json:"title"`
+	Msgs   []*Message `json:"msgs"`
 }
 
 // NewMessageFromDBMsg converts db.Message to Message.
-func NewMessageFromDBMsg(message *pubtypes.Message) *Message {
+func NewMessageFromDBMsg(msg *pubtypes.Message) *Message {
 	return &Message{
-		ChatID: message.ChatID,
-		User:   message.User,
-		MsgID:  message.MsgID,
-		Ts:     message.Ts,
-		Msg:    message.Msg,
+		User: msg.User,
+		ID:   msg.ID,
+		Ts:   msg.Ts,
+		Msg:  msg.Msg,
 	}
 }

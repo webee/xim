@@ -18,6 +18,16 @@ func (r *RPCXChat) Echo(s string, reply *string) (err error) {
 	return nil
 }
 
+// FetchChat fetch chat.
+func (r *RPCXChat) FetchChat(chatID uint64, reply *db.Chat) (err error) {
+	chat, err := FetchChat(chatID)
+	if err != nil {
+		return err
+	}
+	*reply = *chat
+	return nil
+}
+
 // FetchChatMembers fetch chat's members.
 func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err error) {
 	members, err := FetchChatMembers(chatID)

@@ -14,7 +14,7 @@ var (
 
 type Message struct {
 	ChatID uint64
-	MsgID  uint64
+	ID     uint64
 	User   string
 	Ts     int64
 	Msg    string
@@ -87,21 +87,21 @@ func (d *Message) Marshal(buf []byte) ([]byte, error) {
 	}
 	{
 
-		buf[0+8] = byte(d.MsgID >> 0)
+		buf[0+8] = byte(d.ID >> 0)
 
-		buf[1+8] = byte(d.MsgID >> 8)
+		buf[1+8] = byte(d.ID >> 8)
 
-		buf[2+8] = byte(d.MsgID >> 16)
+		buf[2+8] = byte(d.ID >> 16)
 
-		buf[3+8] = byte(d.MsgID >> 24)
+		buf[3+8] = byte(d.ID >> 24)
 
-		buf[4+8] = byte(d.MsgID >> 32)
+		buf[4+8] = byte(d.ID >> 32)
 
-		buf[5+8] = byte(d.MsgID >> 40)
+		buf[5+8] = byte(d.ID >> 40)
 
-		buf[6+8] = byte(d.MsgID >> 48)
+		buf[6+8] = byte(d.ID >> 48)
 
-		buf[7+8] = byte(d.MsgID >> 56)
+		buf[7+8] = byte(d.ID >> 56)
 
 	}
 	{
@@ -174,7 +174,7 @@ func (d *Message) Unmarshal(buf []byte) (uint64, error) {
 	}
 	{
 
-		d.MsgID = 0 | (uint64(buf[i+0+8]) << 0) | (uint64(buf[i+1+8]) << 8) | (uint64(buf[i+2+8]) << 16) | (uint64(buf[i+3+8]) << 24) | (uint64(buf[i+4+8]) << 32) | (uint64(buf[i+5+8]) << 40) | (uint64(buf[i+6+8]) << 48) | (uint64(buf[i+7+8]) << 56)
+		d.ID = 0 | (uint64(buf[i+0+8]) << 0) | (uint64(buf[i+1+8]) << 8) | (uint64(buf[i+2+8]) << 16) | (uint64(buf[i+3+8]) << 24) | (uint64(buf[i+4+8]) << 32) | (uint64(buf[i+5+8]) << 40) | (uint64(buf[i+6+8]) << 48) | (uint64(buf[i+7+8]) << 56)
 
 	}
 	{

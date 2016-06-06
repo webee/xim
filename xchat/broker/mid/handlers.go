@@ -54,7 +54,7 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	// update sending id.
 	pushSessMsg(s, &message)
 
-	return &turnpike.CallResult{Args: []interface{}{true, message.MsgID, message.Ts}}
+	return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}}
 }
 
 // 获取会话信息
