@@ -17,6 +17,7 @@ type Args struct {
 	userKeyPath  string
 	logicRPCAddr string
 	logicPubAddr string
+	XChatHostURL string
 }
 
 var (
@@ -34,4 +35,5 @@ func init() {
 	flag.StringVar(&args.testWebDir, "test-web-dir", "xchat/broker/web", "test web dir.")
 	flag.StringVar(&args.logicRPCAddr, "logic-rpc-addr", "tcp://:16787", "logic rpc addresses.")
 	flag.StringVar(&args.logicPubAddr, "logic-pub-addr", "tcp://:16783", "logic pub address.")
+	flag.StringVar(&args.XChatHostURL, "xchat-host-url", "http://localhost:9980", "xchat api host url.")
 }

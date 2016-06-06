@@ -12,6 +12,7 @@ func setupMid(xchatRouter *router.XChatRouter) {
 		Key:          userKey,
 		LogicRPCAddr: args.logicRPCAddr,
 		LogicPubAddr: args.logicPubAddr,
+		XChatHostURL: args.XChatHostURL,
 	})
 
 	mid.Setup(config, xchatRouter)

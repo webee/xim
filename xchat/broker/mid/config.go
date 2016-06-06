@@ -9,12 +9,14 @@ type Config struct {
 	Key          []byte
 	LogicRPCAddr string
 	LogicPubAddr string
+	XChatHostURL string
 }
 
 var (
 	defaultConfig = &Config{
-		Debug:   false,
-		Testing: false,
+		Debug:        false,
+		Testing:      false,
+		XChatHostURL: "http://localhost:9980",
 	}
 )
 
