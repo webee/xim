@@ -11,7 +11,9 @@
   <input id="chat_id" size=6 type="text" value="1"></input>
 <input id="send" size="75" type="text"></input><input type="submit" onclick="sendMsg()" value="发送"></input>
 </form>
-<div id="msg"></div>
+<div id="msg">
+  <p>start</p>
+</div>
 <script>AUTOBAHN_DEBUG = true;</script>
 <script src="http://autobahn.s3.amazonaws.com/autobahnjs/latest/autobahn.min.jgz"></script>
 
@@ -77,7 +79,7 @@
         var msg_div = document.getElementById("msg");
         var p = document.createElement("p");
         p.innerHTML = msg.ts + "->#" + msg.chat_id + "#" + msg.id + "#" + msg.user+ ": " + msg.msg;
-        msg_div.appendChild(p);
+        msg_div.insertBefore(p, msg_div.firstChild);
     }
 
     // fired when connection is established and session attached
