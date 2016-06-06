@@ -87,15 +87,6 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, i
 	if include {
 		msgs = append(msgs, *msg)
 	}
-	// fetch chat.
-	chat := db.Chat{}
-	if err := xchatLogic.Call(types.RPCXChatFetchChat, msg.ChatID, &chat); err != nil {
-		l.Warning("fetch chat[%d] error: %s", msg.ChatID, err)
-		for _, xs := range xsesses {
-			xs.p.DonePushing(xs.seq)
-		}
-		return
-	}
 
 	toPushMsgs := []*Message{}
 	for _, msg := range msgs {
@@ -113,32 +104,25 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, i
 				}
 			}
 		}
-		chatMsgs := &ChatMessages{
-			ChatID: chat.ID,
-			Type:   chat.Type,
-			Tag:    chat.Tag,
-			Title:  chat.Title,
-			Msgs:   toPush,
-		}
 
-		// TODO: check
+		// TODO: check and optimize.
 		//
 		if async {
-			go doPush(xs.seq, xs.p, chatMsgs)
+			go doPush(xs.seq, xs.p, toPush)
 		} else {
-			doPush(xs.seq, xs.p, chatMsgs)
+			doPush(xs.seq, xs.p, toPush)
 		}
 	}
 }
 
-func doPush(seq uint64, p *PushState, chatMsgs *ChatMessages) {
+func doPush(seq uint64, p *PushState, msgs []*Message) {
 	l.Info("push sess: %d, %d:%d, pushed: %d", p.s.ID, seq, p.curSeq, p.pushMsgID)
 	if ok := p.Pushing(seq); !ok {
 		return
 	}
 	defer p.DonePushing(seq)
 
-	err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, p.s.ID), []interface{}{chatMsgs}, emptyKwargs)
+	err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, p.s.ID), []interface{}{msgs}, emptyKwargs)
 	if err != nil {
 		l.Warning("publish msg error:", err)
 	}

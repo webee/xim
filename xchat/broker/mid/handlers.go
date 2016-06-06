@@ -1,6 +1,7 @@
 package mid
 
 import (
+	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
 
@@ -81,6 +82,23 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	}
 
 	return &turnpike.CallResult{Args: []interface{}{true, chatID}}
+}
+
+// 获取历史消息
+func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChat, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+	chatID := uint64(args[0].(float64))
+
+	// fetch chat.
+	chat := db.Chat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	return &turnpike.CallResult{Args: []interface{}{true, NewChatFromDBChat(&chat)}}
 }
 
 // 获取会话列表

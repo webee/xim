@@ -55,7 +55,7 @@ func GetChatMessages(chatID uint64, sID, eID uint64) (msgs []Message, err error)
 // GetChat returns chat.
 func GetChat(chatID uint64) (chat *Chat, err error) {
 	chat = &Chat{}
-	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, is_deleted, created FROM xchat_chat where id=$1`, chatID)
+	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, created FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
 }
 
 // NewMsg insert a new message.

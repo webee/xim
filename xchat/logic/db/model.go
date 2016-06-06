@@ -6,13 +6,12 @@ import (
 
 // Chat is a conversation.
 type Chat struct {
-	ID        uint64 `db:"id"`
-	Type      string
-	Title     string
-	Tag       string
-	MsgID     string `db:"msg_id"`
-	IsDeleted bool   `db:"is_deleted"`
-	Created   time.Time
+	ID      uint64 `db:"id"`
+	Type    string
+	Title   string
+	Tag     string
+	MsgID   uint64 `db:"msg_id"`
+	Created time.Time
 }
 
 // Member is a chat member.
