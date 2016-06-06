@@ -25,6 +25,50 @@
 			"Rev": "8873b2f1995f59d4bcdd2b0dc9858e2cb9bf0c13"
 		},
 		{
+			"ImportPath": "github.com/go-mangos/mangos",
+			"Comment": "v1.1.0-58-g83e303c",
+			"Rev": "83e303c317b515175501237794009a610fc918e1"
+		},
+		{
+			"ImportPath": "github.com/go-mangos/mangos/protocol/pair",
+			"Comment": "v1.1.0-58-g83e303c",
+			"Rev": "83e303c317b515175501237794009a610fc918e1"
+		},
+		{
+			"ImportPath": "github.com/go-mangos/mangos/protocol/pub",
+			"Comment": "v1.1.0-58-g83e303c",
+			"Rev": "83e303c317b515175501237794009a610fc918e1"
+		},
+		{
+			"ImportPath": "github.com/go-mangos/mangos/protocol/rep",
+			"Comment": "v1.1.0-58-g83e303c",
+			"Rev": "83e303c317b515175501237794009a610fc918e1"
+		},
+		{
+			"ImportPath": "github.com/go-mangos/mangos/protocol/req",
+			"Comment": "v1.1.0-58-g83e303c",
+			"Rev": "83e303c317b515175501237794009a610fc918e1"
+		},
+		{
+			"ImportPath": "github.com/go-mangos/mangos/protocol/sub",
+			"Comment": "v1.1.0-58-g83e303c",
+			"Rev": "83e303c317b515175501237794009a610fc918e1"
+		},
+		{
+			"ImportPath": "github.com/go-mangos/mangos/transport/ipc",
+			"Comment": "v1.1.0-58-g83e303c",
+			"Rev": "83e303c317b515175501237794009a610fc918e1"
+		},
+		{
+			"ImportPath": "github.com/go-mangos/mangos/transport/tcp",
+			"Comment": "v1.1.0-58-g83e303c",
+			"Rev": "83e303c317b515175501237794009a610fc918e1"
+		},
+		{
+			"ImportPath": "github.com/go-ozzo/ozzo-log",
+			"Rev": "510d49f595e9b3ffb30f52b16d39e6ed0437fa9a"
+		},
+		{
 			"ImportPath": "github.com/golang/glog",
 			"Rev": "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 		},
