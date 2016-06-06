@@ -47,6 +47,10 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 		log.Fatalf("Error subscribing to %s: %s", URIWAMPSessionOnLeave, err)
 	}
 
+	if err := xchat.BasicRegister(URIXChatPing, call(ping)); err != nil {
+		log.Fatalf("Error register %s: %s", URIXChatPing, err)
+	}
+
 	if err := xchat.BasicRegister(URIXChatSendMsg, call(sendMsg)); err != nil {
 		log.Fatalf("Error register %s: %s", URIXChatSendMsg, err)
 	}

@@ -7,6 +7,8 @@ const (
 	URIWAMPSessionOnJoin  = "wamp.session.on_join"
 	URIWAMPSessionOnLeave = "wamp.session.on_leave"
 
+	URIXChatPing = "xchat.ping"
+
 	// biz
 	URIXChatSendMsg       = "xchat.user.msg.send"
 	URIXChatFetchChatList = "xchat.user.chat.list"

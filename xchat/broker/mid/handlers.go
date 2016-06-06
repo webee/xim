@@ -35,6 +35,32 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 	l.Debug("left: %s", s)
 }
 
+// ping
+func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatPing, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+	payloadSize := 0
+	if len(args) > 0 {
+		payloadSize = int(args[0].(float64))
+	}
+
+	if payloadSize < 0 {
+		payloadSize = 0
+	} else if payloadSize > 1024*1024 {
+		payloadSize = 1024 * 1024
+	}
+
+	payload := []byte{}
+	for i := 1; i < payloadSize; i++ {
+		payload = append(payload, 0x31)
+	}
+
+	return &turnpike.CallResult{Args: []interface{}{true, string(payload)}}
+}
+
 // 用户发送消息
 func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	l.Debug("[rpc]%s: %v, %+v\n", URIXChatSendMsg, args, kwargs)
@@ -104,6 +130,10 @@ func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 // 获取会话列表
 func fetchChatList(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	l.Debug("[rpc]%s: %v, %+v\n", URIXChatChatList, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
 	return nil
 	// _, user := getSessionFromDetails(kwargs["details"])
 }
