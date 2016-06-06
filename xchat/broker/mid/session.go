@@ -8,7 +8,8 @@ import (
 // SessionID is uniqe session id.
 type SessionID uint64
 
-type pushState struct {
+// PushState is chat's push state.
+type PushState struct {
 	sync.RWMutex
 	// only push msg which id > PushMsgID.
 	pushMsgID uint64
@@ -19,11 +20,11 @@ type pushState struct {
 }
 
 // Pushing starts push.
-func (s *pushState) Pushing(seq uint64) bool {
+func (s *PushState) Pushing(seq uint64) bool {
 	return s.doPushing(seq, false)
 }
 
-func (s *pushState) doPushing(seq uint64, yield bool) bool {
+func (s *PushState) doPushing(seq uint64, yield bool) bool {
 	// TODO: use RWLock.
 	s.RLock()
 	curSeq := s.curSeq
@@ -51,19 +52,19 @@ func (s *pushState) doPushing(seq uint64, yield bool) bool {
 }
 
 /* debug lock.
- */
-func (s *pushState) Lock() {
+func (s *PushState) Lock() {
 	l.Info("%d: LOCK, %d", s.s.ID, s.curSeq)
 	s.RWMutex.Lock()
 }
 
-func (s *pushState) Unlock() {
+func (s *PushState) Unlock() {
 	l.Info("%d: UNLOCK, %d", s.s.ID, s.curSeq)
 	s.RWMutex.Unlock()
 }
+*/
 
 // DonePushing done push.
-func (s *pushState) DonePushing(seq uint64) {
+func (s *PushState) DonePushing(seq uint64) {
 	s.Lock()
 	if s.curSeq == seq {
 		s.curSeq++
@@ -81,7 +82,7 @@ type Session struct {
 	sync.Mutex
 	ID         SessionID
 	User       string
-	pushStates map[uint64]*pushState
+	pushStates map[uint64]*PushState
 }
 
 func (s *Session) String() string {
@@ -92,17 +93,17 @@ func newSession(id SessionID, user string) *Session {
 	return &Session{
 		ID:         id,
 		User:       user,
-		pushStates: make(map[uint64]*pushState),
+		pushStates: make(map[uint64]*PushState),
 	}
 }
 
 // GetSetPushID get last push id if not pushed, and set current id and get a push seq id.
-func (s *Session) GetSetPushID(chatID uint64, id uint64) (*pushState, uint64, uint64, bool) {
+func (s *Session) GetSetPushID(chatID uint64, id uint64) (*PushState, uint64, uint64, bool) {
 	s.Lock()
 	defer s.Unlock()
 	p, ok := s.pushStates[chatID]
 	if !ok {
-		p = &pushState{
+		p = &PushState{
 			pushing: make(chan struct{}),
 			s:       s,
 		}

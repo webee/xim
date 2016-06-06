@@ -19,7 +19,7 @@ func handleMsg(ms <-chan interface{}) {
 }
 
 type xsess struct {
-	p      *pushState
+	p      *PushState
 	lastID uint64
 	seq    uint64
 }
@@ -114,7 +114,7 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, i
 	}
 }
 
-func doPush(seq uint64, p *pushState, toPushMsgs []*Message) {
+func doPush(seq uint64, p *PushState, toPushMsgs []*Message) {
 	l.Info("push sess: %d, %d:%d, pushed: %d", p.s.ID, seq, p.curSeq, p.pushMsgID)
 	if ok := p.Pushing(seq); !ok {
 		return
