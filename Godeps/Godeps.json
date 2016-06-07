@@ -162,6 +162,10 @@
 			"Rev": "1e620d05755a61b370757c07a39532bc01c0f596"
 		},
 		{
+			"ImportPath": "github.com/webee/turnpike",
+			"Rev": "99b8b6a14d7534838574fc4453aeeff557c1950f"
+		},
+		{
 			"ImportPath": "github.com/youtube/vitess/go/acl",
 			"Comment": "v2.0.0-beta.2-15-g24dd44e",
 			"Rev": "24dd44e08b535368f86a6c2d656c1ce7a8760c78"

@@ -1,7 +1,7 @@
 package router
 
 import (
-	"gopkg.in/jcelliott/turnpike.v2"
+	"github.com/webee/turnpike"
 )
 
 // DetailsChecker check the details to determine whether do inject.

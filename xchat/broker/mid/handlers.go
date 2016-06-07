@@ -5,7 +5,7 @@ import (
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
 
-	"gopkg.in/jcelliott/turnpike.v2"
+	"github.com/webee/turnpike"
 )
 
 func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
@@ -87,7 +87,7 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}}
 }
 
-// 获取会话信息
+// 创建会话
 func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	l.Debug("[rpc]%s: %v, %+v\n", URIXChatNewChat, args, kwargs)
 	s := getSessionFromDetails(kwargs["details"], false)

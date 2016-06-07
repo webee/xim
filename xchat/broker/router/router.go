@@ -9,7 +9,7 @@ import (
 
 	ol "github.com/go-ozzo/ozzo-log"
 
-	"gopkg.in/jcelliott/turnpike.v2"
+	"github.com/webee/turnpike"
 )
 
 var (
