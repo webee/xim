@@ -43,6 +43,7 @@
     var session = null;
     var reply_sub = null;
     var msg_sub = null;
+    var do_update = true;
 
     function sendMsg() {
       if (!session) {
@@ -103,11 +104,23 @@
       }
     }
 
+    function update_on() {
+      do_update = true;
+      return do_update;
+    }
+
+    function update_off() {
+      do_update = false;
+      return do_update;
+    }
+
     function newMsg(msg) {
+      if (do_update) {
         var msg_div = document.getElementById("msg");
         var p = document.createElement("p");
         p.innerHTML = msg.ts + "->#" + msg.chat_id + "#" + msg.id + "#" + msg.user+ ": " + msg.msg;
         msg_div.insertBefore(p, msg_div.firstChild);
+      }
     }
 
     // fired when connection is established and session attached
