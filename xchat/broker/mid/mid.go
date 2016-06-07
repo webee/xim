@@ -8,7 +8,7 @@ import (
 	"xim/xchat/logic/pub"
 
 	ol "github.com/go-ozzo/ozzo-log"
-	"github.com/webee/turnpike"
+	"gopkg.in/jcelliott/turnpike.v2"
 )
 
 var (

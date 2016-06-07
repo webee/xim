@@ -3,7 +3,7 @@ package router
 import (
 	"fmt"
 
-	"github.com/webee/turnpike"
+	"gopkg.in/jcelliott/turnpike.v2"
 )
 
 // uris.

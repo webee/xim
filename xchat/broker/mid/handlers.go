@@ -5,7 +5,7 @@ import (
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
 
-	"github.com/webee/turnpike"
+	"gopkg.in/jcelliott/turnpike.v2"
 )
 
 func getSessionFromDetails(d interface{}, forceCreate bool) *Session {

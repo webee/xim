@@ -82,10 +82,6 @@
 			"Rev": "ea0151498788f6fab6365eae24f29f41c0ac0acc"
 		},
 		{
-			"ImportPath": "github.com/jcelliott/turnpike",
-			"Rev": "65eb3bacd2852f9554a44d7d1b60a91fdb26fe67"
-		},
-		{
 			"ImportPath": "github.com/jmoiron/sqlx",
 			"Comment": "sqlx-v1.1-61-g398dd58",
 			"Rev": "398dd5876282499cdfd4cb8ea0f31a672abe9495"
