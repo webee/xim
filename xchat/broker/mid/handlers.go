@@ -58,7 +58,7 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 		payload = append(payload, 0x31)
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true, string(payload)}}
+	return &turnpike.CallResult{Args: []interface{}{true, s.ID, string(payload)}}
 }
 
 // 用户发送消息
