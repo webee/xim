@@ -1,8 +1,22 @@
 package db
 
 import (
+	"fmt"
 	"time"
 )
+
+// Timestamp is timestamp.
+type Timestamp time.Time
+
+// Unix returns unix timestamp.
+func (t Timestamp) Unix() int64 {
+	return time.Time(t).Unix()
+}
+
+// MarshalJSON encode Timestamp to byte array.
+func (t Timestamp) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%d", time.Time(t).Unix())), nil
+}
 
 // Chat is a conversation.
 type Chat struct {
@@ -14,12 +28,24 @@ type Chat struct {
 	Created time.Time
 }
 
+// UserChat is a user's conversation.
+type UserChat struct {
+	ID      uint64    `db:"id" json:"id"`
+	Type    string    `json:"type"`
+	Title   string    `json:"title"`
+	Tag     string    `json:"tag"`
+	MsgID   uint64    `db:"msg_id" json:"msg_id"`
+	Created Timestamp `json:"created"`
+	User    string    `json:"user"`
+	CurID   uint64    `db:"cur_id" json:"cur_id"`
+	Joined  Timestamp `json:"joined"`
+}
+
 // Member is a chat member.
 type Member struct {
 	ChatID  uint64 `db:"chat_id"`
 	User    string
 	Created time.Time
-	InitID  uint64 `db:"init_id"`
 	CurID   uint64 `db:"cur_id"`
 }
 

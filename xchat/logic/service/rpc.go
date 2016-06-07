@@ -28,6 +28,16 @@ func (r *RPCXChat) FetchChat(chatID uint64, reply *db.Chat) (err error) {
 	return nil
 }
 
+// FetchUserChatList fetch user's chat list.
+func (r *RPCXChat) FetchUserChatList(user string, reply *[]db.UserChat) (err error) {
+	userChats, err := FetchUserChatList(user)
+	if err != nil {
+		return err
+	}
+	*reply = userChats
+	return nil
+}
+
 // FetchChatMembers fetch chat's members.
 func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err error) {
 	members, err := FetchChatMembers(chatID)

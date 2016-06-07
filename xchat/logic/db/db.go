@@ -24,7 +24,7 @@ func InitDB(driverName, dataSourceName string) (close func()) {
 
 // GetChatMembers returns chat's members.
 func GetChatMembers(chatID uint64) (members []Member, err error) {
-	err = db.Select(&members, `SELECT chat_id, "user", created, init_id, cur_id FROM xchat_member where chat_id=$1`, chatID)
+	err = db.Select(&members, `SELECT chat_id, "user", created, cur_id FROM xchat_member where chat_id=$1`, chatID)
 	return
 }
 
@@ -36,7 +36,7 @@ func AddGroupMembers(chatID uint64, users []string) error {
 	}
 
 	for _, user := range users {
-		db.Exec(`INSERT INTO xchat_member(chat_id, "user", created, init_id, cur_id) VALUES($1, $2, now(), $3, $4)`, chatID, user, chat.MsgID, chat.MsgID)
+		db.Exec(`INSERT INTO xchat_member(chat_id, "user", created, cur_id) VALUES($1, $2, now(), $4)`, chatID, user, chat.MsgID)
 	}
 	return nil
 }
@@ -56,6 +56,12 @@ func GetChatMessages(chatID uint64, sID, eID uint64) (msgs []Message, err error)
 func GetChat(chatID uint64) (chat *Chat, err error) {
 	chat = &Chat{}
 	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, created FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
+}
+
+// GetUserChatList returns user's chat list.
+func GetUserChatList(user string) (userChats []UserChat, err error) {
+	err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
+	return
 }
 
 // NewMsg insert a new message.
