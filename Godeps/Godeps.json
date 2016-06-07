@@ -82,6 +82,10 @@
 			"Rev": "ea0151498788f6fab6365eae24f29f41c0ac0acc"
 		},
 		{
+			"ImportPath": "github.com/jcelliott/turnpike",
+			"Rev": "65eb3bacd2852f9554a44d7d1b60a91fdb26fe67"
+		},
+		{
 			"ImportPath": "github.com/jmoiron/sqlx",
 			"Comment": "sqlx-v1.1-61-g398dd58",
 			"Rev": "398dd5876282499cdfd4cb8ea0f31a672abe9495"
@@ -156,10 +160,6 @@
 			"ImportPath": "github.com/webee/ttlcache",
 			"Comment": "1.0.1-5-g1e620d0",
 			"Rev": "1e620d05755a61b370757c07a39532bc01c0f596"
-		},
-		{
-			"ImportPath": "github.com/webee/turnpike",
-			"Rev": "99b8b6a14d7534838574fc4453aeeff557c1950f"
 		},
 		{
 			"ImportPath": "github.com/youtube/vitess/go/acl",
