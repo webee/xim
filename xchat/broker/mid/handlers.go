@@ -110,7 +110,7 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	return &turnpike.CallResult{Args: []interface{}{true, chatID}}
 }
 
-// 获取历史消息
+// 获取会话信息
 func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChat, args, kwargs)
 	s := getSessionFromDetails(kwargs["details"], false)
@@ -134,8 +134,13 @@ func fetchChatList(args []interface{}, kwargs map[string]interface{}) (result *t
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
-	return nil
-	// _, user := getSessionFromDetails(kwargs["details"])
+
+	// fetch chat.
+	chats := []db.UserChat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchUserChatList, s.User, &chats); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	return &turnpike.CallResult{Args: []interface{}{true, chats}}
 }
 
 // 获取历史消息

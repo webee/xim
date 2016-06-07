@@ -16,9 +16,14 @@ func FetchChatMembers(chatID uint64) ([]db.Member, error) {
 	return db.GetChatMembers(chatID)
 }
 
-// FetchChat fetch chat's members.
+// FetchChat fetch chat.
 func FetchChat(chatID uint64) (*db.Chat, error) {
 	return db.GetChat(chatID)
+}
+
+// FetchUserChatList fetch user's chat list.
+func FetchUserChatList(user string) ([]db.UserChat, error) {
+	return db.GetUserChatList(user)
 }
 
 // FetchChatMessages fetch chat's messages between sID and eID.

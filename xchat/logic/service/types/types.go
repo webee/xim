@@ -20,5 +20,6 @@ const (
 	RPCXChatSendMsg           = "RPCXChat.SendMsg"
 	RPCXChatFetchChatMessages = "RPCXChat.FetchChatMessages"
 	RPCXChatFetchChat         = "RPCXChat.FetchChat"
+	RPCXChatFetchUserChatList = "RPCXChat.FetchUserChatList"
 	RPCXChatFetchChatMembers  = "RPCXChat.FetchChatMembers"
 )
