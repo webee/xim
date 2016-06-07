@@ -10,71 +10,12 @@ type SessionID uint64
 
 // PushState is chat's push state.
 type PushState struct {
-	sync.RWMutex
+	sync.Mutex
 	// only push msg which id > PushMsgID.
 	pushMsgID uint64
-	seq       uint64
-	curSeq    uint64
 	pushing   chan struct{}
 	s         *Session
-}
-
-// Pushing starts push.
-func (s *PushState) Pushing(seq uint64) bool {
-	return s.doPushing(seq, false)
-}
-
-func (s *PushState) doPushing(seq uint64, yield bool) bool {
-	// TODO: use RWLock.
-	s.RLock()
-	curSeq := s.curSeq
-	s.RUnlock()
-
-	if curSeq == seq {
-		return true
-	}
-	if curSeq > seq {
-		// impossible!!!
-		l.Emergency("current seq: %d, seq: %d", curSeq, seq)
-		return false
-	}
-
-	if yield {
-		select {
-		case s.pushing <- struct{}{}:
-		default:
-		}
-	}
-
-	<-s.pushing
-
-	return s.doPushing(seq, true)
-}
-
-/* debug lock.
-func (s *PushState) Lock() {
-	l.Info("%d: LOCK, %d", s.s.ID, s.curSeq)
-	s.RWMutex.Lock()
-}
-
-func (s *PushState) Unlock() {
-	l.Info("%d: UNLOCK, %d", s.s.ID, s.curSeq)
-	s.RWMutex.Unlock()
-}
-*/
-
-// DonePushing done push.
-func (s *PushState) DonePushing(seq uint64) {
-	s.Lock()
-	if s.curSeq == seq {
-		s.curSeq++
-	}
-	s.Unlock()
-
-	select {
-	case s.pushing <- struct{}{}:
-	default:
-	}
+	taskChan  chan chan []*Message
 }
 
 // Session is a user connection.
@@ -97,30 +38,36 @@ func newSession(id SessionID, user string) *Session {
 	}
 }
 
-// GetSetPushID get last push id if not pushed, and set current id and get a push seq id.
-func (s *Session) GetSetPushID(chatID uint64, id uint64) (*PushState, uint64, uint64, bool) {
+// GetPushState get last push id if not pushed, and set current id and get a push seq id.
+// 排队分配服务seq及任务(lastID, id]
+func (s *Session) GetPushState(chatID uint64, id uint64) (p *PushState, task chan []*Message, lastID uint64, valid bool) {
 	s.Lock()
-	defer s.Unlock()
 	p, ok := s.pushStates[chatID]
 	if !ok {
 		p = &PushState{
-			pushing: make(chan struct{}),
-			s:       s,
+			pushing:   make(chan struct{}, 2),
+			s:         s,
+			pushMsgID: id - 1,
+			taskChan:  make(chan chan []*Message, 64),
 		}
+		p.pushing <- struct{}{}
 		s.pushStates[chatID] = p
 	}
+	s.Unlock()
 
+	p.Lock()
+	defer p.Unlock()
 	if id <= p.pushMsgID {
-		return nil, 0, 0, false
+		return
 	}
+	valid = true
 
-	seq := p.seq
-	p.seq++
+	task = make(chan []*Message, 1)
+	p.taskChan <- task
 
-	lastID := p.pushMsgID
+	lastID = p.pushMsgID
 	p.pushMsgID = id
-
-	return p, seq, lastID, true
+	return
 }
 
 var (

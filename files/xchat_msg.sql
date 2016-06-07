@@ -19,3 +19,5 @@ ALTER TABLE xchat_message
 
 
 CREATE INDEX xchat_message_ts ON xchat_message USING btree(ts);
+
+UPDATE xchat_chat SET msg_id = 0;

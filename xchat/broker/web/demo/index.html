@@ -75,6 +75,34 @@
       );
     }
 
+    function testPing(n) {
+      session.call('xchat.ping', [n||0]).then(res=>console.log("res:", res), err=>console.error("err:", err));
+    }
+
+    function testSendMsg(s, chat_id, i, n, show) {
+      if (i<n) {
+        var content = s + i;
+        session.call('xchat.user.msg.send', [chat_id, content]).then(
+          res=>{
+            console.log("res:", res);
+            var args = res.args;
+            if (args[0]) {
+              if (show) {
+                newMsg({chat_id: chat_id, user:"*test*", id: args[1], ts: args[2], msg: content});
+              }
+            } else {
+              console.error("error:" + args[2]);
+            }
+            testSendMsg(s, chat_id, i+1, n);
+          }).catch(
+          err=>{
+            console.error("err:", err);
+            testSendMsg(s, chat_id, i+1, n);
+          }
+        );
+      }
+    }
+
     function newMsg(msg) {
         var msg_div = document.getElementById("msg");
         var p = document.createElement("p");

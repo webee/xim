@@ -63,7 +63,7 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 
 // 用户发送消息
 func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatSendMsg, args, kwargs)
+	l.Debug("[rpc]%s: %v, %+v", URIXChatSendMsg, args, kwargs)
 	s := getSessionFromDetails(kwargs["details"], false)
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
@@ -150,7 +150,7 @@ func sub(handler turnpike.EventHandler) turnpike.EventHandler {
 	return func(args []interface{}, kargs map[string]interface{}) {
 		defer func() {
 			if r := recover(); r != nil {
-				l.Emergency("sub error: %s", r)
+				l.Warning("sub error: %s", r)
 			}
 		}()
 		handler(args, kargs)
@@ -161,6 +161,7 @@ func call(handler turnpike.BasicMethodHandler) turnpike.BasicMethodHandler {
 	return func(args []interface{}, kargs map[string]interface{}) (result *turnpike.CallResult) {
 		defer func() {
 			if r := recover(); r != nil {
+				l.Warning("call error: %s", r)
 				result = &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{r}}
 			}
 		}()

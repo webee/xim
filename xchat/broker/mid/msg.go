@@ -3,6 +3,7 @@ package mid
 import (
 	"fmt"
 	"math"
+	"time"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
@@ -21,11 +22,13 @@ func handleMsg(ms <-chan interface{}) {
 type xsess struct {
 	p      *PushState
 	lastID uint64
-	seq    uint64
+	task   chan []*Message
 }
 
 func push(msg *pubtypes.Message) {
 	var members []db.Member
+	// TODO: timeout cache rpc call.
+	// call every 2 seconds.
 	if err := xchatLogic.Call(types.RPCXChatFetchChatMembers, msg.ChatID, &members); err != nil {
 		l.Warning("fetch chat[%d] members error: %s", msg.ChatID, err)
 		return
@@ -37,43 +40,43 @@ func push(msg *pubtypes.Message) {
 	for _, member := range members {
 		ss := GetUserSessions(member.User)
 		for _, x := range ss {
-			p, seq, lastID, ok := x.GetSetPushID(msg.ChatID, msg.ID)
+			p, task, lastID, ok := x.GetPushState(msg.ChatID, msg.ID)
 			if !ok {
 				// already send.
 				continue
 			}
-			if lastID > 0 && lastID < minLastID {
+			if lastID < minLastID {
 				minLastID = lastID
 			}
-			xsesses = append(xsesses, &xsess{p, lastID, seq})
+			xsesses = append(xsesses, &xsess{p, lastID, task})
 		}
 	}
 	if len(xsesses) < 1 {
 		return
 	}
 
-	pushSessesMsgs(xsesses, minLastID, msg, true, true)
+	pushSessesMsgs(xsesses, minLastID, msg, true)
 }
 
 func pushSessMsg(x *Session, msg *pubtypes.Message) {
-	p, seq, lastID, ok := x.GetSetPushID(msg.ChatID, msg.ID)
+	p, task, lastID, ok := x.GetPushState(msg.ChatID, msg.ID)
 	if !ok {
 		return
 	}
-	if lastID == 0 || lastID+1 == msg.ID {
+	if lastID+1 == msg.ID {
 		// already send.
-		p.DonePushing(seq)
+		close(task)
+		tryPushing(p)
 		return
 	}
 
-	xsesses := []*xsess{&xsess{p, lastID, seq}}
-	pushSessesMsgs(xsesses, lastID, msg, false, false)
+	xsesses := []*xsess{&xsess{p, lastID, task}}
+	pushSessesMsgs(xsesses, lastID, msg, false)
 }
 
-func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, include bool, async bool) {
-	l.Info("minLastID: %d, count: %d", minLastID, len(xsesses))
+func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, include bool) {
 	var msgs []pubtypes.Message
-	if minLastID != math.MaxUint64 && minLastID < msg.ID-1 {
+	if minLastID+1 < msg.ID {
 		// fetch late messages.
 		args := &types.FetchChatMessagesArgs{
 			ChatID: msg.ChatID,
@@ -105,25 +108,57 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, i
 			}
 		}
 
-		// TODO: check and optimize.
-		//
-		if async {
-			go doPush(xs.seq, xs.p, toPush)
-		} else {
-			doPush(xs.seq, xs.p, toPush)
-		}
+		xs.task <- toPush
+		tryPushing(xs.p)
 	}
 }
 
-func doPush(seq uint64, p *PushState, msgs []*Message) {
-	l.Info("push sess: %d, %d:%d, pushed: %d", p.s.ID, seq, p.curSeq, p.pushMsgID)
-	if ok := p.Pushing(seq); !ok {
-		return
+func tryPushing(p *PushState) {
+	select {
+	case <-p.pushing:
+		// start a goroutine.
+		go pushChatUserMsgs(p.pushing, p.s.ID, p.taskChan)
+	default:
+		// FIXME: BBBBBB => AAAAAA
+		// run a goroutine to go pushChatUserMsgs periodly.
 	}
-	defer p.DonePushing(seq)
+}
 
-	err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, p.s.ID), []interface{}{msgs}, emptyKwargs)
-	if err != nil {
-		l.Warning("publish msg error:", err)
+func pushChatUserMsgs(pushing chan struct{}, id SessionID, tasks <-chan chan []*Message) {
+	var accMsgs []*Message
+	for {
+		select {
+		case task := <-tasks:
+			msgs, ok := <-task
+			if ok {
+				accMsgs = append(accMsgs, msgs...)
+				if len(accMsgs) > 10 {
+					err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, id), []interface{}{accMsgs}, emptyKwargs)
+					if err != nil {
+						l.Warning("publish msg error:", err)
+					}
+					accMsgs = []*Message{}
+				}
+			}
+		case <-time.After(12 * time.Millisecond):
+			if len(accMsgs) > 0 {
+				err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, id), []interface{}{accMsgs}, emptyKwargs)
+				if err != nil {
+					l.Warning("publish msg error:", err)
+				}
+				accMsgs = []*Message{}
+			}
+			select {
+			case task := <-tasks:
+				msgs, ok := <-task
+				if ok {
+					accMsgs = append(accMsgs, msgs...)
+				}
+			case <-time.After(3 * time.Second):
+				pushing <- struct{}{}
+				// FIXME: AAAAAA => BBBBBB
+				return
+			}
+		}
 	}
 }
