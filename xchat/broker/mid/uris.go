@@ -10,16 +10,15 @@ const (
 	URIXChatPing = "xchat.ping"
 
 	// biz
-	URIXChatSendMsg       = "xchat.user.msg.send"
-	URIXChatFetchChatList = "xchat.user.chat.list"
-	URIXChatFetchChatMsgs = "xchat.user.chat.msgs"
+	URIXChatSendMsg = "xchat.user.msg.send"
 
 	// 用户发布消息
 	URIXChatUserPub = "xchat.user.chat.pub"
 
-	URIXChatNewChat   = "xchat.user.chat.new"
-	URIXChatFetchChat = "xchat.user.chat.fetch"
-	URIXChatChatList  = "xchat.user.chat.list"
+	URIXChatNewChat       = "xchat.user.chat.new"
+	URIXChatFetchChat     = "xchat.user.chat.fetch"
+	URIXChatFetchChatList = "xchat.user.chat.list"
+	URIXChatFetchChatMsgs = "xchat.user.chat.msgs"
 
 	// 用户接收消息
 	URIXChatUserMsg = "xchat.user.%d.msg"

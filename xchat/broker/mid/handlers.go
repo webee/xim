@@ -133,7 +133,7 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true, NewChatFromDBChat(&chat)}}
+	return &turnpike.CallResult{Args: []interface{}{true, &chat}}
 }
 
 // 获取会话信息
@@ -145,28 +145,31 @@ func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 	}
 	chatID := uint64(args[0].(float64))
 
-	// fetch chat.
-	chat := db.Chat{}
-	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
+	// fetch user chat.
+	userChat := db.UserChat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchUserChat, &types.FetchUserChatArgs{
+		User:   s.User,
+		ChatID: chatID,
+	}, &userChat); err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, NewChatFromDBChat(&chat)}}
+	return &turnpike.CallResult{Args: []interface{}{true, &userChat}}
 }
 
 // 获取会话列表
 func fetchChatList(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatChatList, args, kwargs)
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChatList, args, kwargs)
 	s := getSessionFromDetails(kwargs["details"], false)
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
 	// fetch chat.
-	chats := []db.UserChat{}
-	if err := xchatLogic.Call(types.RPCXChatFetchUserChatList, s.User, &chats); err != nil {
+	userChats := []db.UserChat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchUserChatList, s.User, &userChats); err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, chats}}
+	return &turnpike.CallResult{Args: []interface{}{true, userChats}}
 }
 
 // 获取历史消息
@@ -195,7 +198,7 @@ func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true, NewChatFromDBChat(&chat)}}
+	return &turnpike.CallResult{Args: []interface{}{true, &chat}}
 }
 
 // 离开房间
@@ -228,7 +231,7 @@ func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true, NewChatFromDBChat(&chat)}}
+	return &turnpike.CallResult{Args: []interface{}{true, &chat}}
 }
 
 func sub(handler turnpike.EventHandler) turnpike.EventHandler {

@@ -120,7 +120,7 @@ func (c *XChatHTTPClient) NewChat(chatType string, users []string, title string)
 }
 
 // FetchUserChats fetch user's chat list.
-func (c *XChatHTTPClient) FetchUserChats(user string, chatType string, tag string) ([]Chat, error) {
+func (c *XChatHTTPClient) FetchUserChats(user string, chatType string, tag string) ([]uint64, error) {
 	params := url.Values{}
 	params.Add("user", user)
 	params.Add("type", chatType)
@@ -141,9 +141,16 @@ func (c *XChatHTTPClient) FetchUserChats(user string, chatType string, tag strin
 		return nil, errors.New("request failed")
 	}
 	decoder := json.NewDecoder(resp.Body)
-	res := []Chat{}
+	res := []struct {
+		ID uint64 `json:"id"`
+	}{}
 	if err := decoder.Decode(&res); err != nil {
 		return nil, err
 	}
-	return res, nil
+
+	ids := []uint64{}
+	for _, r := range res {
+		ids = append(ids, r.ID)
+	}
+	return ids, nil
 }

@@ -72,7 +72,7 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	}
 
 	if err := xchat.BasicRegister(URIXChatFetchChatList, call(fetchChatList)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatNewChat, err)
+		log.Fatalf("Error register %s: %s", URIXChatFetchChatList, err)
 	}
 
 	// Rooms

@@ -22,6 +22,11 @@ func FetchChat(chatID uint64) (*db.Chat, error) {
 	return db.GetChat(chatID)
 }
 
+// FetchUserChat fetch user's chat.
+func FetchUserChat(user string, chatID uint64) (*db.UserChat, error) {
+	return db.GetUserChat(user, chatID)
+}
+
 // FetchUserChatList fetch user's chat list.
 func FetchUserChatList(user string) ([]db.UserChat, error) {
 	return db.GetUserChatList(user)

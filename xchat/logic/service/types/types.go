@@ -14,6 +14,12 @@ type SendMsgArgs struct {
 	Kind   string
 }
 
+// FetchUserChatArgs is the arguments of FetchUserChat
+type FetchUserChatArgs struct {
+	User   string
+	ChatID uint64
+}
+
 // FetchChatMessagesArgs is the arguments of FetchChatMessages
 type FetchChatMessagesArgs struct {
 	ChatID uint64
@@ -27,6 +33,7 @@ const (
 	RPCXChatSendMsg           = "RPCXChat.SendMsg"
 	RPCXChatFetchChatMessages = "RPCXChat.FetchChatMessages"
 	RPCXChatFetchChat         = "RPCXChat.FetchChat"
+	RPCXChatFetchUserChat     = "RPCXChat.FetchUserChat"
 	RPCXChatFetchUserChatList = "RPCXChat.FetchUserChatList"
 	RPCXChatFetchChatMembers  = "RPCXChat.FetchChatMembers"
 )

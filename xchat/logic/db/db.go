@@ -58,6 +58,13 @@ func GetChat(chatID uint64) (chat *Chat, err error) {
 	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, created FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
 }
 
+// GetUserChat returns user's chat.
+func GetUserChat(user string, chatID uint64) (userChat *UserChat, err error) {
+	userChat = &UserChat{}
+	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
+	return
+}
+
 // GetUserChatList returns user's chat list.
 func GetUserChatList(user string) (userChats []UserChat, err error) {
 	err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
