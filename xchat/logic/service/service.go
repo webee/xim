@@ -28,8 +28,13 @@ func FetchUserChat(user string, chatID uint64) (*db.UserChat, error) {
 }
 
 // FetchUserChatList fetch user's chat list.
-func FetchUserChatList(user string) ([]db.UserChat, error) {
-	return db.GetUserChatList(user)
+func FetchUserChatList(user string, onlyUnsync bool) ([]db.UserChat, error) {
+	return db.GetUserChatList(user, onlyUnsync)
+}
+
+// SyncUserChatRecv sync user's chat msg recv.
+func SyncUserChatRecv(user string, chatID uint64, msgID uint64) error {
+	return db.SyncUserChatRecv(user, chatID, msgID)
 }
 
 // FetchChatMessages fetch chat's messages between sID and eID.

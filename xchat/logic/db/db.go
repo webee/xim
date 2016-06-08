@@ -66,8 +66,18 @@ func GetUserChat(user string, chatID uint64) (userChat *UserChat, err error) {
 }
 
 // GetUserChatList returns user's chat list.
-func GetUserChatList(user string) (userChats []UserChat, err error) {
+func GetUserChatList(user string, onlyUnsync bool) (userChats []UserChat, err error) {
+	if onlyUnsync {
+		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
+		return
+	}
 	err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
+	return
+}
+
+// SyncUserChatRecv set user's current recv msg id.
+func SyncUserChatRecv(user string, chatID uint64, msgID uint64) (err error) {
+	_, err = db.Exec(`UPDATE xchat_member SET cur_id=$1 WHERE "user"=$2 and chat_id=$3 and cur_id<$4`, msgID, user, chatID, msgID)
 	return
 }
 

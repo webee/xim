@@ -6,6 +6,14 @@ const (
 	MsgKindChatNotify = "chat_notify"
 )
 
+// NoArgs used by rpc with no args.
+type NoArgs struct {
+}
+
+// NoReply used by rpc with no reply.
+type NoReply struct {
+}
+
 // SendMsgArgs is the arguments of SendMsg.
 type SendMsgArgs struct {
 	ChatID uint64
@@ -18,6 +26,19 @@ type SendMsgArgs struct {
 type FetchUserChatArgs struct {
 	User   string
 	ChatID uint64
+}
+
+// FetchUserChatListArgs is the arguments of FetchUserChatList
+type FetchUserChatListArgs struct {
+	User       string
+	OnlyUnsync bool
+}
+
+// SyncUserChatRecvArgs is the arguments of SyncUserChatRecv.
+type SyncUserChatRecvArgs struct {
+	User   string
+	ChatID uint64
+	MsgID  uint64
 }
 
 // FetchChatMessagesArgs is the arguments of FetchChatMessages
@@ -35,5 +56,6 @@ const (
 	RPCXChatFetchChat         = "RPCXChat.FetchChat"
 	RPCXChatFetchUserChat     = "RPCXChat.FetchUserChat"
 	RPCXChatFetchUserChatList = "RPCXChat.FetchUserChatList"
+	RPCXChatSyncUserChatRecv  = "RPCXChat.SyncUserChatRecv"
 	RPCXChatFetchChatMembers  = "RPCXChat.FetchChatMembers"
 )

@@ -39,13 +39,18 @@ func (r *RPCXChat) FetchUserChat(args *types.FetchUserChatArgs, reply *db.UserCh
 }
 
 // FetchUserChatList fetch user's chat list.
-func (r *RPCXChat) FetchUserChatList(user string, reply *[]db.UserChat) (err error) {
-	userChats, err := FetchUserChatList(user)
+func (r *RPCXChat) FetchUserChatList(args *types.FetchUserChatListArgs, reply *[]db.UserChat) (err error) {
+	userChats, err := FetchUserChatList(args.User, args.OnlyUnsync)
 	if err != nil {
 		return err
 	}
 	*reply = userChats
 	return nil
+}
+
+// SyncUserChatRecv sync user's chat msg recv.
+func (r *RPCXChat) SyncUserChatRecv(args *types.SyncUserChatRecvArgs, reply *types.NoReply) (err error) {
+	return SyncUserChatRecv(args.User, args.ChatID, args.MsgID)
 }
 
 // FetchChatMembers fetch chat's members.

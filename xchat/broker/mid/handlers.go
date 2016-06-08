@@ -164,16 +164,46 @@ func fetchChatList(args []interface{}, kwargs map[string]interface{}) (result *t
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
+	// params
+	var onlyUnsync bool
+	if x, ok := kwargs["only_unsync"]; ok {
+		onlyUnsync = x.(bool)
+	}
+
 	// fetch chat.
 	userChats := []db.UserChat{}
-	if err := xchatLogic.Call(types.RPCXChatFetchUserChatList, s.User, &userChats); err != nil {
+	if err := xchatLogic.Call(types.RPCXChatFetchUserChatList, &types.FetchUserChatListArgs{
+		User:       s.User,
+		OnlyUnsync: onlyUnsync,
+	}, &userChats); err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 	return &turnpike.CallResult{Args: []interface{}{true, userChats}}
 }
 
+// 同时会话接收消息
+func syncChatRecv(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatSyncChatRecv, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+	chatID := uint64(args[0].(float64))
+	msgID := uint64(args[1].(float64))
+
+	// sync chat recv.
+	if err := xchatLogic.Call(types.RPCXChatSyncUserChatRecv, &types.SyncUserChatRecvArgs{
+		User:   s.User,
+		ChatID: chatID,
+		MsgID:  msgID,
+	}, nil); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	return &turnpike.CallResult{Args: []interface{}{true}}
+}
+
 // 获取历史消息
-func fetchChatMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChatMsgs, args, kwargs)
 	return nil
 	// _, user := getSessionFromDetails(kwargs["details"])

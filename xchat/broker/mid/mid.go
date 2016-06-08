@@ -63,8 +63,12 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 		log.Fatalf("Error register %s: %s", URIXChatFetchChat, err)
 	}
 
-	if err := xchat.BasicRegister(URIXChatFetchChatMsgs, call(fetchChatMsg)); err != nil {
+	if err := xchat.BasicRegister(URIXChatFetchChatMsgs, call(fetchChatMsgs)); err != nil {
 		log.Fatalf("Error register %s: %s", URIXChatFetchChatMsgs, err)
+	}
+
+	if err := xchat.BasicRegister(URIXChatSyncChatRecv, call(syncChatRecv)); err != nil {
+		log.Fatalf("Error register %s: %s", URIXChatSyncChatRecv, err)
 	}
 
 	if err := xchat.BasicRegister(URIXChatNewChat, call(newChat)); err != nil {
