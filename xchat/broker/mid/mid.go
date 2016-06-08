@@ -75,6 +75,20 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 		log.Fatalf("Error register %s: %s", URIXChatNewChat, err)
 	}
 
+	// Rooms
+	if err := xchat.BasicRegister(URIXChatEnterRoom, call(enterRoom)); err != nil {
+		log.Fatalf("Error register %s: %s", URIXChatEnterRoom, err)
+	}
+
+	if err := xchat.BasicRegister(URIXChatExitRoom, call(exitRoom)); err != nil {
+		log.Fatalf("Error register %s: %s", URIXChatExitRoom, err)
+	}
+
+	// custome service
+	if err := xchat.BasicRegister(URIXChatGetCsChat, call(getCsChat)); err != nil {
+		log.Fatalf("Error register %s: %s", URIXChatGetCsChat, err)
+	}
+
 	xchatSub = pub.NewSubscriber(config.LogicPubAddr, 128)
 	go handleMsg(xchatSub.Msgs())
 }

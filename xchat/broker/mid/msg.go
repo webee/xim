@@ -12,10 +12,8 @@ func handleMsg(ms <-chan interface{}) {
 	for m := range ms {
 		switch msg := m.(type) {
 		case pubtypes.ChatMessage:
-			l.Info("push msg: %+v", msg)
 			go push(&msg)
 		case pubtypes.ChatNotifyMessage:
-			l.Info("push notify msg: %+v", msg)
 			go pushNotify(&msg)
 		}
 	}

@@ -127,7 +127,13 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true, chatID}}
+	// fetch chat.
+	chat := db.Chat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+
+	return &turnpike.CallResult{Args: []interface{}{true, NewChatFromDBChat(&chat)}}
 }
 
 // 获取会话信息
@@ -169,6 +175,61 @@ func fetchChatMsg(args []interface{}, kwargs map[string]interface{}) (result *tu
 	return nil
 	// _, user := getSessionFromDetails(kwargs["details"])
 	// chatID := uint64(args[0].(float64))
+}
+
+// 房间
+// 进入房间
+func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatEnterRoom, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+
+	// roomID := uint64(args[0].(float64))
+
+	chatID := 4
+	// fetch chat.
+	chat := db.Chat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+
+	return &turnpike.CallResult{Args: []interface{}{true, NewChatFromDBChat(&chat)}}
+}
+
+// 离开房间
+func exitRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatEnterRoom, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+
+	// roomID := uint64(args[0].(float64))
+	// chatID := uint64(args[1].(float64))
+
+	return &turnpike.CallResult{Args: []interface{}{true}}
+}
+
+// 客服
+// 获取我的客服会话
+func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatEnterRoom, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+
+	var chatID uint64
+	chatID = 4
+	// fetch chat.
+	chat := db.Chat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+
+	return &turnpike.CallResult{Args: []interface{}{true, NewChatFromDBChat(&chat)}}
 }
 
 func sub(handler turnpike.EventHandler) turnpike.EventHandler {
