@@ -133,6 +133,7 @@ func pushChatUserMsgs(p *PushState) {
 	notifyTasks := p.notifyTaskChan
 
 	var accMsgs []*Message
+	var accNotifyMsgs []*NotifyMessage
 	for {
 		select {
 		case task := <-tasks:
@@ -150,12 +151,21 @@ func pushChatUserMsgs(p *PushState) {
 			if !ok || len(msgs) == 0 {
 				continue
 			}
-			doPush(s.msgTopic, types.MsgKindChatNotify, msgs)
+			accNotifyMsgs = append(accNotifyMsgs, msgs...)
+			if len(accNotifyMsgs) > 10 {
+				doPush(s.msgTopic, types.MsgKindChatNotify, accNotifyMsgs)
+				accNotifyMsgs = []*NotifyMessage{}
+			}
 		case <-time.After(12 * time.Millisecond):
 			if len(accMsgs) > 0 {
 				doPush(s.msgTopic, types.MsgKindChat, accMsgs)
 				accMsgs = []*Message{}
 			}
+			if len(accNotifyMsgs) > 0 {
+				doPush(s.msgTopic, types.MsgKindChatNotify, accNotifyMsgs)
+				accNotifyMsgs = []*NotifyMessage{}
+			}
+
 			select {
 			case task := <-tasks:
 				msgs, ok := <-task
@@ -164,10 +174,9 @@ func pushChatUserMsgs(p *PushState) {
 				}
 			case task := <-notifyTasks:
 				msgs, ok := <-task
-				if !ok || len(msgs) == 0 {
-					continue
+				if ok {
+					accNotifyMsgs = append(accNotifyMsgs, msgs...)
 				}
-				doPush(s.msgTopic, types.MsgKindChatNotify, msgs)
 			case <-time.After(3 * time.Second):
 				pushing <- struct{}{}
 				// FIXME: AAAAAA => BBBBBB
@@ -178,7 +187,6 @@ func pushChatUserMsgs(p *PushState) {
 }
 
 func doPush(topic string, kind string, payload interface{}) {
-	l.Info("push msg to: %s", topic)
 	err := xchat.Publish(topic, []interface{}{kind, payload}, emptyKwargs)
 	if err != nil {
 		l.Warning("publish msg error:", err)
