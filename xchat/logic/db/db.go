@@ -24,7 +24,7 @@ func InitDB(driverName, dataSourceName string) (close func()) {
 
 // GetChatMembers returns chat's members.
 func GetChatMembers(chatID uint64) (members []Member, err error) {
-	err = db.Select(&members, `SELECT chat_id, "user", created, cur_id FROM xchat_member where chat_id=$1`, chatID)
+	err = db.Select(&members, `SELECT chat_id, "user", joined, cur_id FROM xchat_member where chat_id=$1`, chatID)
 	return
 }
 

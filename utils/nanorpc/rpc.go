@@ -51,6 +51,11 @@ func (r *Client) CallTimeout(serviceMethod string, t time.Duration, args interfa
 	}
 }
 
+// AsyncCall call a method async without result.
+func (r *Client) AsyncCall(serviceMethod string, args interface{}) {
+	r.Client.Go(serviceMethod, args, nil, make(chan *rpc.Call, 1))
+}
+
 func (r *Client) reconnect() {
 	r.Lock()
 	defer r.Unlock()

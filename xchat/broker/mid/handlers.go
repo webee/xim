@@ -61,7 +61,7 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 	return &turnpike.CallResult{Args: []interface{}{true, s.ID, string(payload)}}
 }
 
-// 用户发送消息
+// 用户发送消息, 会话消息
 func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	l.Debug("[rpc]%s: %v, %+v", URIXChatSendMsg, args, kwargs)
 	s := getSessionFromDetails(kwargs["details"], false)
@@ -72,11 +72,12 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	chatID := uint64(args[0].(float64))
 	msg := args[1].(string)
 
-	var message pubtypes.Message
+	var message pubtypes.ChatMessage
 	if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
 		ChatID: chatID,
 		User:   s.User,
 		Msg:    msg,
+		Kind:   types.MsgKindChat,
 	}, &message); err != nil {
 		l.Warning("error: %s", err)
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
@@ -85,6 +86,25 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	pushSessMsg(s, &message)
 
 	return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}}
+}
+
+// 用户发布消息, 通知消息
+func onPubMsg(args []interface{}, kwargs map[string]interface{}) {
+	l.Debug("[pub]%s: %v, %+v", URIXChatUserPub, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return
+	}
+
+	chatID := uint64(args[0].(float64))
+	msg := args[1].(string)
+
+	xchatLogic.AsyncCall(types.RPCXChatSendMsg, &types.SendMsgArgs{
+		ChatID: chatID,
+		User:   s.User,
+		Msg:    msg,
+		Kind:   types.MsgKindChatNotify,
+	})
 }
 
 // 创建会话

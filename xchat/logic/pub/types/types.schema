@@ -1,7 +1,21 @@
-struct Message {
+struct ChatMessage {
 	ChatID uint64
 	ID  uint64
 	User   string
 	Ts     int64
 	Msg    string
+}
+
+struct ChatNotifyMessage {
+	ChatID uint64
+	User   string
+	Ts     int64
+	Msg    string
+}
+
+struct XMessage {
+	Msg union {
+		ChatMessage
+		ChatNotifyMessage
+	}
 }

@@ -1,9 +1,10 @@
 package service
 
 import (
+	"time"
 	"xim/xchat/logic/db"
 	"xim/xchat/logic/pub"
-	"xim/xchat/logic/pub/types"
+	pubtypes "xim/xchat/logic/pub/types"
 )
 
 // Echo send msg back.
@@ -27,14 +28,14 @@ func FetchUserChatList(user string) ([]db.UserChat, error) {
 }
 
 // FetchChatMessages fetch chat's messages between sID and eID.
-func FetchChatMessages(chatID uint64, sID, eID uint64) ([]types.Message, error) {
+func FetchChatMessages(chatID uint64, sID, eID uint64) ([]pubtypes.ChatMessage, error) {
 	msgs, err := db.GetChatMessages(chatID, sID, eID)
 	if err != nil {
 		return nil, err
 	}
-	ms := []types.Message{}
+	ms := []pubtypes.ChatMessage{}
 	for _, msg := range msgs {
-		ms = append(ms, types.Message{
+		ms = append(ms, pubtypes.ChatMessage{
 			ID:   msg.ID,
 			User: msg.User,
 			Ts:   msg.Ts.Unix(),
@@ -44,15 +45,15 @@ func FetchChatMessages(chatID uint64, sID, eID uint64) ([]types.Message, error) 
 	return ms, nil
 }
 
-// SendMsg sends message.
-func SendMsg(chatID uint64, user string, msg string) (*types.Message, error) {
+// SendChatMsg sends chat message.
+func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage, error) {
 	message, err := db.NewMsg(chatID, user, msg)
 	if err != nil {
 		return nil, err
 	}
 
 	// publish
-	m := &types.Message{
+	m := pubtypes.ChatMessage{
 		ChatID: message.ChatID,
 		ID:     message.ID,
 		User:   message.User,
@@ -60,7 +61,22 @@ func SendMsg(chatID uint64, user string, msg string) (*types.Message, error) {
 		Msg:    message.Msg,
 	}
 	// FIXME: goroutine pool?
-	go pub.PublishMessage(m)
+	go pub.PublishMessage(&pubtypes.XMessage{
+		Msg: m,
+	})
+	return &m, err
+}
 
-	return m, err
+// SendChatNotifyMsg sends chat notify message.
+func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
+	m := pubtypes.ChatNotifyMessage{
+		ChatID: chatID,
+		User:   user,
+		Ts:     time.Now().Unix(),
+		Msg:    msg,
+	}
+	go pub.PublishMessage(&pubtypes.XMessage{
+		Msg: m,
+	})
+	return nil
 }

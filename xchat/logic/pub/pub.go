@@ -46,8 +46,8 @@ func StartPublisher(addrs []string, dial bool) (close func()) {
 	}
 }
 
-// PublishMessage publish user send message.
-func PublishMessage(msg *types.Message) error {
+// PublishMessage publish messages.
+func PublishMessage(msg *types.XMessage) error {
 	b, err := msg.Marshal(nil)
 	if err != nil {
 		return err

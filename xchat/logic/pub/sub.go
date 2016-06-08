@@ -47,20 +47,18 @@ func (s *Subscriber) Msgs() <-chan interface{} {
 
 func (s *Subscriber) subscribing() {
 	for {
-		msg, err := s.s.Recv()
+		buf, err := s.s.Recv()
 		if err != nil {
 			close(s.msgs)
 			return
 		}
-		// TODO: switch message type.
-		// default is Message
-		message := &types.Message{}
-		_, err = message.Unmarshal(msg)
+		xmsg := &types.XMessage{}
+		_, err = xmsg.Unmarshal(buf)
 		if err != nil {
 			// TODO:
 			log.Println("decode message error:", err)
 			continue
 		}
-		s.msgs <- message
+		s.msgs <- xmsg.Msg
 	}
 }

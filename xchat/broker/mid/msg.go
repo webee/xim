@@ -1,7 +1,6 @@
 package mid
 
 import (
-	"fmt"
 	"math"
 	"time"
 	"xim/xchat/logic/db"
@@ -12,9 +11,12 @@ import (
 func handleMsg(ms <-chan interface{}) {
 	for m := range ms {
 		switch msg := m.(type) {
-		case *pubtypes.Message:
+		case pubtypes.ChatMessage:
 			l.Info("push msg: %+v", msg)
-			go push(msg)
+			go push(&msg)
+		case pubtypes.ChatNotifyMessage:
+			l.Info("push notify msg: %+v", msg)
+			go pushNotify(&msg)
 		}
 	}
 }
@@ -25,7 +27,7 @@ type xsess struct {
 	task   chan []*Message
 }
 
-func push(msg *pubtypes.Message) {
+func push(msg *pubtypes.ChatMessage) {
 	var members []db.Member
 	// TODO: timeout cache rpc call.
 	// call every 2 seconds.
@@ -58,7 +60,7 @@ func push(msg *pubtypes.Message) {
 	pushSessesMsgs(xsesses, minLastID, msg, true)
 }
 
-func pushSessMsg(x *Session, msg *pubtypes.Message) {
+func pushSessMsg(x *Session, msg *pubtypes.ChatMessage) {
 	p, task, lastID, ok := x.GetPushState(msg.ChatID, msg.ID)
 	if !ok {
 		return
@@ -74,8 +76,8 @@ func pushSessMsg(x *Session, msg *pubtypes.Message) {
 	pushSessesMsgs(xsesses, lastID, msg, false)
 }
 
-func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.Message, include bool) {
-	var msgs []pubtypes.Message
+func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.ChatMessage, include bool) {
+	var msgs []pubtypes.ChatMessage
 	if minLastID+1 < msg.ID {
 		// fetch late messages.
 		args := &types.FetchChatMessagesArgs{
@@ -117,35 +119,41 @@ func tryPushing(p *PushState) {
 	select {
 	case <-p.pushing:
 		// start a goroutine.
-		go pushChatUserMsgs(p.pushing, p.s.ID, p.taskChan)
+		go pushChatUserMsgs(p)
 	default:
 		// FIXME: BBBBBB => AAAAAA
 		// run a goroutine to go pushChatUserMsgs periodly.
 	}
 }
 
-func pushChatUserMsgs(pushing chan struct{}, id SessionID, tasks <-chan chan []*Message) {
+func pushChatUserMsgs(p *PushState) {
+	pushing := p.pushing
+	s := p.s
+	tasks := p.taskChan
+	notifyTasks := p.notifyTaskChan
+
 	var accMsgs []*Message
 	for {
 		select {
 		case task := <-tasks:
 			msgs, ok := <-task
-			if ok {
-				accMsgs = append(accMsgs, msgs...)
-				if len(accMsgs) > 10 {
-					err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, id), []interface{}{accMsgs}, emptyKwargs)
-					if err != nil {
-						l.Warning("publish msg error:", err)
-					}
-					accMsgs = []*Message{}
-				}
+			if !ok || len(msgs) == 0 {
+				continue
 			}
+			accMsgs = append(accMsgs, msgs...)
+			if len(accMsgs) > 10 {
+				doPush(s.msgTopic, types.MsgKindChat, accMsgs)
+				accMsgs = []*Message{}
+			}
+		case task := <-notifyTasks:
+			msgs, ok := <-task
+			if !ok || len(msgs) == 0 {
+				continue
+			}
+			doPush(s.msgTopic, types.MsgKindChatNotify, msgs)
 		case <-time.After(12 * time.Millisecond):
 			if len(accMsgs) > 0 {
-				err := xchat.Publish(fmt.Sprintf(URIXChatUserMsg, id), []interface{}{accMsgs}, emptyKwargs)
-				if err != nil {
-					l.Warning("publish msg error:", err)
-				}
+				doPush(s.msgTopic, types.MsgKindChat, accMsgs)
 				accMsgs = []*Message{}
 			}
 			select {
@@ -154,11 +162,45 @@ func pushChatUserMsgs(pushing chan struct{}, id SessionID, tasks <-chan chan []*
 				if ok {
 					accMsgs = append(accMsgs, msgs...)
 				}
+			case task := <-notifyTasks:
+				msgs, ok := <-task
+				if !ok || len(msgs) == 0 {
+					continue
+				}
+				doPush(s.msgTopic, types.MsgKindChatNotify, msgs)
 			case <-time.After(3 * time.Second):
 				pushing <- struct{}{}
 				// FIXME: AAAAAA => BBBBBB
 				return
 			}
+		}
+	}
+}
+
+func doPush(topic string, kind string, payload interface{}) {
+	l.Info("push msg to: %s", topic)
+	err := xchat.Publish(topic, []interface{}{kind, payload}, emptyKwargs)
+	if err != nil {
+		l.Warning("publish msg error:", err)
+	}
+}
+
+func pushNotify(msg *pubtypes.ChatNotifyMessage) {
+	var members []db.Member
+	// TODO: timeout cache rpc call.
+	// call every 2 seconds.
+	if err := xchatLogic.Call(types.RPCXChatFetchChatMembers, msg.ChatID, &members); err != nil {
+		l.Warning("fetch chat[%d] members error: %s", msg.ChatID, err)
+		return
+	}
+
+	for _, member := range members {
+		ss := GetUserSessions(member.User)
+		for _, x := range ss {
+			p, task := x.GetNotifyPushState(msg.ChatID)
+			toPush := NewNotifyMessageFromDBMsg(msg)
+			task <- []*NotifyMessage{toPush}
+			tryPushing(p)
 		}
 	}
 }

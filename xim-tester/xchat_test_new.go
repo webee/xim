@@ -115,7 +115,7 @@ func newClient(id int, exit chan bool, addr *string) {
 		log.Println("joinRealm", ret)
 	}
 
-	//var channelID turnpike.ID = 1
+	var channelID turnpike.ID = 1
 	var user string = "test"
 
 	// ping and get session id
@@ -142,18 +142,18 @@ func newClient(id int, exit chan bool, addr *string) {
 	for i := 0; i < *times && run; i++ {
 		// 避免同时发送
 		time.Sleep(5 * time.Second)
-		//time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
-		//result, err := c.Call(mid.URIXChatSendMsg, []interface{}{channelID, "hello, xchat"}, map[string]interface{}{
-		//	"detail": map[string]interface{}{
-		//		"session": channelID,
-		//		"user":    user,
-		//	},
-		//})
-		//log.Println("rpc called. ret:", result)
-		//if err != nil {
-		//	log.Println("Error Sending message", err)
-		//	break
-		//}
+		time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
+		result, err := c.Call(mid.URIXChatSendMsg, []interface{}{channelID, "hello, xchat"}, map[string]interface{}{
+			"detail": map[string]interface{}{
+				"session": channelID,
+				"user":    user,
+			},
+		})
+		log.Println("rpc called. ret:", result)
+		if err != nil {
+			log.Println("Error Sending message", err)
+			break
+		}
 	}
 	atomic.AddInt64(&connected, -1)
 	atomic.AddInt64(&failed, 1)

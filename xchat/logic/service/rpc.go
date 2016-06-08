@@ -49,7 +49,7 @@ func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err erro
 }
 
 // FetchChatMessages fetch chat's messages between sID and eID.
-func (r *RPCXChat) FetchChatMessages(args *types.FetchChatMessagesArgs, reply *[]pubtypes.Message) (err error) {
+func (r *RPCXChat) FetchChatMessages(args *types.FetchChatMessagesArgs, reply *[]pubtypes.ChatMessage) (err error) {
 	msgs, err := FetchChatMessages(args.ChatID, args.SID, args.EID)
 	if err != nil {
 		return err
@@ -59,12 +59,17 @@ func (r *RPCXChat) FetchChatMessages(args *types.FetchChatMessagesArgs, reply *[
 }
 
 // SendMsg sends message.
-func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.Message) (err error) {
-	msg, err := SendMsg(args.ChatID, args.User, args.Msg)
-	if err != nil {
-		return err
+func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage) (err error) {
+	switch args.Kind {
+	case types.MsgKindChat:
+		msg, err := SendChatMsg(args.ChatID, args.User, args.Msg)
+		if err != nil {
+			return err
+		}
+		*reply = *msg
+		return nil
+	case types.MsgKindChatNotify:
+		return SendChatNotifyMsg(args.ChatID, args.User, args.Msg)
 	}
-
-	*reply = *msg
 	return nil
 }

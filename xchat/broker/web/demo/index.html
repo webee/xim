@@ -78,7 +78,7 @@
           console.log("res:", res);
           var args = res.args;
           if (args[0]) {
-            newMsg({chat_id: chat_id, user:"*test*", id: args[1], ts: args[2], msg: content});
+            newMsg("chat", {chat_id: chat_id, user:"*test*", id: args[1], ts: args[2], msg: content});
             txt.value = "";
           } else {
             alert("error:" + args[2]);
@@ -104,18 +104,29 @@
             var args = res.args;
             if (args[0]) {
               if (show) {
-                newMsg({chat_id: chat_id, user:"*test*", id: args[1], ts: args[2], msg: content});
+                newMsg("chat", {chat_id: chat_id, user:"*test*", id: args[1], ts: args[2], msg: content});
               }
             } else {
               console.error("error:" + args[2]);
             }
-            testSendMsg(s, chat_id, i+1, n);
+            testSendMsg(s, chat_id, i+1, n, show);
           }).catch(
           err=>{
             console.error("err:", err);
-            testSendMsg(s, chat_id, i+1, n);
+            testSendMsg(s, chat_id, i+1, n, show);
           }
         );
+      }
+    }
+
+    function testSendNotify(s, chat_id, i, n, interval) {
+      if (i<n) {
+        var content = s + i;
+        session.publish('xchat.user.chat.pub', [chat_id, content]);
+        interval = interval || 100
+        setTimeout(function(){
+          testSendNotify(s, chat_id, i+1, n, interval);
+        }, interval);
       }
     }
 
@@ -129,11 +140,15 @@
       return do_update;
     }
 
-    function newMsg(msg) {
+    function newMsg(kind, msg) {
       if (do_update) {
         var msg_div = document.getElementById("msg");
         var p = document.createElement("p");
-        p.innerHTML = msg.ts + "->#" + msg.chat_id + "#" + msg.id + "#" + msg.user+ ": " + msg.msg;
+        if (kind==="chat") {
+          p.innerHTML = msg.ts + "->#" + msg.chat_id + "#" + kind + "#" + msg.id + "#" + msg.user+ ": " + msg.msg;
+        } else if (kind==="chat_notify") {
+          p.innerHTML = msg.ts + "->#" + msg.chat_id + "#" + kind + "#" + msg.user+ ": " + msg.msg;
+        }
         msg_div.insertBefore(p, msg_div.firstChild);
       }
     }
@@ -147,9 +162,10 @@
 
         function onMsg (args, kwargs) {
           console.log(">>>>msg:", args, kwargs);
-          var msgs = args[0];
+          var kind = args[0];
+          var msgs = args[1];
           for (i=0; i < msgs.length; i++) {
-            newMsg(msgs[i]);
+            newMsg(kind, msgs[i]);
           }
         }
         session.subscribe('xchat.user.' + session.id + '.msg', onMsg).then(

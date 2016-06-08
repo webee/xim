@@ -43,10 +43,10 @@ type UserChat struct {
 
 // Member is a chat member.
 type Member struct {
-	ChatID  uint64 `db:"chat_id"`
-	User    string
-	Created time.Time
-	CurID   uint64 `db:"cur_id"`
+	ChatID uint64 `db:"chat_id"`
+	User   string
+	Joined time.Time
+	CurID  uint64 `db:"cur_id"`
 }
 
 // Message is a chat message.

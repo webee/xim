@@ -9,6 +9,7 @@ import (
 // uris.
 const (
 	URIXChatUserMsg = "xchat.user.%d.msg"
+	URIXChatUserPub = "xchat.user.chat.pub"
 )
 
 // XChatAuthorizer is authorizor based on user roles.
@@ -25,6 +26,10 @@ func (a *XChatAuthorizer) Authorize(session turnpike.Session, msg turnpike.Messa
 		case turnpike.CALL:
 			return true, nil
 		case turnpike.PUBLISH:
+			pub := msg.(*turnpike.Publish)
+			if string(pub.Topic) == URIXChatUserPub {
+				return true, nil
+			}
 			return false, nil
 		case turnpike.SUBSCRIBE:
 			sub := msg.(*turnpike.Subscribe)

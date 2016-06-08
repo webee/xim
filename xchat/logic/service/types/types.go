@@ -1,10 +1,17 @@
 package types
 
+// msg kinds.
+const (
+	MsgKindChat       = "chat"
+	MsgKindChatNotify = "chat_notify"
+)
+
 // SendMsgArgs is the arguments of SendMsg.
 type SendMsgArgs struct {
 	ChatID uint64
 	User   string
 	Msg    string
+	Kind   string
 }
 
 // FetchChatMessagesArgs is the arguments of FetchChatMessages
