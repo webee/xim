@@ -123,7 +123,6 @@ func newClient(id int, exit chan bool, addr string) {
 			log.Println("Error Sending message", err)
 			break
 		}
-		log.Println("rpc called")
 	}
 	atomic.AddInt64(&connected, -1)
 	atomic.AddInt64(&failed, 1)

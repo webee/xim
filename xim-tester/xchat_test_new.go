@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	maxPending   = 1
 	mySigningKey = "demo app user key."
 )
 
@@ -32,6 +31,7 @@ var concurrent = flag.Int64("concurrent", 1, "concurrent users")
 var timeout = flag.Duration("timeout", 30*time.Second, "timeout for recv")
 var rate = flag.Int("rate", 1, "the rate between user and channel")
 var duration = flag.Int("duration", 30, "duration between msgs")
+var maxpending = flag.Int64("pending", 10, "max concurrent connecting")
 
 type MyClient turnpike.Client
 
@@ -51,7 +51,7 @@ func main() {
 	var i int = 1
 	for {
 		if atomic.LoadInt64(&connected)+atomic.LoadInt64(&pending) < *concurrent &&
-			atomic.LoadInt64(&pending) < maxPending && run {
+			atomic.LoadInt64(&pending) < *maxpending && run {
 			atomic.AddInt64(&pending, 1)
 			go newClient(i/(*rate), exit, addr)
 			i++
@@ -141,7 +141,6 @@ func newClient(id int, exit chan bool, addr *string) {
 
 	for i := 0; i < *times && run; i++ {
 		// 避免同时发送
-		time.Sleep(5 * time.Second)
 		time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
 		result, err := c.Call(mid.URIXChatSendMsg, []interface{}{channelID, "hello, xchat"}, map[string]interface{}{
 			"detail": map[string]interface{}{
