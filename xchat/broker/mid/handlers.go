@@ -188,7 +188,7 @@ func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnp
 
 	// roomID := uint64(args[0].(float64))
 
-	chatID := 4
+	chatID := uint64(4)
 	// fetch chat.
 	chat := db.Chat{}
 	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
@@ -221,8 +221,7 @@ func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	var chatID uint64
-	chatID = 4
+	chatID := uint64(4)
 	// fetch chat.
 	chat := db.Chat{}
 	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
