@@ -34,6 +34,7 @@ var testing = flag.Bool("testing", true, "testing mode")
 var endpoint = flag.String("endpoint", "/ws", "wamp router websocket url endpoint.")
 var addr = flag.String("addr", "localhost:3699", "wamp server addr")
 var pprofAddr = flag.String("pprofaddr", "0.0.0.0:3688", "pprof addr")
+var realm = flag.String("realm", "xchat", "realm domain")
 var topics map[int]string
 var xchat *turnpike.Client
 
@@ -50,7 +51,7 @@ func main() {
 		log.Fatalln("create xchat channel failed.")
 	}
 
-	xchat, err = xchatRouter.GetLocalClient("xchat", nil)
+	xchat, err = xchatRouter.GetLocalClient(*realm, nil)
 	if err != nil {
 		log.Fatalln("create xchat failed.", err)
 	}
@@ -113,7 +114,6 @@ func Start(xchat *turnpike.Client) {
 }
 
 func MethodHandler(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	log.Println("rpc called")
 	var err error
 
 	for _, v := range args {
@@ -156,7 +156,7 @@ func NewXChatRouter(userKey []byte, debug, testing bool) (*XChatRouter, error) {
 		turnpike.Debug()
 	}
 	realms := map[string]turnpike.Realm{
-		"xchat": {},
+		*realm: {},
 	}
 	if testing {
 		realms["realm1"] = turnpike.Realm{}
