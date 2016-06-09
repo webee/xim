@@ -14,19 +14,24 @@ type PushState struct {
 	// only push msg which id > PushMsgID.
 	pushMsgID      uint64
 	pushing        chan struct{}
+	pushingMutex   chan struct{}
 	s              *Session
 	taskChan       chan chan []*Message
 	notifyTaskChan chan chan []*NotifyMessage
 }
 
 func newPushState(s *Session, pushID uint64) *PushState {
-	return &PushState{
-		pushing:        make(chan struct{}, 2),
+	p := &PushState{
+		pushing:        make(chan struct{}, 1),
+		pushingMutex:   make(chan struct{}, 1),
 		s:              s,
 		pushMsgID:      pushID,
 		taskChan:       make(chan chan []*Message, 64),
 		notifyTaskChan: make(chan chan []*NotifyMessage, 32),
 	}
+	p.pushing <- struct{}{}
+	p.pushingMutex <- struct{}{}
+	return p
 }
 
 // Session is a user connection.
@@ -57,7 +62,6 @@ func (s *Session) GetPushState(chatID uint64, id uint64) (p *PushState, task cha
 	p, ok := s.pushStates[chatID]
 	if !ok {
 		p = newPushState(s, id-1)
-		p.pushing <- struct{}{}
 		s.pushStates[chatID] = p
 	}
 	s.Unlock()
@@ -86,7 +90,6 @@ func (s *Session) GetNotifyPushState(chatID uint64) (p *PushState, task chan []*
 	p, ok := s.pushStates[chatID]
 	if !ok {
 		p = newPushState(s, 0)
-		p.pushing <- struct{}{}
 		s.pushStates[chatID] = p
 	}
 	s.Unlock()
