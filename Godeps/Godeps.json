@@ -7,6 +7,10 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/alangpierce/go-forceexport",
+			"Rev": "8f1d6941cd755b975763ddb1f836561edddac2b8"
+		},
+		{
 			"ImportPath": "github.com/bitly/go-simplejson",
 			"Comment": "v0.5.0",
 			"Rev": "aabad6e819789e569bd6aabf444c935aa9ba1e44"
@@ -147,6 +151,10 @@
 		{
 			"ImportPath": "github.com/mitchellh/mapstructure",
 			"Rev": "d2dd0262208475919e1a362f675cfc0e7c10e905"
+		},
+		{
+			"ImportPath": "github.com/patrickmn/go-cache",
+			"Rev": "1881a9bccb818787f68c52bfba648c6cf34c34fa"
 		},
 		{
 			"ImportPath": "github.com/ugorji/go/codec",
