@@ -70,10 +70,10 @@ func (c *nanoGobServerCodec) ReadRequestHeader(r *rpc.Request) error {
 	dec := gob.NewDecoder(bytes.NewBuffer(msg.Body))
 	err = dec.Decode(r)
 	if err != nil {
-		r.Seq = id
-	} else {
-		c.dec = dec
+		return err
 	}
+	c.dec = dec
+
 	//log.Printf("id: %d, seq: %d, %+v\n", id, r.Seq, msg.Header)
 	sync := make(chan struct{})
 	c.acts <- func() {

@@ -84,6 +84,7 @@ func newGoRPCClient(addr string) *rpc.Client {
 	}
 
 	s.SetOption(mangos.OptionRaw, true)
+	s.SetOption(mangos.OptionMaxRecvSize, int(65536))
 	s.AddTransport(tcp.NewTransport())
 	s.AddTransport(ipc.NewTransport())
 	if err := s.Dial(addr); err != nil {
