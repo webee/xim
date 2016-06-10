@@ -3,7 +3,6 @@ package mid
 import (
 	"math"
 	"time"
-	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
 )
@@ -20,13 +19,7 @@ func handleMsg(ms <-chan interface{}) {
 }
 
 func pushNotify(msg *pubtypes.ChatNotifyMessage) {
-	var members []db.Member
-	// TODO: timeout cache rpc call.
-	// call every 2 seconds.
-	if err := xchatLogic.Call(types.RPCXChatFetchChatMembers, msg.ChatID, &members); err != nil {
-		l.Warning("fetch chat[%d] members error: %s", msg.ChatID, err)
-		return
-	}
+	members := getChatMembers(msg.ChatID)
 
 	for _, member := range members {
 		if member.User == msg.User {
@@ -51,13 +44,8 @@ type xsess struct {
 }
 
 func push(msg *pubtypes.ChatMessage) {
-	var members []db.Member
-	// TODO: timeout cache rpc call.
-	// call every 2 seconds.
-	if err := xchatLogic.Call(types.RPCXChatFetchChatMembers, msg.ChatID, &members); err != nil {
-		l.Warning("fetch chat[%d] members error: %s", msg.ChatID, err)
-		return
-	}
+	members := getChatMembers(msg.ChatID)
+
 	minLastID := uint64(math.MaxUint64)
 	xsesses := []*xsess{}
 
@@ -83,8 +71,8 @@ func push(msg *pubtypes.ChatMessage) {
 	pushSessesMsgs(xsesses, minLastID, msg, true)
 }
 
-func pushSessMsg(x *Session, msg *pubtypes.ChatMessage) {
-	p, task, lastID, ok := x.GetPushState(msg.ChatID, msg.ID)
+func pushSessMsg(p *PushState, msg *pubtypes.ChatMessage) {
+	task, lastID, ok := p.getTask(msg.ID, true)
 	if !ok {
 		return
 	}

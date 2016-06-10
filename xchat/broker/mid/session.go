@@ -11,6 +11,7 @@ type SessionID uint64
 // PushState is chat's push state.
 type PushState struct {
 	sync.Mutex
+	sending chan struct{}
 	// only push msg which id > PushMsgID.
 	pushMsgID      uint64
 	pushing        chan struct{}
@@ -20,8 +21,47 @@ type PushState struct {
 	notifyTaskChan chan chan []*NotifyMessage
 }
 
+func (p *PushState) setSending() {
+	<-p.sending
+}
+
+func (p *PushState) doneSending() {
+	p.sending <- struct{}{}
+}
+
+func (p *PushState) getTask(id uint64, isSender bool) (task chan []*Message, lastID uint64, valid bool) {
+	p.Lock()
+	defer p.Unlock()
+
+	if !isSender {
+		select {
+		case <-p.sending:
+			p.sending <- struct{}{}
+		default:
+			// in sending.
+			return
+		}
+	}
+
+	if id <= p.pushMsgID {
+		return
+	}
+	if p.pushMsgID == 0 {
+		p.pushMsgID = id - 1
+	}
+	valid = true
+
+	task = make(chan []*Message, 1)
+	p.taskChan <- task
+
+	lastID = p.pushMsgID
+	p.pushMsgID = id
+	return
+}
+
 func newPushState(s *Session, pushID uint64) *PushState {
 	p := &PushState{
+		sending:        make(chan struct{}, 1),
 		pushing:        make(chan struct{}, 1),
 		pushingMutex:   make(chan struct{}, 1),
 		s:              s,
@@ -29,6 +69,7 @@ func newPushState(s *Session, pushID uint64) *PushState {
 		taskChan:       make(chan chan []*Message, 64),
 		notifyTaskChan: make(chan chan []*NotifyMessage, 32),
 	}
+	p.sending <- struct{}{}
 	p.pushing <- struct{}{}
 	p.pushingMutex <- struct{}{}
 	return p
@@ -56,6 +97,18 @@ func newSession(id SessionID, user string) *Session {
 	}
 }
 
+// GetChatPustState returns chat's push state.
+func (s *Session) GetChatPustState(chatID uint64) *PushState {
+	s.Lock()
+	defer s.Unlock()
+	p, ok := s.pushStates[chatID]
+	if !ok {
+		p = newPushState(s, 0)
+		s.pushStates[chatID] = p
+	}
+	return p
+}
+
 // GetPushState get last push id if not pushed, and set current id and get a push task.
 func (s *Session) GetPushState(chatID uint64, id uint64) (p *PushState, task chan []*Message, lastID uint64, valid bool) {
 	s.Lock()
@@ -66,21 +119,7 @@ func (s *Session) GetPushState(chatID uint64, id uint64) (p *PushState, task cha
 	}
 	s.Unlock()
 
-	p.Lock()
-	defer p.Unlock()
-	if id <= p.pushMsgID {
-		return
-	}
-	if p.pushMsgID == 0 {
-		p.pushMsgID = id - 1
-	}
-	valid = true
-
-	task = make(chan []*Message, 1)
-	p.taskChan <- task
-
-	lastID = p.pushMsgID
-	p.pushMsgID = id
+	task, lastID, valid = p.getTask(id, false)
 	return
 }
 

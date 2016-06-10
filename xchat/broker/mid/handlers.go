@@ -72,6 +72,10 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	chatID := uint64(args[0].(float64))
 	msg := args[1].(string)
 
+	p := s.GetChatPustState(chatID)
+	p.setSending()
+	defer p.doneSending()
+
 	var message pubtypes.ChatMessage
 	if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
 		ChatID: chatID,
@@ -79,11 +83,11 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		Msg:    msg,
 		Kind:   types.MsgKindChat,
 	}, &message); err != nil {
-		l.Warning("error: %s", err)
+		l.Warning("%s error: %s", types.RPCXChatSendMsg, err)
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 	// update sending id.
-	pushSessMsg(s, &message)
+	pushSessMsg(p, &message)
 
 	return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}}
 }
