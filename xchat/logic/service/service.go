@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"time"
 	"xim/xchat/logic/db"
 	"xim/xchat/logic/pub"
@@ -79,6 +80,15 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 
 // SendChatNotifyMsg sends chat notify message.
 func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
+	ok, err := db.IsChatMember(chatID, user)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return fmt.Errorf("no permission")
+	}
+
 	m := pubtypes.ChatNotifyMessage{
 		ChatID: chatID,
 		User:   user,
