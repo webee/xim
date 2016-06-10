@@ -13,10 +13,10 @@ var (
 )
 
 // InitDB init the db.
-func InitDB(driverName, dataSourceName string) (close func()) {
+func InitDB(driverName, dataSourceName string, maxConn int) (close func()) {
 	db = sqlx.MustConnect(driverName, dataSourceName)
 	db.SetMaxIdleConns(1)
-	db.SetMaxOpenConns(100)
+	db.SetMaxOpenConns(maxConn)
 	return func() {
 		db.Close()
 	}

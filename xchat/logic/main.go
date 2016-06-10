@@ -31,7 +31,7 @@ func main() {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
 
-	defer db.InitDB(args.dbDriverName, args.dbDatasourceName)()
+	defer db.InitDB(args.dbDriverName, args.dbDatasourceName, args.dbMaxConn)()
 	defer pub.StartPublisher(args.pubAddrs.List(), args.dial)()
 	defer nanorpc.StartRPCServer(args.addrs.List(), args.dial, new(service.RPCXChat))()
 

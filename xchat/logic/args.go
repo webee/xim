@@ -15,6 +15,7 @@ type Args struct {
 	pprofAddr        string
 	dbDriverName     string
 	dbDatasourceName string
+	dbMaxConn        int
 }
 
 var (
@@ -33,4 +34,5 @@ func init() {
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6061", "debug pprof http address.")
 	flag.StringVar(&args.dbDriverName, "db-driver-name", "postgres", "database driver name.")
 	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", "postgres://xchat:xchat1234@localhost:5432/xchat?sslmode=disable", "database datasoure name.")
+	flag.IntVar(&args.dbMaxConn, "db-max-conn", 200, "database connection pool max connections.")
 }
