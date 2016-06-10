@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -53,7 +54,7 @@ func main() {
 	}()
 	exit := make(chan bool, *concurrent)
 
-	var i int = 1
+	i := int(1)
 	for {
 		if atomic.LoadInt64(&connected)+atomic.LoadInt64(&pending) < *concurrent &&
 			atomic.LoadInt64(&pending) < *maxpending && run {
@@ -64,18 +65,14 @@ func main() {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
-
-	for i := int64(0); i < *concurrent; i++ {
-		<-exit
-	}
 }
 
 func createToken(user string, valid time.Duration) (string, error) {
 	// Create the token
 	token := jwt.New(jwt.SigningMethodHS256)
 	// Set some claims
-	token.Claims["user"] = "test"
-	token.Claims["username"] = "test"
+	token.Claims["user"] = user
+	token.Claims["username"] = user
 	token.Claims["exp"] = time.Now().Add(valid).Unix()
 	// Sign and get the complete encoded token as a string
 	tokenString, err := token.SignedString([]byte(mySigningKey))
@@ -83,17 +80,19 @@ func createToken(user string, valid time.Duration) (string, error) {
 	return tokenString, err
 }
 
-func AuthFunc(hello map[string]interface{}, c map[string]interface{}) (string, map[string]interface{}, error) {
-	log.Println(hello, c)
-	challenge, ok := c["challenge"].(string)
-	if ok {
-		log.Fatal("no challenge data recevied", challenge)
+func genAuthFunc(user string) turnpike.AuthFunc {
+	return func(hello map[string]interface{}, c map[string]interface{}) (string, map[string]interface{}, error) {
+		log.Println(hello, c)
+		challenge, ok := c["challenge"].(string)
+		if ok {
+			log.Fatal("no challenge data recevied", challenge)
+		}
+		token, err := createToken(user, 72*time.Hour)
+		if err != nil {
+			return "", nil, err
+		}
+		return token, nil, nil
 	}
-	token, err := createToken("test", 72*time.Hour)
-	if err != nil {
-		return "", nil, err
-	}
-	return token, nil, nil
 }
 
 func newClient(id int, exit chan bool, addr *string) {
@@ -108,7 +107,7 @@ func newClient(id int, exit chan bool, addr *string) {
 	atomic.AddInt64(&connected, 1)
 
 	c.ReceiveTimeout = *timeout
-	c.Auth = map[string]turnpike.AuthFunc{"jwt": AuthFunc}
+	c.Auth = map[string]turnpike.AuthFunc{"jwt": genAuthFunc(strconv.Itoa(id))}
 
 	ret, err := c.JoinRealm(*realm, nil)
 	if err != nil {
@@ -116,11 +115,10 @@ func newClient(id int, exit chan bool, addr *string) {
 		atomic.AddInt64(&connected, -1)
 		atomic.AddInt64(&failed, 1)
 		return
-	} else {
-		log.Println("joinRealm", ret)
 	}
+	log.Println("joinRealm", ret)
 
-	var user string = "test"
+	user := "test"
 
 	// ping and get session id
 	session, err := c.Call(mid.URIXChatPing, nil, map[string]interface{}{
@@ -134,19 +132,19 @@ func newClient(id int, exit chan bool, addr *string) {
 	} else {
 		log.Println("ping return", session)
 	}
-	tmpId, ok := session.Arguments[1].(float64)
+	tmpID, ok := session.Arguments[1].(float64)
 	if !ok {
 		log.Println("get sesssionId failed.", err)
 	}
-	sessionId := uint64(tmpId)
+	sessionID := uint64(tmpID)
 
-	topic := fmt.Sprintf(mid.URIXChatUserMsg, sessionId)
+	topic := fmt.Sprintf(mid.URIXChatUserMsg, sessionID)
 	recvMsg(topic, c)
 
+	chatID := (id-1)%60 + 1
 	for i := 0; i < *times && run; i++ {
 		// 避免同时发送
 		time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
-		chatID := rand.Int() % 1000
 		result, err := c.Call(mid.URIXChatSendMsg, []interface{}{chatID, "hello, xchat"}, map[string]interface{}{})
 		log.Println("rpc called. ret:", result)
 		if err != nil {
