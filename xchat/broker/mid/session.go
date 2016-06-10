@@ -3,6 +3,7 @@ package mid
 import (
 	"fmt"
 	"sync"
+	pubtypes "xim/xchat/logic/pub/types"
 )
 
 // SessionID is uniqe session id.
@@ -33,7 +34,7 @@ func (p *PushState) getTask(id uint64, isSender bool) (task chan []*Message, las
 	p.Lock()
 	defer p.Unlock()
 
-	if !isSender {
+	if isSender {
 		select {
 		case <-p.sending:
 			p.sending <- struct{}{}
@@ -110,7 +111,9 @@ func (s *Session) GetChatPustState(chatID uint64) *PushState {
 }
 
 // GetPushState get last push id if not pushed, and set current id and get a push task.
-func (s *Session) GetPushState(chatID uint64, id uint64) (p *PushState, task chan []*Message, lastID uint64, valid bool) {
+func (s *Session) GetPushState(msg *pubtypes.ChatMessage) (p *PushState, task chan []*Message, lastID uint64, valid bool) {
+	chatID := msg.ChatID
+	id := msg.ID
 	s.Lock()
 	p, ok := s.pushStates[chatID]
 	if !ok {
@@ -119,7 +122,7 @@ func (s *Session) GetPushState(chatID uint64, id uint64) (p *PushState, task cha
 	}
 	s.Unlock()
 
-	task, lastID, valid = p.getTask(id, false)
+	task, lastID, valid = p.getTask(id, msg.User == s.User)
 	return
 }
 

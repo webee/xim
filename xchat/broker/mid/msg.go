@@ -53,7 +53,7 @@ func push(msg *pubtypes.ChatMessage) {
 	for _, member := range members {
 		ss := GetUserSessions(member.User)
 		for _, x := range ss {
-			p, task, lastID, ok := x.GetPushState(msg.ChatID, msg.ID)
+			p, task, lastID, ok := x.GetPushState(msg)
 			if !ok {
 				// already send.
 				continue
@@ -72,7 +72,7 @@ func push(msg *pubtypes.ChatMessage) {
 }
 
 func pushSessMsg(p *PushState, msg *pubtypes.ChatMessage) {
-	task, lastID, ok := p.getTask(msg.ID, true)
+	task, lastID, ok := p.getTask(msg.ID, false)
 	if !ok {
 		return
 	}
