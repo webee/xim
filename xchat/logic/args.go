@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"time"
 	"xim/utils/argsutils"
 )
 
@@ -16,6 +17,7 @@ type Args struct {
 	dbDriverName     string
 	dbDatasourceName string
 	dbMaxConn        int
+	rpcTimeout       time.Duration
 }
 
 var (
@@ -35,4 +37,5 @@ func init() {
 	flag.StringVar(&args.dbDriverName, "db-driver-name", "postgres", "database driver name.")
 	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", "postgres://xchat:xchat1234@localhost:5432/xchat?sslmode=disable", "database datasoure name.")
 	flag.IntVar(&args.dbMaxConn, "db-max-conn", 200, "database connection pool max connections.")
+	flag.DurationVar(&args.rpcTimeout, "rpc-timeout", 5*time.Second, "call rpc timeout.")
 }

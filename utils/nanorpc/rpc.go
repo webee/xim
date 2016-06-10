@@ -100,7 +100,8 @@ func newGoRPCClient(addr string) *rpc.Client {
 }
 
 // StartRPCServer starts rpc server with register rcvrs.
-func StartRPCServer(addrs []string, dial bool, rcvrs ...interface{}) (close func()) {
+func StartRPCServer(addrs []string, rpcTimeout time.Duration, dial bool, rcvrs ...interface{}) (close func()) {
+	RPCCallTimeout = rpcTimeout
 	for _, rcvr := range rcvrs {
 		rpc.Register(rcvr)
 	}
