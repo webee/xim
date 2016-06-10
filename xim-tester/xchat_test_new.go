@@ -141,7 +141,7 @@ func newClient(id int, exit chan bool, addr *string) {
 	topic := fmt.Sprintf(mid.URIXChatUserMsg, sessionID)
 	recvMsg(topic, c)
 
-	chatID := (id-1)%60 + 1
+	chatID := (id-1)/60 + 1
 	for i := 0; i < *times && run; i++ {
 		// 避免同时发送
 		time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
