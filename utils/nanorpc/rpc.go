@@ -69,7 +69,8 @@ func (r *Client) reconnect() {
 }
 
 // NewClient return s rpc client dial to addr.
-func NewClient(addr string) *Client {
+func NewClient(addr string, rpcCallTimeout time.Duration) *Client {
+	RPCCallTimeout = rpcCallTimeout
 	return &Client{
 		Client:        newGoRPCClient(addr),
 		addr:          addr,
@@ -100,8 +101,7 @@ func newGoRPCClient(addr string) *rpc.Client {
 }
 
 // StartRPCServer starts rpc server with register rcvrs.
-func StartRPCServer(addrs []string, rpcTimeout time.Duration, dial bool, rcvrs ...interface{}) (close func()) {
-	RPCCallTimeout = rpcTimeout
+func StartRPCServer(addrs []string, dial bool, rcvrs ...interface{}) (close func()) {
 	for _, rcvr := range rcvrs {
 		rpc.Register(rcvr)
 	}

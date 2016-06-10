@@ -3,22 +3,24 @@ package main
 import (
 	"flag"
 	"path"
+	"time"
 	"xim/utils/envutils"
 )
 
 // Args is app's arguments.
 type Args struct {
-	addr         string
-	endpoint     string
-	testWebDir   string
-	testing      bool
-	debug        bool
-	brokerDebug  bool
-	pprofAddr    string
-	userKeyPath  string
-	logicRPCAddr string
-	logicPubAddr string
-	XChatHostURL string
+	addr           string
+	endpoint       string
+	testWebDir     string
+	testing        bool
+	debug          bool
+	brokerDebug    bool
+	pprofAddr      string
+	userKeyPath    string
+	logicRPCAddr   string
+	logicPubAddr   string
+	XChatHostURL   string
+	rpcCallTimeout time.Duration
 }
 
 var (
@@ -38,4 +40,5 @@ func init() {
 	flag.StringVar(&args.logicRPCAddr, "logic-rpc-addr", "tcp://:16787", "logic rpc addresses.")
 	flag.StringVar(&args.logicPubAddr, "logic-pub-addr", "tcp://:16783", "logic pub address.")
 	flag.StringVar(&args.XChatHostURL, "xchat-host-url", "http://localhost:9980", "xchat api host url.")
+	flag.DurationVar(&args.rpcCallTimeout, "rpc-timeout", 5*time.Second, "call rpc timeout.")
 }

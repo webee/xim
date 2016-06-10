@@ -32,7 +32,7 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	initXChatHTTPClient(config.Key, config.XChatHostURL)
 
 	var err error
-	xchatLogic = nanorpc.NewClient(config.LogicRPCAddr)
+	xchatLogic = nanorpc.NewClient(config.LogicRPCAddr, config.RPCCallTimeout)
 
 	xchat, err = xchatRouter.GetLocalClient("xchat", nil)
 	if err != nil {
