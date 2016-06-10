@@ -4,13 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"sync/atomic"
 	"time"
 
+	"xim/xchat/broker/mid"
+
 	"github.com/dgrijalva/jwt-go"
 	"gopkg.in/jcelliott/turnpike.v2"
-	"math/rand"
-	"xim/xchat/broker/mid"
 )
 
 const (
@@ -34,6 +35,10 @@ var duration = flag.Int("duration", 30, "duration between msgs")
 var maxpending = flag.Int64("pending", 10, "max concurrent connecting")
 
 type MyClient turnpike.Client
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 func main() {
 	flag.Parse()
@@ -115,7 +120,6 @@ func newClient(id int, exit chan bool, addr *string) {
 		log.Println("joinRealm", ret)
 	}
 
-	var channelID turnpike.ID = 1
 	var user string = "test"
 
 	// ping and get session id
@@ -142,12 +146,8 @@ func newClient(id int, exit chan bool, addr *string) {
 	for i := 0; i < *times && run; i++ {
 		// 避免同时发送
 		time.Sleep(time.Duration(rand.Intn(*duration)) * time.Second)
-		result, err := c.Call(mid.URIXChatSendMsg, []interface{}{channelID, "hello, xchat"}, map[string]interface{}{
-			"detail": map[string]interface{}{
-				"session": channelID,
-				"user":    user,
-			},
-		})
+		chatID := rand.Int() % 1000
+		result, err := c.Call(mid.URIXChatSendMsg, []interface{}{chatID, "hello, xchat"}, map[string]interface{}{})
 		log.Println("rpc called. ret:", result)
 		if err != nil {
 			log.Println("Error Sending message", err)
