@@ -141,7 +141,7 @@ func newClient(id int, exit chan bool, addr *string) {
 	sessionId := uint64(tmpId)
 
 	topic := fmt.Sprintf(mid.URIXChatUserMsg, sessionId)
-	go recvMsg(topic, c)
+	recvMsg(topic, c)
 
 	for i := 0; i < *times && run; i++ {
 		// 避免同时发送
