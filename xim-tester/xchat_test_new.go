@@ -23,7 +23,7 @@ var (
 	connected int64
 	pending   int64
 	failed    int64
-	run       bool = true
+	run       = true
 )
 
 var realm = flag.String("realm", "xchat", "realm")
@@ -35,6 +35,7 @@ var rate = flag.Int("rate", 1, "the rate between user and channel")
 var duration = flag.Int("duration", 30, "duration between msgs")
 var maxpending = flag.Int64("pending", 10, "max concurrent connecting")
 
+// MyClient is a wamp client.
 type MyClient turnpike.Client
 
 func init() {
@@ -106,14 +107,17 @@ func newClient(id int, exit chan bool, addr *string) {
 	atomic.AddInt64(&pending, -1)
 	atomic.AddInt64(&connected, 1)
 
+	defer func() {
+		atomic.AddInt64(&connected, -1)
+		atomic.AddInt64(&failed, 1)
+	}()
+
 	c.ReceiveTimeout = *timeout
 	c.Auth = map[string]turnpike.AuthFunc{"jwt": genAuthFunc(strconv.Itoa(id))}
 
 	ret, err := c.JoinRealm(*realm, nil)
 	if err != nil {
 		log.Println(id, "join realm failed.", err)
-		atomic.AddInt64(&connected, -1)
-		atomic.AddInt64(&failed, 1)
 		return
 	}
 	log.Println("joinRealm", ret)
@@ -129,9 +133,9 @@ func newClient(id int, exit chan bool, addr *string) {
 	})
 	if err != nil {
 		log.Println("ping failed.", err)
-	} else {
-		log.Println("ping return", session)
+		return
 	}
+	log.Println("ping return", session)
 	tmpID, ok := session.Arguments[1].(float64)
 	if !ok {
 		log.Println("get sesssionId failed.", err)
@@ -152,8 +156,6 @@ func newClient(id int, exit chan bool, addr *string) {
 			break
 		}
 	}
-	atomic.AddInt64(&connected, -1)
-	atomic.AddInt64(&failed, 1)
 	log.Println(id, "client exit")
 	c.Close()
 	exit <- true
@@ -161,7 +163,7 @@ func newClient(id int, exit chan bool, addr *string) {
 
 func recvMsg(topic string, c *turnpike.Client) {
 	log.Printf("sub topic{%s}\n", topic)
-	err := c.Subscribe(topic, OnRecvMsg)
+	err := c.Subscribe(topic, nnRecvMsg)
 	if err != nil {
 		log.Println("subscribe failed.", err)
 	} else {
@@ -169,7 +171,7 @@ func recvMsg(topic string, c *turnpike.Client) {
 	}
 }
 
-func OnRecvMsg(args []interface{}, kwargs map[string]interface{}) {
+func nnRecvMsg(args []interface{}, kwargs map[string]interface{}) {
 	details := args[0].(interface{})
 	log.Println("recvMsg: ", details)
 }
