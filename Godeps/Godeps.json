@@ -30,43 +30,43 @@
 		},
 		{
 			"ImportPath": "github.com/go-mangos/mangos",
-			"Comment": "v1.1.0-58-g83e303c",
-			"Rev": "83e303c317b515175501237794009a610fc918e1"
+			"Comment": "v1.1.0-60-gfcec390",
+			"Rev": "fcec39061870d7143d2d1e886e5b684721395377"
 		},
 		{
 			"ImportPath": "github.com/go-mangos/mangos/protocol/pair",
-			"Comment": "v1.1.0-58-g83e303c",
-			"Rev": "83e303c317b515175501237794009a610fc918e1"
+			"Comment": "v1.1.0-60-gfcec390",
+			"Rev": "fcec39061870d7143d2d1e886e5b684721395377"
 		},
 		{
 			"ImportPath": "github.com/go-mangos/mangos/protocol/pub",
-			"Comment": "v1.1.0-58-g83e303c",
-			"Rev": "83e303c317b515175501237794009a610fc918e1"
+			"Comment": "v1.1.0-60-gfcec390",
+			"Rev": "fcec39061870d7143d2d1e886e5b684721395377"
 		},
 		{
 			"ImportPath": "github.com/go-mangos/mangos/protocol/rep",
-			"Comment": "v1.1.0-58-g83e303c",
-			"Rev": "83e303c317b515175501237794009a610fc918e1"
+			"Comment": "v1.1.0-60-gfcec390",
+			"Rev": "fcec39061870d7143d2d1e886e5b684721395377"
 		},
 		{
 			"ImportPath": "github.com/go-mangos/mangos/protocol/req",
-			"Comment": "v1.1.0-58-g83e303c",
-			"Rev": "83e303c317b515175501237794009a610fc918e1"
+			"Comment": "v1.1.0-60-gfcec390",
+			"Rev": "fcec39061870d7143d2d1e886e5b684721395377"
 		},
 		{
 			"ImportPath": "github.com/go-mangos/mangos/protocol/sub",
-			"Comment": "v1.1.0-58-g83e303c",
-			"Rev": "83e303c317b515175501237794009a610fc918e1"
+			"Comment": "v1.1.0-60-gfcec390",
+			"Rev": "fcec39061870d7143d2d1e886e5b684721395377"
 		},
 		{
 			"ImportPath": "github.com/go-mangos/mangos/transport/ipc",
-			"Comment": "v1.1.0-58-g83e303c",
-			"Rev": "83e303c317b515175501237794009a610fc918e1"
+			"Comment": "v1.1.0-60-gfcec390",
+			"Rev": "fcec39061870d7143d2d1e886e5b684721395377"
 		},
 		{
 			"ImportPath": "github.com/go-mangos/mangos/transport/tcp",
-			"Comment": "v1.1.0-58-g83e303c",
-			"Rev": "83e303c317b515175501237794009a610fc918e1"
+			"Comment": "v1.1.0-60-gfcec390",
+			"Rev": "fcec39061870d7143d2d1e886e5b684721395377"
 		},
 		{
 			"ImportPath": "github.com/go-ozzo/ozzo-log",
