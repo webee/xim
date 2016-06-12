@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	// TODO: fix expiration duration and add update member event msg.
 	chatMembersCache = cache.New(5*time.Minute, 1*time.Minute)
 )
 
