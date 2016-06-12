@@ -106,3 +106,9 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 	})
 	return nil
 }
+
+// UpdateDeviceInfo update user's client device info.
+func UpdateDeviceInfo(user string, dev string, devID string, info string) error {
+	// TODO: publish to message queue.
+	return nil
+}

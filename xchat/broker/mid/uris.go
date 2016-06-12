@@ -24,6 +24,10 @@ const (
 	// 用户接收消息
 	URIXChatUserMsg = "xchat.user.%d.msg"
 
+	// 设备信息
+	// 发布设备信息
+	URIXChatPubDeviceInfo = "xchat.user.device.info.pub"
+
 	// 房间
 	URIXChatEnterRoom = "xchat.user.room.enter"
 	URIXChatExitRoom  = "xchat.user.room.exit"

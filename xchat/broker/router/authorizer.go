@@ -2,6 +2,7 @@ package router
 
 import (
 	"fmt"
+	"strings"
 
 	"gopkg.in/jcelliott/turnpike.v2"
 )
@@ -9,7 +10,6 @@ import (
 // uris.
 const (
 	URIXChatUserMsg = "xchat.user.%d.msg"
-	URIXChatUserPub = "xchat.user.chat.pub"
 )
 
 // XChatAuthorizer is authorizor based on user roles.
@@ -27,7 +27,8 @@ func (a *XChatAuthorizer) Authorize(session turnpike.Session, msg turnpike.Messa
 			return true, nil
 		case turnpike.PUBLISH:
 			pub := msg.(*turnpike.Publish)
-			if string(pub.Topic) == URIXChatUserPub {
+			topic := string(pub.Topic)
+			if strings.HasPrefix(topic, "xchat.user.") && strings.HasSuffix(topic, ".pub") {
 				return true, nil
 			}
 			return false, nil

@@ -108,3 +108,8 @@ func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage)
 	}
 	return nil
 }
+
+// UpdateDeviceInfo update user's client device info.
+func (r *RPCXChat) UpdateDeviceInfo(args *types.UpdateDeviceInfoArgs, reply *types.NoReply) error {
+	return UpdateDeviceInfo(args.User, args.Dev, args.DevID, args.Info)
+}

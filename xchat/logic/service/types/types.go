@@ -60,6 +60,14 @@ type FetchChatMessagesArgs struct {
 	Desc   bool
 }
 
+// UpdateDeviceInfoArgs is the arguments of UpdateDeviceInfoArgs
+type UpdateDeviceInfoArgs struct {
+	User  string
+	Dev   string
+	DevID string
+	Info  string
+}
+
 // XChatService methods.
 const (
 	RPCXChatEcho                  = "RPCXChat.Echo"
@@ -71,4 +79,5 @@ const (
 	RPCXChatFetchUserChatList     = "RPCXChat.FetchUserChatList"
 	RPCXChatSyncUserChatRecv      = "RPCXChat.SyncUserChatRecv"
 	RPCXChatFetchChatMembers      = "RPCXChat.FetchChatMembers"
+	RPCXChatUpdateDeviceInfo      = "RPCXChat.UpdateDeviceInfo"
 )

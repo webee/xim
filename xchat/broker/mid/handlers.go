@@ -263,6 +263,28 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 	return &turnpike.CallResult{Args: []interface{}{true, toPushMsgs}}
 }
 
+// 设备信息
+// 更新设备信息
+func onPubDeviceInfo(args []interface{}, kwargs map[string]interface{}) {
+	l.Debug("[pub]%s: %v, %+v\n", URIXChatPubDeviceInfo, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return
+	}
+
+	dev := args[0].(string)
+	devID := args[1].(string)
+	info := args[2].(string)
+
+	arguments := &types.UpdateDeviceInfoArgs{
+		User:  s.User,
+		Dev:   dev,
+		DevID: devID,
+		Info:  info,
+	}
+	xchatLogic.AsyncCall(types.RPCXChatUpdateDeviceInfo, arguments)
+}
+
 // 房间
 // 进入房间
 func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
@@ -333,7 +355,7 @@ func call(handler turnpike.BasicMethodHandler) turnpike.BasicMethodHandler {
 		defer func() {
 			if r := recover(); r != nil {
 				l.Warning("call error: %s", r)
-				result = &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{r}}
+				result = &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{false, 4, turnpike.ErrInvalidArgument}}
 			}
 		}()
 		return handler(args, kargs)
