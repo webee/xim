@@ -52,10 +52,11 @@ func FetchChatMessages(chatID uint64, lID, rID uint64, limit int, desc bool) ([]
 	ms := []pubtypes.ChatMessage{}
 	for _, msg := range msgs {
 		ms = append(ms, pubtypes.ChatMessage{
-			ID:   msg.ID,
-			User: msg.User,
-			Ts:   msg.Ts.Unix(),
-			Msg:  msg.Msg,
+			ChatID: msg.ChatID,
+			ID:     msg.ID,
+			User:   msg.User,
+			Ts:     msg.Ts.Unix(),
+			Msg:    msg.Msg,
 		})
 	}
 	return ms, nil
