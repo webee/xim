@@ -41,6 +41,16 @@ type SyncUserChatRecvArgs struct {
 	MsgID  uint64
 }
 
+// FetchUserChatMessagesArgs is the arguments of FetchUserChatMessages
+type FetchUserChatMessagesArgs struct {
+	User   string
+	ChatID uint64
+	LID    uint64
+	RID    uint64
+	Limit  int
+	Desc   bool
+}
+
 // FetchChatMessagesArgs is the arguments of FetchChatMessages
 type FetchChatMessagesArgs struct {
 	ChatID uint64
@@ -52,12 +62,13 @@ type FetchChatMessagesArgs struct {
 
 // XChatService methods.
 const (
-	RPCXChatEcho              = "RPCXChat.Echo"
-	RPCXChatSendMsg           = "RPCXChat.SendMsg"
-	RPCXChatFetchChatMessages = "RPCXChat.FetchChatMessages"
-	RPCXChatFetchChat         = "RPCXChat.FetchChat"
-	RPCXChatFetchUserChat     = "RPCXChat.FetchUserChat"
-	RPCXChatFetchUserChatList = "RPCXChat.FetchUserChatList"
-	RPCXChatSyncUserChatRecv  = "RPCXChat.SyncUserChatRecv"
-	RPCXChatFetchChatMembers  = "RPCXChat.FetchChatMembers"
+	RPCXChatEcho                  = "RPCXChat.Echo"
+	RPCXChatSendMsg               = "RPCXChat.SendMsg"
+	RPCXChatFetchChatMessages     = "RPCXChat.FetchChatMessages"
+	RPCXChatFetchUserChatMessages = "RPCXChat.FetchUserChatMessages"
+	RPCXChatFetchChat             = "RPCXChat.FetchChat"
+	RPCXChatFetchUserChat         = "RPCXChat.FetchUserChat"
+	RPCXChatFetchUserChatList     = "RPCXChat.FetchUserChatList"
+	RPCXChatSyncUserChatRecv      = "RPCXChat.SyncUserChatRecv"
+	RPCXChatFetchChatMembers      = "RPCXChat.FetchChatMembers"
 )

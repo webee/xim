@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
@@ -60,6 +61,25 @@ func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err erro
 		return err
 	}
 	*reply = members
+	return nil
+}
+
+// FetchUserChatMessages fetch chat's messages between sID and eID.
+func (r *RPCXChat) FetchUserChatMessages(args *types.FetchUserChatMessagesArgs, reply *[]pubtypes.ChatMessage) (err error) {
+	ok, err := IsChatMember(args.ChatID, args.User)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return fmt.Errorf("no permission")
+	}
+
+	msgs, err := FetchChatMessages(args.ChatID, args.LID, args.RID, args.Limit, args.Desc)
+	if err != nil {
+		return err
+	}
+	*reply = msgs
 	return nil
 }
 

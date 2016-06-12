@@ -243,7 +243,8 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 	}
 
 	var msgs []pubtypes.ChatMessage
-	arguments := &types.FetchChatMessagesArgs{
+	arguments := &types.FetchUserChatMessagesArgs{
+		User:   s.User,
 		ChatID: chatID,
 		LID:    lid,
 		RID:    rid,
@@ -251,8 +252,8 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 		Desc:   desc,
 	}
 
-	if err := xchatLogic.Call(types.RPCXChatFetchChatMessages, arguments, &msgs); err != nil {
-		l.Warning("fetch chat[%d] messages error: %s", chatID, err)
+	if err := xchatLogic.Call(types.RPCXChatFetchUserChatMessages, arguments, &msgs); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 	return &turnpike.CallResult{Args: []interface{}{true, msgs}}
 }

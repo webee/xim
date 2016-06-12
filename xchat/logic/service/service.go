@@ -38,6 +38,11 @@ func SyncUserChatRecv(user string, chatID uint64, msgID uint64) error {
 	return db.SyncUserChatRecv(user, chatID, msgID)
 }
 
+// IsChatMember checks is user chat's member.
+func IsChatMember(chatID uint64, user string) (bool, error) {
+	return db.IsChatMember(chatID, user)
+}
+
 // FetchChatMessages fetch chat's messages between lID and rID.
 func FetchChatMessages(chatID uint64, lID, rID uint64, limit int, desc bool) ([]pubtypes.ChatMessage, error) {
 	msgs, err := db.GetChatMessages(chatID, lID, rID, limit, desc)
