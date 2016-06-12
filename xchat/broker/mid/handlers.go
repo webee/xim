@@ -94,7 +94,7 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 
 // 用户发布消息, 通知消息
 func onPubMsg(args []interface{}, kwargs map[string]interface{}) {
-	l.Debug("[pub]%s: %v, %+v", URIXChatUserPub, args, kwargs)
+	l.Debug("[pub]%s: %v, %+v", URIXChatPubMsg, args, kwargs)
 	s := getSessionFromDetails(kwargs["details"], false)
 	if s == nil {
 		return

@@ -9,11 +9,11 @@ const (
 
 	URIXChatPing = "xchat.ping"
 
-	// biz
+	// 用户发送消息到会话
 	URIXChatSendMsg = "xchat.user.msg.send"
 
-	// 用户发布消息
-	URIXChatUserPub = "xchat.user.chat.pub"
+	// 用户发布消息到会话
+	URIXChatPubMsg = "xchat.user.msg.pub"
 
 	URIXChatNewChat       = "xchat.user.chat.new"
 	URIXChatFetchChat     = "xchat.user.chat.fetch"
