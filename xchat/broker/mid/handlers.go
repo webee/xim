@@ -255,7 +255,12 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 	if err := xchatLogic.Call(types.RPCXChatFetchUserChatMessages, arguments, &msgs); err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, msgs}}
+
+	toPushMsgs := []*Message{}
+	for _, msg := range msgs {
+		toPushMsgs = append(toPushMsgs, NewMessageFromDBMsg(&msg))
+	}
+	return &turnpike.CallResult{Args: []interface{}{true, toPushMsgs}}
 }
 
 // 房间
