@@ -93,8 +93,8 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.ChatMessag
 		// fetch late messages.
 		args := &types.FetchChatMessagesArgs{
 			ChatID: msg.ChatID,
-			SID:    minLastID,
-			EID:    msg.ID,
+			LID:    minLastID,
+			RID:    msg.ID,
 		}
 		if err := xchatLogic.Call(types.RPCXChatFetchChatMessages, args, &msgs); err != nil {
 			l.Warning("fetch chat[%d] messages error: %s", msg.ChatID, err)

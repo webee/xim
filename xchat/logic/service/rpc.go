@@ -65,7 +65,7 @@ func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err erro
 
 // FetchChatMessages fetch chat's messages between sID and eID.
 func (r *RPCXChat) FetchChatMessages(args *types.FetchChatMessagesArgs, reply *[]pubtypes.ChatMessage) (err error) {
-	msgs, err := FetchChatMessages(args.ChatID, args.SID, args.EID)
+	msgs, err := FetchChatMessages(args.ChatID, args.LID, args.RID, args.Limit, args.Desc)
 	if err != nil {
 		return err
 	}

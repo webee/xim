@@ -47,8 +47,37 @@ func IsChatMember(chatID uint64, user string) (t bool, err error) {
 }
 
 // GetChatMessages get chat messages between sID and eID.
-func GetChatMessages(chatID uint64, sID, eID uint64) (msgs []Message, err error) {
-	err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message where chat_id=$1 and id > $2 and id < $3 order by id`, chatID, sID, eID)
+func GetChatMessages(chatID uint64, lID, rID uint64, limit int, desc bool) (msgs []Message, err error) {
+	// TODO: use sql generator.
+	if !desc {
+		if rID > 0 {
+			if limit > 0 {
+				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 and id < $3 ORDER BY id LIMIT $4`, chatID, lID, rID, limit)
+			} else {
+				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 and id < $3 ORDER BY id`, chatID, lID, rID)
+			}
+		} else {
+			if limit > 0 {
+				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 ORDER BY id LIMIT $3`, chatID, lID, limit)
+			} else {
+				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 ORDER BY id`, chatID, lID)
+			}
+		}
+	} else {
+		if rID > 0 {
+			if limit > 0 {
+				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 and id < $3 ORDER BY id DESC LIMIT $4`, chatID, lID, rID, limit)
+			} else {
+				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 and id < $3 ORDER BY id DESC`, chatID, lID, rID)
+			}
+		} else {
+			if limit > 0 {
+				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 ORDER BY id DESC LIMIT $3`, chatID, lID, limit)
+			} else {
+				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 ORDER BY id DESC`, chatID, lID)
+			}
+		}
+	}
 	return
 }
 

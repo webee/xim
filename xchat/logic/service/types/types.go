@@ -44,8 +44,10 @@ type SyncUserChatRecvArgs struct {
 // FetchChatMessagesArgs is the arguments of FetchChatMessages
 type FetchChatMessagesArgs struct {
 	ChatID uint64
-	SID    uint64
-	EID    uint64
+	LID    uint64
+	RID    uint64
+	Limit  int
+	Desc   bool
 }
 
 // XChatService methods.

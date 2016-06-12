@@ -209,9 +209,52 @@ func syncChatRecv(args []interface{}, kwargs map[string]interface{}) (result *tu
 // 获取历史消息
 func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChatMsgs, args, kwargs)
-	return nil
-	// _, user := getSessionFromDetails(kwargs["details"])
-	// chatID := uint64(args[0].(float64))
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+	// params
+	chatID := uint64(args[0].(float64))
+
+	var lid, rid uint64
+	var limit int
+	var desc bool
+	if kwargs["lid"] != nil {
+		lid = uint64(kwargs["lid"].(float64))
+	} else {
+		desc = true
+	}
+
+	if kwargs["rid"] != nil {
+		rid = uint64(kwargs["rid"].(float64))
+	}
+
+	if lid > 0 && lid+1 >= rid {
+		return &turnpike.CallResult{Args: []interface{}{true, []interface{}{}}}
+	}
+
+	if kwargs["limit"] != nil {
+		limit = int(kwargs["limit"].(float64))
+	}
+	if limit <= 0 {
+		limit = 150
+	} else if limit > 1000 {
+		limit = 1000
+	}
+
+	var msgs []pubtypes.ChatMessage
+	arguments := &types.FetchChatMessagesArgs{
+		ChatID: chatID,
+		LID:    lid,
+		RID:    rid,
+		Limit:  limit,
+		Desc:   desc,
+	}
+
+	if err := xchatLogic.Call(types.RPCXChatFetchChatMessages, arguments, &msgs); err != nil {
+		l.Warning("fetch chat[%d] messages error: %s", chatID, err)
+	}
+	return &turnpike.CallResult{Args: []interface{}{true, msgs}}
 }
 
 // 房间

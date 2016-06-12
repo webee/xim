@@ -38,9 +38,9 @@ func SyncUserChatRecv(user string, chatID uint64, msgID uint64) error {
 	return db.SyncUserChatRecv(user, chatID, msgID)
 }
 
-// FetchChatMessages fetch chat's messages between sID and eID.
-func FetchChatMessages(chatID uint64, sID, eID uint64) ([]pubtypes.ChatMessage, error) {
-	msgs, err := db.GetChatMessages(chatID, sID, eID)
+// FetchChatMessages fetch chat's messages between lID and rID.
+func FetchChatMessages(chatID uint64, lID, rID uint64, limit int, desc bool) ([]pubtypes.ChatMessage, error) {
+	msgs, err := db.GetChatMessages(chatID, lID, rID, limit, desc)
 	if err != nil {
 		return nil, err
 	}
