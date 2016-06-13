@@ -112,3 +112,17 @@ func UpdateDeviceInfo(user string, dev string, devID string, info string) error 
 	// TODO: publish to message queue.
 	return nil
 }
+
+// ExitRoom let user exit the room's chat.
+func ExitRoom(roomID, chatID uint64, user string) error {
+	ok, err := db.IsRoomChat(roomID, chatID)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return fmt.Errorf("chat is not own to room")
+	}
+
+	return db.RemoveChatMembers(chatID, []string{user})
+}

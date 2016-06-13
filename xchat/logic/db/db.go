@@ -29,16 +29,53 @@ func GetChatMembers(chatID uint64) (members []Member, err error) {
 }
 
 // AddGroupMembers add users to group.
-func AddGroupMembers(chatID uint64, users []string) error {
+func AddGroupMembers(chatID uint64, users []string) (err error) {
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+
 	chat := Chat{}
-	if err := db.Get(&chat, `SELECT msg_id FROM xchat_chat where id=$1 and type='group'`, chatID); err != nil {
+	if err := tx.Get(&chat, `SELECT msg_id FROM xchat_chat where id=$1 and type='group'`, chatID); err != nil {
 		return err
 	}
 
 	for _, user := range users {
-		db.Exec(`INSERT INTO xchat_member(chat_id, "user", created, cur_id) VALUES($1, $2, now(), $4)`, chatID, user, chat.MsgID)
+		tx.Exec(`INSERT INTO xchat_member(chat_id, "user", created, cur_id) VALUES($1, $2, now(), $4)`, chatID, user, chat.MsgID)
 	}
-	return nil
+
+	if err = tx.Commit(); err != nil {
+		if errRollback := tx.Rollback(); errRollback != nil {
+			err = errRollback
+			return
+		}
+	}
+	return
+}
+
+// RemoveChatMembers removes users from chat.
+func RemoveChatMembers(chatID uint64, users []string) (err error) {
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		_, err = tx.Exec(`DELETE FROM xchat_member WHERE chat_id=$1 and "user"=$2`, chatID, user)
+	}
+
+	if err = tx.Commit(); err != nil {
+		if errRollback := tx.Rollback(); errRollback != nil {
+			err = errRollback
+			return
+		}
+	}
+	return
+}
+
+// IsRoomChat judges whether chat is own to room.
+func IsRoomChat(roomID, chatID uint64) (t bool, err error) {
+	return t, db.Get(&t, `SELECT EXISTS(SELECT 1 FROM xchat_chat where room_id=$1 and id=$2)`, roomID, chatID)
 }
 
 // IsChatMember judges whether user in a chat member.
@@ -141,8 +178,10 @@ func NewMsg(chatID uint64, user string, msg string) (message *Message, err error
 	if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, id, uid, ts, msg) values($1, $2, $3, now(), $4) RETURNING ts`, chatID, message.ID, user, msg); err != nil {
 		return
 	}
+
 	if err = tx.Commit(); err != nil {
-		if err = tx.Rollback(); err != nil {
+		if errRollback := tx.Rollback(); errRollback != nil {
+			err = errRollback
 			return
 		}
 	}

@@ -18,6 +18,7 @@ import (
 const (
 	URINewChat      = "/api/chats/"
 	URIUserChatList = "/api/user/chats/?%s"
+	URIEnterRoom    = "/api/rooms/%d/enter/?%s"
 )
 
 var (
@@ -117,6 +118,36 @@ func (c *XChatHTTPClient) NewChat(chatType string, users []string, title string)
 		return 0, errors.New("request failed")
 	}
 	return uint64(id.(float64)), nil
+}
+
+// EnterRoom choose a chat for user.
+func (c *XChatHTTPClient) EnterRoom(roomID uint64, user string) (uint64, error) {
+	params := url.Values{}
+	params.Add("user", user)
+
+	req, err := http.NewRequest("GET", c.url(URIEnterRoom, roomID, params.Encode()), nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Add("Authorization", "Bearer "+c.Token())
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return 0, errors.New("request failed")
+	}
+	decoder := json.NewDecoder(resp.Body)
+	res := struct {
+		ChatID uint64 `json:"chat_id"`
+	}{}
+	if err := decoder.Decode(&res); err != nil {
+		return 0, err
+	}
+
+	return res.ChatID, nil
 }
 
 // FetchUserChats fetch user's chat list.

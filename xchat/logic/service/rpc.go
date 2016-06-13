@@ -113,3 +113,8 @@ func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage)
 func (r *RPCXChat) UpdateDeviceInfo(args *types.UpdateDeviceInfoArgs, reply *types.NoReply) error {
 	return UpdateDeviceInfo(args.User, args.Dev, args.DevID, args.Info)
 }
+
+// ExitRoom let user exit room's chat.
+func (r *RPCXChat) ExitRoom(args *types.ExitRoomArgs, reply *types.NoReply) error {
+	return ExitRoom(args.RoomID, args.ChatID, args.User)
+}

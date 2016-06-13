@@ -22,6 +22,13 @@ type SendMsgArgs struct {
 	Kind   string
 }
 
+// ExitRoomArgs is the arguments of ExitRoom
+type ExitRoomArgs struct {
+	RoomID uint64
+	ChatID uint64
+	User   string
+}
+
 // FetchUserChatArgs is the arguments of FetchUserChat
 type FetchUserChatArgs struct {
 	User   string
@@ -80,4 +87,5 @@ const (
 	RPCXChatSyncUserChatRecv      = "RPCXChat.SyncUserChatRecv"
 	RPCXChatFetchChatMembers      = "RPCXChat.FetchChatMembers"
 	RPCXChatUpdateDeviceInfo      = "RPCXChat.UpdateDeviceInfo"
+	RPCXChatExitRoom              = "RPCXChat.ExitRoom"
 )
