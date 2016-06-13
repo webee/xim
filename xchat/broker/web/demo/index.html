@@ -122,7 +122,7 @@
     function testSendNotify(s, chat_id, i, n, interval) {
       if (i<n) {
         var content = s + i;
-        session.publish('xchat.user.chat.pub', [chat_id, content]);
+        session.publish('xchat.user.msg.pub', [chat_id, content]);
         interval = interval || 100
         setTimeout(function(){
           testSendNotify(s, chat_id, i+1, n, interval);
