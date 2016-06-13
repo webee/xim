@@ -1,3 +1,4 @@
+*.log
 null/
 xim-broker
 !xim-broker/
