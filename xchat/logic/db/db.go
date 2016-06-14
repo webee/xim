@@ -149,7 +149,7 @@ func GetOrCreateNewRoomChatIDs(roomID uint64, chatIDs []uint64) (ids []uint64, e
 		chatIDs = append(chatIDs, 0)
 	}
 
-	query, args, err := sqlx.In("SELECT rc.chat_id FROM xchat_roomchat rc left join xchat_chat c on rc.chat_id=c.id WHERE rc.room_id=? and c.is_deleted=false and rc.chat_id NOT IN (?) ORDER BY rc.chat_id desc", roomID, chatIDs)
+	query, args, err := sqlx.In("SELECT rc.chat_id FROM xchat_roomchat rc left join xchat_chat c on rc.chat_id=c.id WHERE rc.room_id=? and c.is_deleted=false and rc.chat_id NOT IN (?) ORDER BY rc.chat_id", roomID, chatIDs)
 	if err != nil {
 		return nil, err
 	}
