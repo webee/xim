@@ -62,7 +62,7 @@ func RemoveChatMembers(chatID uint64, users []string) (err error) {
 	for _, user := range users {
 		_, err = tx.Exec(`DELETE FROM xchat_member WHERE chat_id=$1 and "user"=$2`, chatID, user)
 	}
-	tx.Exec(`UPDATE xchatxchat SET updated=now() WHERE id=$1`, chatID)
+	tx.Exec(`UPDATE xchat_chat SET updated=now() WHERE id=$1`, chatID)
 
 	if err = tx.Commit(); err != nil {
 		if errRollback := tx.Rollback(); errRollback != nil {
