@@ -23,7 +23,7 @@ func getChatMembers(chatID uint64, updated int64) []db.Member {
 	value, ok := chatMembersCache.Get(key)
 	if ok {
 		cm := value.(*chatMembers)
-		if cm.updated >= updated {
+		if cm.updated >= updated || updated == 0 {
 			return cm.members
 		}
 	}

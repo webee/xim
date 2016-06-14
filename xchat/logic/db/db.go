@@ -127,7 +127,7 @@ func GetChat(chatID uint64) (chat *Chat, err error) {
 // GetUserChat returns user's chat.
 func GetUserChat(user string, chatID uint64) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
+	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, c.updated, m.user, m.cur_id, m.joined FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
 	return
 }
 
