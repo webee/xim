@@ -130,3 +130,8 @@ func ExitRoom(roomID, chatID uint64, user string) error {
 
 	return db.RemoveChatMembers(chatID, []string{user})
 }
+
+// FetchRoomChatIDs fetch room chats' ids.
+func FetchRoomChatIDs(roomID uint64) ([]uint64, error) {
+	return db.GetRoomChatIDs(roomID)
+}

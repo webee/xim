@@ -22,11 +22,9 @@ type SendMsgArgs struct {
 	Kind   string
 }
 
-// ExitRoomArgs is the arguments of ExitRoom
-type ExitRoomArgs struct {
+// FetchRoomChatIDsArgs is the arguments of FetchRoomChatIDs
+type FetchRoomChatIDsArgs struct {
 	RoomID uint64
-	ChatID uint64
-	User   string
 }
 
 // FetchUserChatArgs is the arguments of FetchUserChat

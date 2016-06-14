@@ -41,7 +41,7 @@ func AddGroupMembers(chatID uint64, users []string) (err error) {
 	for _, user := range users {
 		tx.Exec(`INSERT INTO xchat_member(chat_id, "user", created, cur_id) VALUES($1, $2, now(), $4)`, chatID, user, chat.MsgID)
 	}
-	tx.Exec(`UPDATE xchatxchat SET updated=now() WHERE id=$1`, chatID)
+	tx.Exec(`UPDATE xchat_chat SET updated=now() WHERE id=$1`, chatID)
 
 	if err = tx.Commit(); err != nil {
 		if errRollback := tx.Rollback(); errRollback != nil {
@@ -135,9 +135,15 @@ func GetUserChat(user string, chatID uint64) (userChat *UserChat, err error) {
 func GetUserChatList(user string, onlyUnsync bool) (userChats []UserChat, err error) {
 	if onlyUnsync {
 		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
-		return
+	} else {
+		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
 	}
-	err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
+	return
+}
+
+// GetRoomChatIDs gets room chats' ids.
+func GetRoomChatIDs(roomID uint64) (ids []uint64, err error) {
+	err = db.Select(&ids, `SELECT chat_id FROM xchat_roomchat rc left join xchat_chat c on rc.chat_id=c.id where rc.room_id=$1 and c.is_deleted=false`, roomID)
 	return
 }
 

@@ -115,7 +115,13 @@ func (r *RPCXChat) UpdateDeviceInfo(args *types.UpdateDeviceInfoArgs, reply *typ
 	return UpdateDeviceInfo(args.User, args.Dev, args.DevID, args.Info)
 }
 
-// ExitRoom let user exit room's chat.
-func (r *RPCXChat) ExitRoom(args *types.ExitRoomArgs, reply *types.NoReply) error {
-	return ExitRoom(args.RoomID, args.ChatID, args.User)
+// FetchRoomChatIDs fetch room chats' ids.
+func (r *RPCXChat) FetchRoomChatIDs(args *types.FetchRoomChatIDsArgs, reply *[]uint64) error {
+	ids, err := FetchRoomChatIDs(args.RoomID)
+	if err != nil {
+		return err
+	}
+
+	*reply = ids
+	return nil
 }
