@@ -64,12 +64,12 @@ func FetchChatMessages(chatID uint64, lID, rID uint64, limit int, desc bool) ([]
 
 // SendChatMsg sends chat message.
 func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage, error) {
-	message, err := db.NewMsg(chatID, user, msg)
+	userChat, err := db.GetUserChat(user, chatID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("no permission: %s", err.Error())
 	}
-	// 获取最新chat
-	chat, err := db.GetChat(chatID)
+
+	message, err := db.NewMsg(chatID, user, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 		User:    message.User,
 		Ts:      message.Ts.Unix(),
 		Msg:     message.Msg,
-		Updated: chat.Updated.Unix(),
+		Updated: userChat.Updated.Unix(),
 	}
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
@@ -92,18 +92,9 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 
 // SendChatNotifyMsg sends chat notify message.
 func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
-	ok, err := db.IsChatMember(chatID, user)
+	userChat, err := db.GetUserChat(user, chatID)
 	if err != nil {
-		return err
-	}
-	if !ok {
-		return fmt.Errorf("no permission")
-	}
-
-	// 获取最新chat
-	chat, err := db.GetChat(chatID)
-	if err != nil {
-		return err
+		return fmt.Errorf("no permission: %s", err.Error())
 	}
 
 	m := pubtypes.ChatNotifyMessage{
@@ -111,7 +102,7 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 		User:    user,
 		Ts:      time.Now().Unix(),
 		Msg:     msg,
-		Updated: chat.Updated.Unix(),
+		Updated: userChat.Updated.Unix(),
 	}
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{

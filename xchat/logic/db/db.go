@@ -1,8 +1,6 @@
 package db
 
 import (
-	"fmt"
-
 	"github.com/jmoiron/sqlx"
 	// use pg driver
 	_ "github.com/lib/pq"
@@ -151,16 +149,6 @@ func SyncUserChatRecv(user string, chatID uint64, msgID uint64) (err error) {
 
 // NewMsg insert a new message.
 func NewMsg(chatID uint64, user string, msg string) (message *Message, err error) {
-	// 判断是否为会话成员
-	t, err := IsChatMember(chatID, user)
-	if err != nil {
-		return
-	}
-	if !t {
-		err = fmt.Errorf("no permission")
-		return
-	}
-
 	// 插入消息
 	tx, err := db.Beginx()
 	if err != nil {
