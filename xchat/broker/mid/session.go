@@ -22,6 +22,22 @@ type PushState struct {
 	notifyTaskChan chan chan []*NotifyMessage
 }
 
+func newPushState(s *Session) *PushState {
+	p := &PushState{
+		sending:        make(chan struct{}, 1),
+		pushing:        make(chan struct{}, 1),
+		pushingMutex:   make(chan struct{}, 1),
+		s:              s,
+		pushMsgID:      0,
+		taskChan:       make(chan chan []*Message, 64),
+		notifyTaskChan: make(chan chan []*NotifyMessage, 32),
+	}
+	p.sending <- struct{}{}
+	p.pushing <- struct{}{}
+	p.pushingMutex <- struct{}{}
+	return p
+}
+
 func (p *PushState) setSending() {
 	<-p.sending
 }
@@ -60,22 +76,6 @@ func (p *PushState) getTask(id uint64, isSender bool) (task chan []*Message, las
 	return
 }
 
-func newPushState(s *Session, pushID uint64) *PushState {
-	p := &PushState{
-		sending:        make(chan struct{}, 1),
-		pushing:        make(chan struct{}, 1),
-		pushingMutex:   make(chan struct{}, 1),
-		s:              s,
-		pushMsgID:      pushID,
-		taskChan:       make(chan chan []*Message, 64),
-		notifyTaskChan: make(chan chan []*NotifyMessage, 32),
-	}
-	p.sending <- struct{}{}
-	p.pushing <- struct{}{}
-	p.pushingMutex <- struct{}{}
-	return p
-}
-
 // Session is a user connection.
 type Session struct {
 	sync.Mutex
@@ -104,7 +104,7 @@ func (s *Session) GetChatPustState(chatID uint64) *PushState {
 	defer s.Unlock()
 	p, ok := s.pushStates[chatID]
 	if !ok {
-		p = newPushState(s, 0)
+		p = newPushState(s)
 		s.pushStates[chatID] = p
 	}
 	return p
@@ -114,13 +114,7 @@ func (s *Session) GetChatPustState(chatID uint64) *PushState {
 func (s *Session) GetPushState(msg *pubtypes.ChatMessage) (p *PushState, task chan []*Message, lastID uint64, valid bool) {
 	chatID := msg.ChatID
 	id := msg.ID
-	s.Lock()
-	p, ok := s.pushStates[chatID]
-	if !ok {
-		p = newPushState(s, id-1)
-		s.pushStates[chatID] = p
-	}
-	s.Unlock()
+	p = s.GetChatPustState(chatID)
 
 	task, lastID, valid = p.getTask(id, msg.User == s.User)
 	return
@@ -128,13 +122,7 @@ func (s *Session) GetPushState(msg *pubtypes.ChatMessage) (p *PushState, task ch
 
 // GetNotifyPushState get notify task.
 func (s *Session) GetNotifyPushState(chatID uint64) (p *PushState, task chan []*NotifyMessage) {
-	s.Lock()
-	p, ok := s.pushStates[chatID]
-	if !ok {
-		p = newPushState(s, 0)
-		s.pushStates[chatID] = p
-	}
-	s.Unlock()
+	p = s.GetChatPustState(chatID)
 
 	p.Lock()
 	defer p.Unlock()

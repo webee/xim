@@ -26,6 +26,7 @@ func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	s := getSessionFromDetails(details, true)
 	AddSession(s)
 	l.Debug("join: %s", s)
+	// TODO: 发送消息
 }
 
 // 处理用户断开注销
@@ -33,6 +34,8 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 	id := SessionID(args[0].(turnpike.ID))
 	s := RemoveSession(id)
 	l.Debug("left: %s", s)
+	// TODO: 发送消息
+	// TODO: 离开所有房间
 }
 
 // ping
@@ -42,6 +45,7 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
+	// TODO: 添加多种探测功能，rpc, 获取状态等
 	payloadSize := 0
 	if len(args) > 0 {
 		payloadSize = int(args[0].(float64))
