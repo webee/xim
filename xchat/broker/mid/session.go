@@ -124,6 +124,7 @@ func (s *Session) ExitRoom(roomID, chatID uint64) {
 	if ok && cid == chatID {
 		rooms.Exit(roomID, chatID, s.ID)
 		delete(s.rooms, roomID)
+		s.RemoveChatPustState(chatID)
 	}
 	return
 }
@@ -136,6 +137,7 @@ func (s *Session) ExitAllRooms() {
 	for roomID, chatID := range s.rooms {
 		rooms.Exit(roomID, chatID, s.ID)
 		delete(s.rooms, roomID)
+		s.RemoveChatPustState(chatID)
 	}
 	return
 }
@@ -150,6 +152,14 @@ func (s *Session) GetChatPustState(chatID uint64) *PushState {
 		s.pushStates[chatID] = p
 	}
 	return p
+}
+
+// RemoveChatPustState returns chat's push state.
+func (s *Session) RemoveChatPustState(chatID uint64) {
+	s.Lock()
+	defer s.Unlock()
+
+	delete(s.pushStates, chatID)
 }
 
 // GetPushState get last push id if not pushed, and set current id and get a push task.
