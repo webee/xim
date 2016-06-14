@@ -60,6 +60,7 @@ func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err erro
 	if err != nil {
 		return err
 	}
+
 	*reply = members
 	return nil
 }

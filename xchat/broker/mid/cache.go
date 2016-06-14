@@ -9,16 +9,23 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
+type chatMembers struct {
+	updated int64
+	members []db.Member
+}
+
 var (
-	// TODO: fix expiration duration and add update member event msg.
-	chatMembersCache = cache.New(5*time.Minute, 1*time.Minute)
+	chatMembersCache = cache.New(10*time.Minute, 3*time.Minute)
 )
 
-func getChatMembers(chatID uint64) []db.Member {
+func getChatMembers(chatID uint64, updated int64) []db.Member {
 	key := strconv.FormatUint(chatID, 10)
 	value, ok := chatMembersCache.Get(key)
 	if ok {
-		return value.([]db.Member)
+		cm := value.(*chatMembers)
+		if cm.updated >= updated {
+			return cm.members
+		}
 	}
 
 	members := []db.Member{}
@@ -26,7 +33,10 @@ func getChatMembers(chatID uint64) []db.Member {
 		l.Warning("fetch chat[%d] members error: %s", chatID, err)
 		return members
 	}
-	chatMembersCache.Set(key, members, cache.DefaultExpiration)
+	chatMembersCache.Set(key, &chatMembers{
+		updated: updated,
+		members: members,
+	}, cache.DefaultExpiration)
 
 	return members
 }

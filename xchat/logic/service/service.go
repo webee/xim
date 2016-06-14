@@ -68,14 +68,20 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 	if err != nil {
 		return nil, err
 	}
+	// 获取最新chat
+	chat, err := db.GetChat(chatID)
+	if err != nil {
+		return nil, err
+	}
 
 	// publish
 	m := pubtypes.ChatMessage{
-		ChatID: message.ChatID,
-		ID:     message.ID,
-		User:   message.User,
-		Ts:     message.Ts.Unix(),
-		Msg:    message.Msg,
+		ChatID:  message.ChatID,
+		ID:      message.ID,
+		User:    message.User,
+		Ts:      message.Ts.Unix(),
+		Msg:     message.Msg,
+		Updated: chat.Updated.Unix(),
 	}
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
@@ -90,17 +96,24 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 	if err != nil {
 		return err
 	}
-
 	if !ok {
 		return fmt.Errorf("no permission")
 	}
 
-	m := pubtypes.ChatNotifyMessage{
-		ChatID: chatID,
-		User:   user,
-		Ts:     time.Now().Unix(),
-		Msg:    msg,
+	// 获取最新chat
+	chat, err := db.GetChat(chatID)
+	if err != nil {
+		return err
 	}
+
+	m := pubtypes.ChatNotifyMessage{
+		ChatID:  chatID,
+		User:    user,
+		Ts:      time.Now().Unix(),
+		Msg:     msg,
+		Updated: chat.Updated.Unix(),
+	}
+	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
 		Msg: m,
 	})

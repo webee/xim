@@ -13,6 +13,7 @@ type Chat struct {
 	Tag     string    `json:"tag"`
 	MsgID   uint64    `db:"msg_id" json:"msg_id"`
 	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
 }
 
 // MarshalJSON encoding this to json.
@@ -21,9 +22,11 @@ func (d *Chat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		*Alias
 		Created int64 `json:"created"`
+		Updated int64 `json:"updated"`
 	}{
 		Alias:   (*Alias)(d),
 		Created: d.Created.Unix(),
+		Updated: d.Updated.Unix(),
 	})
 }
 
@@ -35,6 +38,7 @@ type UserChat struct {
 	Tag     string    `json:"tag"`
 	MsgID   uint64    `db:"msg_id" json:"msg_id"`
 	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
 	User    string    `json:"user"`
 	CurID   uint64    `db:"cur_id" json:"cur_id"`
 	Joined  time.Time `json:"joined"`
@@ -46,10 +50,12 @@ func (d *UserChat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		*Alias
 		Created int64 `json:"created"`
+		Updated int64 `json:"updated"`
 		Joined  int64 `json:"joined"`
 	}{
 		Alias:   (*Alias)(d),
 		Created: d.Created.Unix(),
+		Updated: d.Updated.Unix(),
 		Joined:  d.Joined.Unix(),
 	})
 }

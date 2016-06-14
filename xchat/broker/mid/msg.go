@@ -19,7 +19,7 @@ func handleMsg(ms <-chan interface{}) {
 }
 
 func pushNotify(msg *pubtypes.ChatNotifyMessage) {
-	members := getChatMembers(msg.ChatID)
+	members := getChatMembers(msg.ChatID, msg.Updated)
 
 	for _, member := range members {
 		if member.User == msg.User {
@@ -44,12 +44,12 @@ type xsess struct {
 }
 
 func push(msg *pubtypes.ChatMessage) {
-	members := getChatMembers(msg.ChatID)
+	members := getChatMembers(msg.ChatID, msg.Updated)
 
 	minLastID := uint64(math.MaxUint64)
 	xsesses := []*xsess{}
 
-	// TODO: one chat per PushState, not one session.
+	// TODO: one chat per PushState, not one session. 使用全局发送状态，各session维护自己的任务队列
 	for _, member := range members {
 		ss := GetUserSessions(member.User)
 		for _, x := range ss {

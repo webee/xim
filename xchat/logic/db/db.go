@@ -43,6 +43,7 @@ func AddGroupMembers(chatID uint64, users []string) (err error) {
 	for _, user := range users {
 		tx.Exec(`INSERT INTO xchat_member(chat_id, "user", created, cur_id) VALUES($1, $2, now(), $4)`, chatID, user, chat.MsgID)
 	}
+	tx.Exec(`UPDATE xchatxchat SET updated=now() WHERE id=$1`, chatID)
 
 	if err = tx.Commit(); err != nil {
 		if errRollback := tx.Rollback(); errRollback != nil {
@@ -63,6 +64,7 @@ func RemoveChatMembers(chatID uint64, users []string) (err error) {
 	for _, user := range users {
 		_, err = tx.Exec(`DELETE FROM xchat_member WHERE chat_id=$1 and "user"=$2`, chatID, user)
 	}
+	tx.Exec(`UPDATE xchatxchat SET updated=now() WHERE id=$1`, chatID)
 
 	if err = tx.Commit(); err != nil {
 		if errRollback := tx.Rollback(); errRollback != nil {
@@ -121,7 +123,7 @@ func GetChatMessages(chatID uint64, lID, rID uint64, limit int, desc bool) (msgs
 // GetChat returns chat.
 func GetChat(chatID uint64) (chat *Chat, err error) {
 	chat = &Chat{}
-	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, created FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
+	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, created, updated FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
 }
 
 // GetUserChat returns user's chat.
