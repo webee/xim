@@ -115,9 +115,9 @@ func (r *RPCXChat) UpdateDeviceInfo(args *types.UpdateDeviceInfoArgs, reply *typ
 	return UpdateDeviceInfo(args.User, args.Dev, args.DevID, args.Info)
 }
 
-// FetchRoomChatIDs fetch room chats' ids.
-func (r *RPCXChat) FetchRoomChatIDs(args *types.FetchRoomChatIDsArgs, reply *[]uint64) error {
-	ids, err := FetchRoomChatIDs(args.RoomID)
+// FetchNewRoomChatIDs fetch room's new chat ids.
+func (r *RPCXChat) FetchNewRoomChatIDs(args *types.FetchNewRoomChatIDs, reply *[]uint64) error {
+	ids, err := FetchNewRoomChatIDs(args.RoomID, args.ChatIDs)
 	if err != nil {
 		return err
 	}

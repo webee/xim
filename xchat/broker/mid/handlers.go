@@ -33,9 +33,12 @@ func onJoin(args []interface{}, kwargs map[string]interface{}) {
 func onLeave(args []interface{}, kwargs map[string]interface{}) {
 	id := SessionID(args[0].(turnpike.ID))
 	s := RemoveSession(id)
-	l.Debug("left: %s", s)
-	// TODO: 发送消息
-	// TODO: 离开所有房间
+	if s != nil {
+		// 离开所有房间
+		s.ExitAllRooms()
+		l.Debug("left: %s", s)
+		// TODO: 发送消息
+	}
 }
 
 // ping
@@ -299,7 +302,7 @@ func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnp
 	}
 
 	roomID := uint64(args[0].(float64))
-	chatID, err := xchatHTTPClient.EnterRoom(roomID, s.User)
+	chatID, err := s.EnterRoom(roomID)
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -323,14 +326,7 @@ func exitRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 
 	roomID := uint64(args[0].(float64))
 	chatID := uint64(args[1].(float64))
-
-	if err := xchatLogic.Call(types.RPCXChatExitRoom, &types.ExitRoomArgs{
-		RoomID: roomID,
-		ChatID: chatID,
-		User:   s.User,
-	}, nil); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
-	}
+	s.ExitRoom(roomID, chatID)
 
 	return &turnpike.CallResult{Args: []interface{}{true}}
 }

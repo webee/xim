@@ -13,12 +13,13 @@ var (
 )
 
 type ChatMessage struct {
-	ChatID  uint64
-	ID      uint64
-	User    string
-	Ts      int64
-	Msg     string
-	Updated int64
+	ChatID     uint64
+	ID         uint64
+	User       string
+	Ts         int64
+	Msg        string
+	Updated    int64
+	IsRoomChat bool
 }
 
 func (d *ChatMessage) Size() (s uint64) {
@@ -53,7 +54,7 @@ func (d *ChatMessage) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 32
+	s += 33
 	return
 }
 func (d *ChatMessage) Marshal(buf []byte) ([]byte, error) {
@@ -181,7 +182,14 @@ func (d *ChatMessage) Marshal(buf []byte) ([]byte, error) {
 		buf[i+7+24] = byte(d.Updated >> 56)
 
 	}
-	return buf[:i+32], nil
+	{
+		if d.IsRoomChat {
+			buf[i+32] = 1
+		} else {
+			buf[i+32] = 0
+		}
+	}
+	return buf[:i+33], nil
 }
 
 func (d *ChatMessage) Unmarshal(buf []byte) (uint64, error) {
@@ -247,15 +255,19 @@ func (d *ChatMessage) Unmarshal(buf []byte) (uint64, error) {
 		d.Updated = 0 | (int64(buf[i+0+24]) << 0) | (int64(buf[i+1+24]) << 8) | (int64(buf[i+2+24]) << 16) | (int64(buf[i+3+24]) << 24) | (int64(buf[i+4+24]) << 32) | (int64(buf[i+5+24]) << 40) | (int64(buf[i+6+24]) << 48) | (int64(buf[i+7+24]) << 56)
 
 	}
-	return i + 32, nil
+	{
+		d.IsRoomChat = buf[i+32] == 1
+	}
+	return i + 33, nil
 }
 
 type ChatNotifyMessage struct {
-	ChatID  uint64
-	User    string
-	Ts      int64
-	Msg     string
-	Updated int64
+	ChatID     uint64
+	User       string
+	Ts         int64
+	Msg        string
+	Updated    int64
+	IsRoomChat bool
 }
 
 func (d *ChatNotifyMessage) Size() (s uint64) {
@@ -290,7 +302,7 @@ func (d *ChatNotifyMessage) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 24
+	s += 25
 	return
 }
 func (d *ChatNotifyMessage) Marshal(buf []byte) ([]byte, error) {
@@ -399,7 +411,14 @@ func (d *ChatNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 		buf[i+7+16] = byte(d.Updated >> 56)
 
 	}
-	return buf[:i+24], nil
+	{
+		if d.IsRoomChat {
+			buf[i+24] = 1
+		} else {
+			buf[i+24] = 0
+		}
+	}
+	return buf[:i+25], nil
 }
 
 func (d *ChatNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
@@ -460,7 +479,10 @@ func (d *ChatNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 		d.Updated = 0 | (int64(buf[i+0+16]) << 0) | (int64(buf[i+1+16]) << 8) | (int64(buf[i+2+16]) << 16) | (int64(buf[i+3+16]) << 24) | (int64(buf[i+4+16]) << 32) | (int64(buf[i+5+16]) << 40) | (int64(buf[i+6+16]) << 48) | (int64(buf[i+7+16]) << 56)
 
 	}
-	return i + 24, nil
+	{
+		d.IsRoomChat = buf[i+24] == 1
+	}
+	return i + 25, nil
 }
 
 type XMessage struct {

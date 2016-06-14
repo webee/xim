@@ -83,6 +83,9 @@ type Session struct {
 	User       string
 	pushStates map[uint64]*PushState
 	msgTopic   string
+	// roomID->chatID
+	roomsLock sync.RWMutex
+	rooms     map[uint64]uint64
 }
 
 func (s *Session) String() string {
@@ -95,7 +98,46 @@ func newSession(id SessionID, user string) *Session {
 		User:       user,
 		pushStates: make(map[uint64]*PushState),
 		msgTopic:   fmt.Sprintf(URIXChatUserMsg, id),
+		rooms:      make(map[uint64]uint64),
 	}
+}
+
+// EnterRoom enter to room.
+func (s *Session) EnterRoom(roomID uint64) (chatID uint64, err error) {
+	s.roomsLock.Lock()
+	defer s.roomsLock.Unlock()
+
+	chatID, err = rooms.Enter(roomID, s.ID)
+	if err != nil {
+		return
+	}
+	s.rooms[roomID] = chatID
+	return
+}
+
+// ExitRoom exit from room.
+func (s *Session) ExitRoom(roomID, chatID uint64) {
+	s.roomsLock.Lock()
+	defer s.roomsLock.Unlock()
+
+	cid, ok := s.rooms[roomID]
+	if ok && cid == chatID {
+		rooms.Exit(roomID, chatID, s.ID)
+		delete(s.rooms, roomID)
+	}
+	return
+}
+
+// ExitAllRooms exit from all rooms.
+func (s *Session) ExitAllRooms() {
+	s.roomsLock.Lock()
+	defer s.roomsLock.Unlock()
+
+	for roomID, chatID := range s.rooms {
+		rooms.Exit(roomID, chatID, s.ID)
+		delete(s.rooms, roomID)
+	}
+	return
 }
 
 // GetChatPustState returns chat's push state.

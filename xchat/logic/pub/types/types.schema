@@ -5,6 +5,7 @@ struct ChatMessage {
 	Ts     int64
 	Msg    string
 	Updated int64
+	IsRoomChat bool
 }
 
 struct ChatNotifyMessage {
@@ -13,6 +14,7 @@ struct ChatNotifyMessage {
 	Ts     int64
 	Msg    string
 	Updated int64
+	IsRoomChat bool
 }
 
 struct XMessage {

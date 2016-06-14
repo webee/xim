@@ -1,6 +1,8 @@
 package db
 
 import (
+	"strconv"
+
 	"github.com/jmoiron/sqlx"
 	// use pg driver
 	_ "github.com/lib/pq"
@@ -141,9 +143,45 @@ func GetUserChatList(user string, onlyUnsync bool) (userChats []UserChat, err er
 	return
 }
 
-// GetRoomChatIDs gets room chats' ids.
-func GetRoomChatIDs(roomID uint64) (ids []uint64, err error) {
-	err = db.Select(&ids, `SELECT chat_id FROM xchat_roomchat rc left join xchat_chat c on rc.chat_id=c.id where rc.room_id=$1 and c.is_deleted=false`, roomID)
+// GetOrCreateNewRoomChatIDs gets room or craete new chats.
+func GetOrCreateNewRoomChatIDs(roomID uint64, chatIDs []uint64) (ids []uint64, err error) {
+	if len(chatIDs) == 0 {
+		chatIDs = append(chatIDs, 0)
+	}
+
+	query, args, err := sqlx.In("SELECT rc.chat_id FROM xchat_roomchat rc left join xchat_chat c on rc.chat_id=c.id WHERE rc.room_id=? and c.is_deleted=false and rc.chat_id NOT IN (?) ORDER BY rc.chat_id desc", roomID, chatIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	query = db.Rebind(query)
+
+	err = db.Select(&ids, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ids) > 0 {
+		return
+	}
+
+	// new chat.
+	tx, err := db.Beginx()
+	if err != nil {
+		return
+	}
+
+	var chatID uint64
+	tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, is_deleted, created, updated) VALUES('room', $1, '_room', 0, false, now(), now()) RETURNING id`, strconv.FormatUint(roomID, 10))
+	tx.Exec(`INSERT INTO xchat_roomchat(room_id, chat_id) VALUES($1, $2)`, roomID, chatID)
+
+	if err = tx.Commit(); err != nil {
+		if errRollback := tx.Rollback(); errRollback != nil {
+			err = errRollback
+			return
+		}
+	}
+	ids = append(ids, chatID)
 	return
 }
 

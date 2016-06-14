@@ -22,11 +22,6 @@ type SendMsgArgs struct {
 	Kind   string
 }
 
-// FetchRoomChatIDsArgs is the arguments of FetchRoomChatIDs
-type FetchRoomChatIDsArgs struct {
-	RoomID uint64
-}
-
 // FetchUserChatArgs is the arguments of FetchUserChat
 type FetchUserChatArgs struct {
 	User   string
@@ -73,6 +68,12 @@ type UpdateDeviceInfoArgs struct {
 	Info  string
 }
 
+// FetchNewRoomChatIDs is the arguments of FetchNewRoomChatIDs
+type FetchNewRoomChatIDs struct {
+	RoomID  uint64
+	ChatIDs []uint64
+}
+
 // XChatService methods.
 const (
 	RPCXChatEcho                  = "RPCXChat.Echo"
@@ -85,5 +86,5 @@ const (
 	RPCXChatSyncUserChatRecv      = "RPCXChat.SyncUserChatRecv"
 	RPCXChatFetchChatMembers      = "RPCXChat.FetchChatMembers"
 	RPCXChatUpdateDeviceInfo      = "RPCXChat.UpdateDeviceInfo"
-	RPCXChatExitRoom              = "RPCXChat.ExitRoom"
+	RPCXChatFetchNewRoomChatIDs   = "RPCXChat.FetchNewRoomChatIDs"
 )

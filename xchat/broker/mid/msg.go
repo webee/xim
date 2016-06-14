@@ -19,21 +19,18 @@ func handleMsg(ms <-chan interface{}) {
 }
 
 func pushNotify(msg *pubtypes.ChatNotifyMessage) {
-	members := getChatMembers(msg.ChatID, msg.Updated)
+	sessions := getChatSessions(msg.IsRoomChat, msg.ChatID, msg.Updated)
 
-	for _, member := range members {
-		if member.User == msg.User {
+	for _, x := range sessions {
+		if x.User == msg.User {
 			// 不需要发送给消息发送者
 			continue
 		}
 
-		ss := GetUserSessions(member.User)
-		for _, x := range ss {
-			p, task := x.GetNotifyPushState(msg.ChatID)
-			toPush := NewNotifyMessageFromDBMsg(msg)
-			task <- []*NotifyMessage{toPush}
-			tryPushing(p)
-		}
+		p, task := x.GetNotifyPushState(msg.ChatID)
+		toPush := NewNotifyMessageFromDBMsg(msg)
+		task <- []*NotifyMessage{toPush}
+		tryPushing(p)
 	}
 }
 
@@ -43,26 +40,46 @@ type xsess struct {
 	task   chan []*Message
 }
 
+func getChatSessions(isRoomChat bool, chatID uint64, updated int64) (sessions []*Session) {
+	if !isRoomChat {
+		members := getChatMembers(chatID, updated)
+
+		for _, member := range members {
+			ss := GetUserSessions(member.User)
+			for _, x := range ss {
+				sessions = append(sessions, x)
+			}
+		}
+	} else {
+		ids := rooms.ChatMembers(chatID)
+		for _, id := range ids {
+			x, ok := GetSession(id)
+			if ok {
+				sessions = append(sessions, x)
+			}
+		}
+	}
+
+	return
+}
+
 func push(msg *pubtypes.ChatMessage) {
-	members := getChatMembers(msg.ChatID, msg.Updated)
+	sessions := getChatSessions(msg.IsRoomChat, msg.ChatID, msg.Updated)
 
 	minLastID := uint64(math.MaxUint64)
 	xsesses := []*xsess{}
 
 	// TODO: one chat per PushState, not one session. 使用全局发送状态，各session维护自己的任务队列
-	for _, member := range members {
-		ss := GetUserSessions(member.User)
-		for _, x := range ss {
-			p, task, lastID, ok := x.GetPushState(msg)
-			if !ok {
-				// already send.
-				continue
-			}
-			if lastID < minLastID {
-				minLastID = lastID
-			}
-			xsesses = append(xsesses, &xsess{p, lastID, task})
+	for _, x := range sessions {
+		p, task, lastID, ok := x.GetPushState(msg)
+		if !ok {
+			// already send.
+			continue
 		}
+		if lastID < minLastID {
+			minLastID = lastID
+		}
+		xsesses = append(xsesses, &xsess{p, lastID, task})
 	}
 	if len(xsesses) < 1 {
 		return
