@@ -65,7 +65,7 @@ func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
 		}
 	}
 	// 都满了, 从服务器获取所有会话
-	ids := make([]uint64, len(chats))
+	ids := []uint64{}
 	for _, chat := range chats {
 		ids = append(ids, chat.chatID)
 	}
@@ -94,6 +94,7 @@ func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
 	}
 
 	if newChat != nil {
+		newChat.members[id] = struct{}{}
 		return newChat.chatID, nil
 	}
 
@@ -122,12 +123,11 @@ func (rc *RoomChats) Members(chatID uint64) (ids []SessionID) {
 		return
 	}
 
-	ids = make([]SessionID, len(chat.members))
 	for id := range chat.members {
 		ids = append(ids, id)
 	}
 
-	return ids
+	return
 }
 
 // HasChat checks if room has chat.
