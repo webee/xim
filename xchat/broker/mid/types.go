@@ -19,12 +19,12 @@ type ChatIdentity struct {
 }
 
 func (ci ChatIdentity) String() string {
-	return fmt.Sprintf("%s#%d", ci.Type, ci.ID)
+	return fmt.Sprintf("%s.%d", ci.Type, ci.ID)
 }
 
 // ParseChatIdentity parse chat identity from string.
 func ParseChatIdentity(s string) (chatIdentity *ChatIdentity, err error) {
-	parts := strings.SplitN(s, "#", 2)
+	parts := strings.SplitN(s, ".", 2)
 	if len(parts) != 2 {
 		return nil, ErrBadChatIdentity
 	}
@@ -50,7 +50,7 @@ type Message struct {
 // NewMessageFromDBMsg converts db.Message to Message.
 func NewMessageFromDBMsg(msg *pubtypes.ChatMessage) *Message {
 	return &Message{
-		ChatID: fmt.Sprintf("%s#%d", msg.ChatType, msg.ChatID),
+		ChatID: fmt.Sprintf("%s.%d", msg.ChatType, msg.ChatID),
 		User:   msg.User,
 		ID:     msg.ID,
 		Ts:     msg.Ts,
@@ -69,7 +69,7 @@ type NotifyMessage struct {
 // NewNotifyMessageFromDBMsg converts db.Message to Message.
 func NewNotifyMessageFromDBMsg(msg *pubtypes.ChatNotifyMessage) *NotifyMessage {
 	return &NotifyMessage{
-		ChatID: fmt.Sprintf("%s#%d", msg.ChatType, msg.ChatID),
+		ChatID: fmt.Sprintf("%s.%d", msg.ChatType, msg.ChatID),
 		User:   msg.User,
 		Ts:     msg.Ts,
 		Msg:    msg.Msg,

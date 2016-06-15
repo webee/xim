@@ -56,7 +56,7 @@ func (d *UserChat) MarshalJSON() ([]byte, error) {
 		Joined  int64  `json:"joined"`
 	}{
 		Alias:   (*Alias)(d),
-		ID:      fmt.Sprintf("%s#%d", d.Type, d.ID),
+		ID:      fmt.Sprintf("%s.%d", d.Type, d.ID),
 		Created: d.Created.Unix(),
 		Updated: d.Updated.Unix(),
 		Joined:  d.Joined.Unix(),
