@@ -78,7 +78,7 @@
           console.log("res:", res);
           var args = res.args;
           if (args[0]) {
-            newMsg("chat", {chat_id: chat_id, user:"*test*", id: args[1], ts: args[2], msg: content});
+            newMsg("chat", {chat_id: chat_id, user:"*"+user+"*", id: args[1], ts: args[2], msg: content});
             txt.value = "";
           } else {
             alert("error:" + args[2]);
