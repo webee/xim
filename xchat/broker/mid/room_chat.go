@@ -34,7 +34,8 @@ func (a ByCountDesc) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByCountDesc) Less(i, j int) bool { return len(a[i].members) > len(a[j].members) }
 
 var (
-	rooms = &Rooms{
+	areaLimit = int(1000)
+	rooms     = &Rooms{
 		rooms: make(map[uint64]*RoomChats, 4),
 	}
 )
@@ -59,7 +60,7 @@ func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
 	sort.Sort(ByCountDesc(chats))
 
 	for _, chat := range chats {
-		if len(chat.members) <= 1000 {
+		if len(chat.members) < areaLimit {
 			chat.members[id] = struct{}{}
 			return chat.chatID, nil
 		}

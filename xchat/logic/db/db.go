@@ -1,8 +1,6 @@
 package db
 
 import (
-	"strconv"
-
 	"github.com/jmoiron/sqlx"
 	// use pg driver
 	_ "github.com/lib/pq"
@@ -172,8 +170,10 @@ func GetOrCreateNewRoomChatIDs(roomID uint64, chatIDs []uint64) (ids []uint64, e
 	}
 
 	var chatID uint64
-	tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, is_deleted, created, updated) VALUES('room', $1, '_room', 0, false, now(), now()) RETURNING id`, strconv.FormatUint(roomID, 10))
-	tx.Exec(`INSERT INTO xchat_roomchat(room_id, chat_id) VALUES($1, $2)`, roomID, chatID)
+	tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, is_deleted, created, updated) VALUES('room', $1, '_room', 0, false, now(), now()) RETURNING id`, roomID)
+	var area uint32
+	tx.Get(&area, `SELECT count(area) FROM xchat_roomchat WHERE room_id=$1`, roomID)
+	tx.Exec(`INSERT INTO xchat_roomchat(room_id, area, chat_id) VALUES($1, $2, $3)`, roomID, area, chatID)
 
 	if err = tx.Commit(); err != nil {
 		if errRollback := tx.Rollback(); errRollback != nil {
