@@ -383,7 +383,7 @@ func exitRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	chatIdentity, err := ParseChatIdentity(args[1].(string))
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
