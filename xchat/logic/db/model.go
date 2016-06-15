@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -49,11 +50,13 @@ func (d *UserChat) MarshalJSON() ([]byte, error) {
 	type Alias UserChat
 	return json.Marshal(&struct {
 		*Alias
-		Created int64 `json:"created"`
-		Updated int64 `json:"updated"`
-		Joined  int64 `json:"joined"`
+		ID      string `json:"id"`
+		Created int64  `json:"created"`
+		Updated int64  `json:"updated"`
+		Joined  int64  `json:"joined"`
 	}{
 		Alias:   (*Alias)(d),
+		ID:      fmt.Sprintf("%s#%d", d.Type, d.ID),
 		Created: d.Created.Unix(),
 		Updated: d.Updated.Unix(),
 		Joined:  d.Joined.Unix(),
@@ -82,11 +85,12 @@ func (d *Member) MarshalJSON() ([]byte, error) {
 
 // Message is a chat message.
 type Message struct {
-	ChatID uint64 `db:"chat_id"`
-	ID     uint64 `db:"id"`
-	User   string `db:"uid"`
-	Ts     time.Time
-	Msg    string
+	ChatID   uint64 `db:"chat_id"`
+	ChatType string `db:"chat_type"`
+	ID       uint64 `db:"id"`
+	User     string `db:"uid"`
+	Ts       time.Time
+	Msg      string
 }
 
 // MarshalJSON encoding this to json.

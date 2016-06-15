@@ -13,17 +13,32 @@ var (
 )
 
 type ChatMessage struct {
-	ChatID     uint64
-	ID         uint64
-	User       string
-	Ts         int64
-	Msg        string
-	Updated    int64
-	IsRoomChat bool
+	ChatID   uint64
+	ChatType string
+	ID       uint64
+	User     string
+	Ts       int64
+	Msg      string
+	Updated  int64
 }
 
 func (d *ChatMessage) Size() (s uint64) {
 
+	{
+		l := uint64(len(d.ChatType))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t <<= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
 	{
 		l := uint64(len(d.User))
 
@@ -54,7 +69,7 @@ func (d *ChatMessage) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 33
+	s += 32
 	return
 }
 func (d *ChatMessage) Marshal(buf []byte) ([]byte, error) {
@@ -88,22 +103,41 @@ func (d *ChatMessage) Marshal(buf []byte) ([]byte, error) {
 
 	}
 	{
+		l := uint64(len(d.ChatType))
 
-		buf[0+8] = byte(d.ID >> 0)
+		{
 
-		buf[1+8] = byte(d.ID >> 8)
+			t := uint64(l)
 
-		buf[2+8] = byte(d.ID >> 16)
+			for t >= 0x80 {
+				buf[i+8] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+8] = byte(t)
+			i++
 
-		buf[3+8] = byte(d.ID >> 24)
+		}
+		copy(buf[i+8:], d.ChatType)
+		i += l
+	}
+	{
 
-		buf[4+8] = byte(d.ID >> 32)
+		buf[i+0+8] = byte(d.ID >> 0)
 
-		buf[5+8] = byte(d.ID >> 40)
+		buf[i+1+8] = byte(d.ID >> 8)
 
-		buf[6+8] = byte(d.ID >> 48)
+		buf[i+2+8] = byte(d.ID >> 16)
 
-		buf[7+8] = byte(d.ID >> 56)
+		buf[i+3+8] = byte(d.ID >> 24)
+
+		buf[i+4+8] = byte(d.ID >> 32)
+
+		buf[i+5+8] = byte(d.ID >> 40)
+
+		buf[i+6+8] = byte(d.ID >> 48)
+
+		buf[i+7+8] = byte(d.ID >> 56)
 
 	}
 	{
@@ -182,14 +216,7 @@ func (d *ChatMessage) Marshal(buf []byte) ([]byte, error) {
 		buf[i+7+24] = byte(d.Updated >> 56)
 
 	}
-	{
-		if d.IsRoomChat {
-			buf[i+32] = 1
-		} else {
-			buf[i+32] = 0
-		}
-	}
-	return buf[:i+33], nil
+	return buf[:i+32], nil
 }
 
 func (d *ChatMessage) Unmarshal(buf []byte) (uint64, error) {
@@ -199,6 +226,26 @@ func (d *ChatMessage) Unmarshal(buf []byte) (uint64, error) {
 
 		d.ChatID = 0 | (uint64(buf[i+0+0]) << 0) | (uint64(buf[i+1+0]) << 8) | (uint64(buf[i+2+0]) << 16) | (uint64(buf[i+3+0]) << 24) | (uint64(buf[i+4+0]) << 32) | (uint64(buf[i+5+0]) << 40) | (uint64(buf[i+6+0]) << 48) | (uint64(buf[i+7+0]) << 56)
 
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+8] & 0x7F)
+			for buf[i+8]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+8]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		d.ChatType = string(buf[i+8 : i+8+l])
+		i += l
 	}
 	{
 
@@ -255,23 +302,35 @@ func (d *ChatMessage) Unmarshal(buf []byte) (uint64, error) {
 		d.Updated = 0 | (int64(buf[i+0+24]) << 0) | (int64(buf[i+1+24]) << 8) | (int64(buf[i+2+24]) << 16) | (int64(buf[i+3+24]) << 24) | (int64(buf[i+4+24]) << 32) | (int64(buf[i+5+24]) << 40) | (int64(buf[i+6+24]) << 48) | (int64(buf[i+7+24]) << 56)
 
 	}
-	{
-		d.IsRoomChat = buf[i+32] == 1
-	}
-	return i + 33, nil
+	return i + 32, nil
 }
 
 type ChatNotifyMessage struct {
-	ChatID     uint64
-	User       string
-	Ts         int64
-	Msg        string
-	Updated    int64
-	IsRoomChat bool
+	ChatID   uint64
+	ChatType string
+	User     string
+	Ts       int64
+	Msg      string
+	Updated  int64
 }
 
 func (d *ChatNotifyMessage) Size() (s uint64) {
 
+	{
+		l := uint64(len(d.ChatType))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t <<= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
 	{
 		l := uint64(len(d.User))
 
@@ -302,7 +361,7 @@ func (d *ChatNotifyMessage) Size() (s uint64) {
 		}
 		s += l
 	}
-	s += 25
+	s += 24
 	return
 }
 func (d *ChatNotifyMessage) Marshal(buf []byte) ([]byte, error) {
@@ -334,6 +393,25 @@ func (d *ChatNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 
 		buf[7+0] = byte(d.ChatID >> 56)
 
+	}
+	{
+		l := uint64(len(d.ChatType))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+8] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+8] = byte(t)
+			i++
+
+		}
+		copy(buf[i+8:], d.ChatType)
+		i += l
 	}
 	{
 		l := uint64(len(d.User))
@@ -411,14 +489,7 @@ func (d *ChatNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 		buf[i+7+16] = byte(d.Updated >> 56)
 
 	}
-	{
-		if d.IsRoomChat {
-			buf[i+24] = 1
-		} else {
-			buf[i+24] = 0
-		}
-	}
-	return buf[:i+25], nil
+	return buf[:i+24], nil
 }
 
 func (d *ChatNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
@@ -428,6 +499,26 @@ func (d *ChatNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 
 		d.ChatID = 0 | (uint64(buf[i+0+0]) << 0) | (uint64(buf[i+1+0]) << 8) | (uint64(buf[i+2+0]) << 16) | (uint64(buf[i+3+0]) << 24) | (uint64(buf[i+4+0]) << 32) | (uint64(buf[i+5+0]) << 40) | (uint64(buf[i+6+0]) << 48) | (uint64(buf[i+7+0]) << 56)
 
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+8] & 0x7F)
+			for buf[i+8]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+8]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		d.ChatType = string(buf[i+8 : i+8+l])
+		i += l
 	}
 	{
 		l := uint64(0)
@@ -479,10 +570,7 @@ func (d *ChatNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 		d.Updated = 0 | (int64(buf[i+0+16]) << 0) | (int64(buf[i+1+16]) << 8) | (int64(buf[i+2+16]) << 16) | (int64(buf[i+3+16]) << 24) | (int64(buf[i+4+16]) << 32) | (int64(buf[i+5+16]) << 40) | (int64(buf[i+6+16]) << 48) | (int64(buf[i+7+16]) << 56)
 
 	}
-	{
-		d.IsRoomChat = buf[i+24] == 1
-	}
-	return i + 25, nil
+	return i + 24, nil
 }
 
 type XMessage struct {

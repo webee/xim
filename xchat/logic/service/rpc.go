@@ -76,7 +76,7 @@ func (r *RPCXChat) FetchUserChatMessages(args *types.FetchUserChatMessagesArgs, 
 		return fmt.Errorf("no permission")
 	}
 
-	msgs, err := FetchChatMessages(args.ChatID, args.LID, args.RID, args.Limit, args.Desc)
+	msgs, err := FetchChatMessages(args.ChatID, args.ChatType, args.LID, args.RID, args.Limit, args.Desc)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func (r *RPCXChat) FetchUserChatMessages(args *types.FetchUserChatMessagesArgs, 
 
 // FetchChatMessages fetch chat's messages between sID and eID.
 func (r *RPCXChat) FetchChatMessages(args *types.FetchChatMessagesArgs, reply *[]pubtypes.ChatMessage) (err error) {
-	msgs, err := FetchChatMessages(args.ChatID, args.LID, args.RID, args.Limit, args.Desc)
+	msgs, err := FetchChatMessages(args.ChatID, args.ChatType, args.LID, args.RID, args.Limit, args.Desc)
 	if err != nil {
 		return err
 	}

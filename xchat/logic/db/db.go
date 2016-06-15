@@ -86,34 +86,34 @@ func IsChatMember(chatID uint64, user string) (t bool, err error) {
 }
 
 // GetChatMessages get chat messages between sID and eID.
-func GetChatMessages(chatID uint64, lID, rID uint64, limit int, desc bool) (msgs []Message, err error) {
+func GetChatMessages(chatID uint64, chatType string, lID, rID uint64, limit int, desc bool) (msgs []Message, err error) {
 	// TODO: use sql generator.
 	if !desc {
 		if rID > 0 {
 			if limit > 0 {
-				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 and id < $3 ORDER BY id LIMIT $4`, chatID, lID, rID, limit)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id LIMIT $5`, chatID, chatType, lID, rID, limit)
 			} else {
-				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 and id < $3 ORDER BY id`, chatID, lID, rID)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id`, chatID, chatType, lID, rID)
 			}
 		} else {
 			if limit > 0 {
-				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 ORDER BY id LIMIT $3`, chatID, lID, limit)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id LIMIT $4`, chatID, chatType, lID, limit)
 			} else {
-				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 ORDER BY id`, chatID, lID)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id`, chatID, chatType, lID)
 			}
 		}
 	} else {
 		if rID > 0 {
 			if limit > 0 {
-				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 and id < $3 ORDER BY id DESC LIMIT $4`, chatID, lID, rID, limit)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id DESC LIMIT $5`, chatID, chatType, lID, rID, limit)
 			} else {
-				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 and id < $3 ORDER BY id DESC`, chatID, lID, rID)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id DESC`, chatID, chatType, lID, rID)
 			}
 		} else {
 			if limit > 0 {
-				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 ORDER BY id DESC LIMIT $3`, chatID, lID, limit)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id DESC LIMIT $4`, chatID, chatType, lID, limit)
 			} else {
-				err = db.Select(&msgs, `SELECT chat_id, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and id > $2 ORDER BY id DESC`, chatID, lID)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id DESC`, chatID, chatType, lID)
 			}
 		}
 	}
@@ -192,7 +192,7 @@ func SyncUserChatRecv(user string, chatID uint64, msgID uint64) (err error) {
 }
 
 // NewMsg insert a new message.
-func NewMsg(chatID uint64, user string, msg string) (message *Message, err error) {
+func NewMsg(chatID uint64, chatType string, user string, msg string) (message *Message, err error) {
 	// 插入消息
 	tx, err := db.Beginx()
 	if err != nil {
@@ -200,16 +200,17 @@ func NewMsg(chatID uint64, user string, msg string) (message *Message, err error
 	}
 
 	message = &Message{
-		ChatID: chatID,
-		User:   user,
-		Msg:    msg,
+		ChatID:   chatID,
+		ChatType: chatType,
+		User:     user,
+		Msg:      msg,
 	}
 
 	if err = tx.Get(message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 RETURNING msg_id as id`, chatID); err != nil {
 		return
 	}
 
-	if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, id, uid, ts, msg) values($1, $2, $3, now(), $4) RETURNING ts`, chatID, message.ID, user, msg); err != nil {
+	if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, chat_type, id, uid, ts, msg) values($1, $2, $3, $4, now(), $5) RETURNING ts`, chatID, chatType, message.ID, user, msg); err != nil {
 		return
 	}
 

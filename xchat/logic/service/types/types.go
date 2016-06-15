@@ -16,10 +16,11 @@ type NoReply struct {
 
 // SendMsgArgs is the arguments of SendMsg.
 type SendMsgArgs struct {
-	ChatID uint64
-	User   string
-	Msg    string
-	Kind   string
+	ChatID   uint64
+	ChatType string
+	User     string
+	Msg      string
+	Kind     string
 }
 
 // FetchUserChatArgs is the arguments of FetchUserChat
@@ -43,21 +44,23 @@ type SyncUserChatRecvArgs struct {
 
 // FetchUserChatMessagesArgs is the arguments of FetchUserChatMessages
 type FetchUserChatMessagesArgs struct {
-	User   string
-	ChatID uint64
-	LID    uint64
-	RID    uint64
-	Limit  int
-	Desc   bool
+	User     string
+	ChatID   uint64
+	ChatType string
+	LID      uint64
+	RID      uint64
+	Limit    int
+	Desc     bool
 }
 
 // FetchChatMessagesArgs is the arguments of FetchChatMessages
 type FetchChatMessagesArgs struct {
-	ChatID uint64
-	LID    uint64
-	RID    uint64
-	Limit  int
-	Desc   bool
+	ChatID   uint64
+	ChatType string
+	LID      uint64
+	RID      uint64
+	Limit    int
+	Desc     bool
 }
 
 // UpdateDeviceInfoArgs is the arguments of UpdateDeviceInfoArgs

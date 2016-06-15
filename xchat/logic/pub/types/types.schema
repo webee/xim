@@ -1,20 +1,20 @@
 struct ChatMessage {
 	ChatID uint64
+	ChatType string
 	ID  uint64
 	User   string
 	Ts     int64
 	Msg    string
 	Updated int64
-	IsRoomChat bool
 }
 
 struct ChatNotifyMessage {
 	ChatID uint64
+	ChatType string
 	User   string
 	Ts     int64
 	Msg    string
 	Updated int64
-	IsRoomChat bool
 }
 
 struct XMessage {

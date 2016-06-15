@@ -44,19 +44,20 @@ func IsChatMember(chatID uint64, user string) (bool, error) {
 }
 
 // FetchChatMessages fetch chat's messages between lID and rID.
-func FetchChatMessages(chatID uint64, lID, rID uint64, limit int, desc bool) ([]pubtypes.ChatMessage, error) {
-	msgs, err := db.GetChatMessages(chatID, lID, rID, limit, desc)
+func FetchChatMessages(chatID uint64, chatType string, lID, rID uint64, limit int, desc bool) ([]pubtypes.ChatMessage, error) {
+	msgs, err := db.GetChatMessages(chatID, chatType, lID, rID, limit, desc)
 	if err != nil {
 		return nil, err
 	}
 	ms := []pubtypes.ChatMessage{}
 	for _, msg := range msgs {
 		ms = append(ms, pubtypes.ChatMessage{
-			ChatID: msg.ChatID,
-			ID:     msg.ID,
-			User:   msg.User,
-			Ts:     msg.Ts.Unix(),
-			Msg:    msg.Msg,
+			ChatID:   msg.ChatID,
+			ChatType: msg.ChatType,
+			ID:       msg.ID,
+			User:     msg.User,
+			Ts:       msg.Ts.Unix(),
+			Msg:      msg.Msg,
 		})
 	}
 	return ms, nil
@@ -64,8 +65,8 @@ func FetchChatMessages(chatID uint64, lID, rID uint64, limit int, desc bool) ([]
 
 // SendChatMsg sends chat message.
 func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage, error) {
-	var isRoomChat bool
 	var updated int64
+	var chatType string
 	userChat, err := db.GetUserChat(user, chatID)
 	if err != nil {
 		chat, err2 := db.GetChat(chatID)
@@ -76,25 +77,25 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 			return nil, fmt.Errorf("no permission: %s", err.Error())
 		}
 		// is room chat.
-		updated = chat.Updated.Unix()
-		isRoomChat = true
+		chatType = chat.Type
 	} else {
 		updated = userChat.Updated.Unix()
+		chatType = userChat.Type
 	}
 
-	message, err := db.NewMsg(chatID, user, msg)
+	message, err := db.NewMsg(chatID, chatType, user, msg)
 	if err != nil {
 		return nil, err
 	}
 
 	m := pubtypes.ChatMessage{
-		ChatID:     message.ChatID,
-		ID:         message.ID,
-		User:       message.User,
-		Ts:         message.Ts.Unix(),
-		Msg:        message.Msg,
-		Updated:    updated,
-		IsRoomChat: isRoomChat,
+		ChatID:   message.ChatID,
+		ChatType: message.ChatType,
+		ID:       message.ID,
+		User:     message.User,
+		Ts:       message.Ts.Unix(),
+		Msg:      message.Msg,
+		Updated:  updated,
 	}
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
@@ -105,8 +106,8 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 
 // SendChatNotifyMsg sends chat notify message.
 func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
-	var isRoomChat bool
 	var updated int64
+	var chatType string
 	userChat, err := db.GetUserChat(user, chatID)
 	if err != nil {
 		chat, err2 := db.GetChat(chatID)
@@ -117,19 +118,19 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 			return fmt.Errorf("no permission: %s", err.Error())
 		}
 		// is room chat.
-		updated = chat.Updated.Unix()
-		isRoomChat = true
+		chatType = chat.Type
 	} else {
 		updated = userChat.Updated.Unix()
+		chatType = userChat.Type
 	}
 
 	m := pubtypes.ChatNotifyMessage{
-		ChatID:     chatID,
-		User:       user,
-		Ts:         time.Now().Unix(),
-		Msg:        msg,
-		Updated:    updated,
-		IsRoomChat: isRoomChat,
+		ChatID:   chatID,
+		ChatType: chatType,
+		User:     user,
+		Ts:       time.Now().Unix(),
+		Msg:      msg,
+		Updated:  updated,
 	}
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{

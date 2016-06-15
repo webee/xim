@@ -19,7 +19,7 @@ func handleMsg(ms <-chan interface{}) {
 }
 
 func pushNotify(msg *pubtypes.ChatNotifyMessage) {
-	sessions := getChatSessions(msg.IsRoomChat, msg.ChatID, msg.Updated)
+	sessions := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
 
 	for _, x := range sessions {
 		if x.User == msg.User {
@@ -40,8 +40,8 @@ type xsess struct {
 	task   chan []*Message
 }
 
-func getChatSessions(isRoomChat bool, chatID uint64, updated int64) (sessions []*Session) {
-	if !isRoomChat {
+func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []*Session) {
+	if chatType != RoomChatType {
 		members := getChatMembers(chatID, updated)
 
 		for _, member := range members {
@@ -64,7 +64,7 @@ func getChatSessions(isRoomChat bool, chatID uint64, updated int64) (sessions []
 }
 
 func push(msg *pubtypes.ChatMessage) {
-	sessions := getChatSessions(msg.IsRoomChat, msg.ChatID, msg.Updated)
+	sessions := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
 
 	minLastID := uint64(math.MaxUint64)
 	xsesses := []*xsess{}
@@ -109,9 +109,10 @@ func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.ChatMessag
 	if minLastID+1 < msg.ID {
 		// fetch late messages.
 		args := &types.FetchChatMessagesArgs{
-			ChatID: msg.ChatID,
-			LID:    minLastID,
-			RID:    msg.ID,
+			ChatID:   msg.ChatID,
+			ChatType: msg.ChatType,
+			LID:      minLastID,
+			RID:      msg.ID,
 		}
 		if err := xchatLogic.Call(types.RPCXChatFetchChatMessages, args, &msgs); err != nil {
 			l.Warning("fetch chat[%d] messages error: %s", msg.ChatID, err)

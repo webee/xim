@@ -1,6 +1,7 @@
 package mid
 
 import (
+	"strconv"
 	"time"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
@@ -77,7 +78,13 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	chatID := uint64(args[0].(float64))
+	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	chatID := chatIdentity.ID
+	chatType := chatIdentity.Type
+
 	msg := args[1].(string)
 
 	p := s.GetChatPustState(chatID)
@@ -86,10 +93,11 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 
 	var message pubtypes.ChatMessage
 	if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
-		ChatID: chatID,
-		User:   s.User,
-		Msg:    msg,
-		Kind:   types.MsgKindChat,
+		ChatID:   chatID,
+		ChatType: chatType,
+		User:     s.User,
+		Msg:      msg,
+		Kind:     types.MsgKindChat,
 	}, &message); err != nil {
 		l.Warning("%s error: %s", types.RPCXChatSendMsg, err)
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
@@ -108,14 +116,20 @@ func onPubMsg(args []interface{}, kwargs map[string]interface{}) {
 		return
 	}
 
-	chatID := uint64(args[0].(float64))
+	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	if err != nil {
+		return
+	}
+	chatID := chatIdentity.ID
+	chatType := chatIdentity.Type
 	msg := args[1].(string)
 
 	xchatLogic.AsyncCall(types.RPCXChatSendMsg, &types.SendMsgArgs{
-		ChatID: chatID,
-		User:   s.User,
-		Msg:    msg,
-		Kind:   types.MsgKindChatNotify,
+		ChatID:   chatID,
+		ChatType: chatType,
+		User:     s.User,
+		Msg:      msg,
+		Kind:     types.MsgKindChatNotify,
 	})
 }
 
@@ -157,7 +171,11 @@ func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
-	chatID := uint64(args[0].(float64))
+	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	chatID := chatIdentity.ID
 
 	// fetch user chat.
 	userChat := db.UserChat{}
@@ -202,7 +220,11 @@ func syncChatRecv(args []interface{}, kwargs map[string]interface{}) (result *tu
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
-	chatID := uint64(args[0].(float64))
+	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	chatID := chatIdentity.ID
 	msgID := uint64(args[1].(float64))
 
 	// sync chat recv.
@@ -224,7 +246,12 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 	// params
-	chatID := uint64(args[0].(float64))
+	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	chatID := chatIdentity.ID
+	chatType := chatIdentity.Type
 
 	var lid, rid uint64
 	var limit int
@@ -254,12 +281,13 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 
 	var msgs []pubtypes.ChatMessage
 	arguments := &types.FetchUserChatMessagesArgs{
-		User:   s.User,
-		ChatID: chatID,
-		LID:    lid,
-		RID:    rid,
-		Limit:  limit,
-		Desc:   desc,
+		User:     s.User,
+		ChatID:   chatID,
+		ChatType: chatType,
+		LID:      lid,
+		RID:      rid,
+		Limit:    limit,
+		Desc:     desc,
 	}
 
 	if err := xchatLogic.Call(types.RPCXChatFetchUserChatMessages, arguments, &msgs); err != nil {
@@ -304,7 +332,11 @@ func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	roomID := uint64(args[0].(float64))
+	roomID, err := strconv.ParseUint(args[0].(string), 10, 64)
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+
 	chatID, err := s.EnterRoom(roomID)
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
@@ -340,8 +372,17 @@ func exitRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	roomID := uint64(args[0].(float64))
-	chatID := uint64(args[1].(float64))
+	roomID, err := strconv.ParseUint(args[0].(string), 10, 64)
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+
+	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	chatID := chatIdentity.ID
+
 	s.ExitRoom(roomID, chatID)
 
 	return &turnpike.CallResult{Args: []interface{}{true}}

@@ -8,7 +8,7 @@
 <h1>XChat</h1>
 <p>Open JavaScript console to watch output.</p>
 <form onsubmit="return false">
-  <input id="chat_id" size=6 type="text" value="1"></input>
+  <input id="chat_id" size=12 type="text" value="group#1"></input>
 <input id="send" size="75" type="text"></input><input type="submit" onclick="sendMsg()" value="发送"></input>
 </form>
 <div id="msg">
@@ -65,7 +65,7 @@
         return
       }
 
-      var chat_id = parseInt(document.getElementById("chat_id").value);
+      var chat_id = document.getElementById("chat_id").value;
       var txt = document.getElementById("send");
       var content = txt.value;
       if (content.length === 0) {
@@ -145,9 +145,9 @@
         var msg_div = document.getElementById("msg");
         var p = document.createElement("p");
         if (kind==="chat") {
-          p.innerHTML = msg.ts + "->#" + msg.chat_id + "#" + kind + "#" + msg.id + "#" + msg.user+ ": " + msg.msg;
+          p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user+ ">" + msg.id + " : " + msg.msg;
         } else if (kind==="chat_notify") {
-          p.innerHTML = msg.ts + "->#" + msg.chat_id + "#" + kind + "#" + msg.user+ ": " + msg.msg;
+          p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user+ " : " + msg.msg;
         }
         msg_div.insertBefore(p, msg_div.firstChild);
       }
