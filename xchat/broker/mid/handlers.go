@@ -403,10 +403,16 @@ func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	chatID, err := xchatHTTPClient.NewChat("cs", []string{s.User}, "我的客服", "_cs")
+	xchatID, err := xchatHTTPClient.NewChat("cs", []string{s.User}, "我的客服", "_cs")
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
+
+	chatIdentity, err := ParseChatIdentity(xchatID)
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	chatID := chatIdentity.ID
 
 	// fetch user chat.
 	userChat := db.UserChat{}
