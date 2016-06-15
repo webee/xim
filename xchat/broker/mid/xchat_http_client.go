@@ -85,7 +85,7 @@ func (c *XChatHTTPClient) Token() string {
 }
 
 // NewChat creates chat.
-func (c *XChatHTTPClient) NewChat(chatType string, users []string, title, tag string) (uint64, error) {
+func (c *XChatHTTPClient) NewChat(chatType string, users []string, title, tag string) (string, error) {
 	params := make(map[string]interface{})
 	params["type"] = chatType
 	params["users"] = users
@@ -95,29 +95,29 @@ func (c *XChatHTTPClient) NewChat(chatType string, users []string, title, tag st
 	b, _ := json.Marshal(params)
 	req, err := http.NewRequest("POST", c.url(URINewChat), bytes.NewReader(b))
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	req.Header.Add("Authorization", "Bearer "+c.Token())
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return 0, errors.New("request failed")
+		return "", errors.New("request failed")
 	}
 	decoder := json.NewDecoder(resp.Body)
 	res := make(map[string]interface{})
 	if err := decoder.Decode(&res); err != nil {
-		return 0, err
+		return "", err
 	}
 	id, ok := res["id"]
 	if !ok {
-		return 0, errors.New("request failed")
+		return "", errors.New("request failed")
 	}
-	return uint64(id.(float64)), nil
+	return id.(string), nil
 }
 
 // EnterRoom choose a chat for user.

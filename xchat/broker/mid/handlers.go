@@ -148,10 +148,16 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	}
 	title := args[2].(string)
 
-	chatID, err := xchatHTTPClient.NewChat(chatType, users, title, "user")
+	xchatID, err := xchatHTTPClient.NewChat(chatType, users, title, "user")
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
+
+	chatIdentity, err := ParseChatIdentity(xchatID)
+	if err != nil {
+		return
+	}
+	chatID := chatIdentity.ID
 
 	// fetch user chat.
 	userChat := db.UserChat{}
