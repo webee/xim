@@ -21,6 +21,7 @@
 <script>
     var userkey = "demo app user key.";
     var user = document.location.hash.substr(1)||"test";
+    var jwt = document.location.search.substr(1);
     // the URL of the WAMP Router (Crossbar.io)
     //
     var wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" + document.location.host + "/ws";
@@ -28,6 +29,9 @@
     function onchallenge (session, method, extra) {
         console.log("onchallenge", method, extra);
         if (method === "jwt") {
+            if (!!jwt) {
+              return jwt
+            }
             // Header
             var oHeader = {alg: 'HS256', typ: 'JWT'};
             // Payload
