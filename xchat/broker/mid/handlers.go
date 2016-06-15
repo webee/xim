@@ -1,6 +1,7 @@
 package mid
 
 import (
+	"time"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
@@ -133,18 +134,20 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	}
 	title := args[2].(string)
 
-	chatID, err := xchatHTTPClient.NewChat(chatType, users, title)
+	chatID, err := xchatHTTPClient.NewChat(chatType, users, title, "user")
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	// fetch chat.
-	chat := db.Chat{}
-	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
+	// fetch user chat.
+	userChat := db.UserChat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchUserChat, &types.FetchUserChatArgs{
+		User:   s.User,
+		ChatID: chatID,
+	}, &userChat); err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
-
-	return &turnpike.CallResult{Args: []interface{}{true, &chat}}
+	return &turnpike.CallResult{Args: []interface{}{true, &userChat}}
 }
 
 // 获取会话信息
@@ -313,7 +316,20 @@ func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true, &chat}}
+	userChat := db.UserChat{
+		ID:      chat.ID,
+		Type:    chat.Type,
+		Title:   chat.Title,
+		Tag:     chat.Tag,
+		MsgID:   chat.MsgID,
+		Created: chat.Created,
+		Updated: chat.Created,
+		User:    s.User,
+		CurID:   chat.MsgID,
+		Joined:  time.Now(),
+	}
+
+	return &turnpike.CallResult{Args: []interface{}{true, &userChat}}
 }
 
 // 离开房间
@@ -334,20 +350,26 @@ func exitRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 // 客服
 // 获取我的客服会话
 func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatEnterRoom, args, kwargs)
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatGetCsChat, args, kwargs)
 	s := getSessionFromDetails(kwargs["details"], false)
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	chatID := uint64(4)
-	// fetch chat.
-	chat := db.Chat{}
-	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
+	chatID, err := xchatHTTPClient.NewChat("cs", []string{s.User}, "我的客服", "_cs")
+	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true, &chat}}
+	// fetch user chat.
+	userChat := db.UserChat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchUserChat, &types.FetchUserChatArgs{
+		User:   s.User,
+		ChatID: chatID,
+	}, &userChat); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	return &turnpike.CallResult{Args: []interface{}{true, &userChat}}
 }
 
 func sub(handler turnpike.EventHandler) turnpike.EventHandler {

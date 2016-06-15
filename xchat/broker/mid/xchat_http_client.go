@@ -85,11 +85,11 @@ func (c *XChatHTTPClient) Token() string {
 }
 
 // NewChat creates chat.
-func (c *XChatHTTPClient) NewChat(chatType string, users []string, title string) (uint64, error) {
+func (c *XChatHTTPClient) NewChat(chatType string, users []string, title, tag string) (uint64, error) {
 	params := make(map[string]interface{})
 	params["type"] = chatType
 	params["users"] = users
-	params["tag"] = "user"
+	params["tag"] = tag
 	params["title"] = title
 
 	b, _ := json.Marshal(params)
