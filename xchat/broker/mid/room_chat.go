@@ -31,7 +31,7 @@ type ByCountDesc []*Chat
 
 func (a ByCountDesc) Len() int           { return len(a) }
 func (a ByCountDesc) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByCountDesc) Less(i, j int) bool { return len(a[i].members) > len(a[j].members) }
+func (a ByCountDesc) Less(i, j int) bool { return len(a[i].members) >= len(a[j].members) }
 
 var (
 	areaLimit = int(1000)
