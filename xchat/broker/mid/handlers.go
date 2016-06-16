@@ -59,9 +59,11 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 	// TODO: 添加多种探测功能，rpc, 获取状态等
+	method := args[0].(string)
+
 	payloadSize := 0
 	if len(args) > 0 {
-		payloadSize = int(args[0].(float64))
+		payloadSize = int(args[1].(float64))
 	}
 
 	if payloadSize < 0 {
@@ -71,11 +73,28 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 	}
 
 	payload := []byte{}
-	for i := 1; i < payloadSize; i++ {
+	for i := 0; i < payloadSize; i++ {
 		payload = append(payload, 0x31)
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true, s.ID, string(payload)}}
+	sleep := int64(args[2].(float64))
+
+	if method == "rpc" {
+		var content string
+		if err := xchatLogic.Call(types.RPCXChatPing, &types.PingArgs{
+			Sleep:   sleep,
+			Payload: string(payload),
+		}, &content); err != nil {
+			l.Warning("%s error: %s", types.RPCXChatPing, err)
+			return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		}
+
+		return &turnpike.CallResult{Args: []interface{}{true, s.ID, content}}
+	} else if method == "net" {
+		time.Sleep(time.Duration(sleep) * time.Millisecond)
+		return &turnpike.CallResult{Args: []interface{}{true, s.ID, string(payload)}}
+	}
+	return &turnpike.CallResult{Args: []interface{}{false, 1, "invalid method"}}
 }
 
 func onPubUserInfo(args []interface{}, kwargs map[string]interface{}) {

@@ -11,11 +11,9 @@ import (
 type RPCXChat struct {
 }
 
-// Echo send msg back.
-func (r *RPCXChat) Echo(s string, reply *string) (err error) {
-	//l.Info("echo: %s", s)
-	//time.Sleep(1 * time.Millisecond)
-	*reply = Echo(s)
+// Ping is a test rpc method.
+func (r *RPCXChat) Ping(args *types.PingArgs, reply *string) (err error) {
+	*reply = Ping(args.Sleep, args.Payload)
 	return nil
 }
 

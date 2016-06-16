@@ -8,9 +8,10 @@ import (
 	pubtypes "xim/xchat/logic/pub/types"
 )
 
-// Echo send msg back.
-func Echo(s string) string {
-	return s
+// Ping is a test service.
+func Ping(sleep int64, payload string) string {
+	time.Sleep(time.Duration(sleep) * time.Millisecond)
+	return "RPC:" + payload
 }
 
 // FetchChatMembers fetch chat's members.

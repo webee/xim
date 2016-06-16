@@ -107,8 +107,16 @@
       );
     }
 
-    function testPing(n) {
-      session.call('xchat.ping', [n||0]).then(res=>console.log("res:", res), err=>console.error("err:", err));
+    function testPing() {
+      var args = [];
+      for (let i=0;i<arguments.length;i++) {
+        args.push(arguments[i]);
+      }
+      if (args.length === 0) {
+        args = ["net", 0, 0];
+      }
+
+      session.call('xchat.ping', args).then(res=>console.log("res:", res), err=>console.error("err:", err));
     }
 
     function testSendMsg(s, chat_id, i, n, show) {

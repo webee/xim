@@ -14,6 +14,12 @@ type NoArgs struct {
 type NoReply struct {
 }
 
+// PingArgs is the arguments of Ping.
+type PingArgs struct {
+	Sleep   int64
+	Payload string
+}
+
 // SendMsgArgs is the arguments of SendMsg.
 type SendMsgArgs struct {
 	ChatID   uint64
@@ -84,7 +90,7 @@ type FetchNewRoomChatIDs struct {
 
 // XChatService methods.
 const (
-	RPCXChatEcho                  = "RPCXChat.Echo"
+	RPCXChatPing                  = "RPCXChat.Ping"
 	RPCXChatPubUserStatus         = "RPCXChat.PubUserStatus"
 	RPCXChatSendMsg               = "RPCXChat.SendMsg"
 	RPCXChatFetchChatMessages     = "RPCXChat.FetchChatMessages"
