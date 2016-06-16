@@ -28,7 +28,6 @@ func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	s := getSessionFromDetails(details, true)
 	AddSession(s)
 	l.Debug("join: %s", s)
-	// TODO: 发送消息
 }
 
 // 处理用户断开注销
@@ -39,7 +38,16 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 		// 离开所有房间
 		s.ExitAllRooms()
 		l.Debug("left: %s", s)
-		// TODO: 发送消息
+
+		clientInfo := s.GetClientInfo()
+		if clientInfo != "" {
+			arguments := &types.PubUserStatusArgs{
+				User:   s.User,
+				Status: types.UserStatusOffline,
+				Info:   clientInfo,
+			}
+			xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
+		}
 	}
 }
 
@@ -68,6 +76,24 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 	}
 
 	return &turnpike.CallResult{Args: []interface{}{true, s.ID, string(payload)}}
+}
+
+func onPubUserInfo(args []interface{}, kwargs map[string]interface{}) {
+	l.Debug("[pub]%s: %v, %+v\n", URIXChatPubUserInfo, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return
+	}
+
+	info := args[0].(string)
+	s.SetClientInfo(info)
+
+	arguments := &types.PubUserStatusArgs{
+		User:   s.User,
+		Status: types.UserStatusOnline,
+		Info:   info,
+	}
+	xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
 }
 
 // 用户发送消息, 会话消息
@@ -305,28 +331,6 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 		toPushMsgs = append(toPushMsgs, NewMessageFromDBMsg(&msg))
 	}
 	return &turnpike.CallResult{Args: []interface{}{true, toPushMsgs}}
-}
-
-// 设备信息
-// 更新设备信息
-func onPubDeviceInfo(args []interface{}, kwargs map[string]interface{}) {
-	l.Debug("[pub]%s: %v, %+v\n", URIXChatPubDeviceInfo, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return
-	}
-
-	dev := args[0].(string)
-	devID := args[1].(string)
-	info := args[2].(string)
-
-	arguments := &types.UpdateDeviceInfoArgs{
-		User:  s.User,
-		Dev:   dev,
-		DevID: devID,
-		Info:  info,
-	}
-	xchatLogic.AsyncCall(types.RPCXChatUpdateDeviceInfo, arguments)
 }
 
 // 房间

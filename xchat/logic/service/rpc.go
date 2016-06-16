@@ -19,6 +19,11 @@ func (r *RPCXChat) Echo(s string, reply *string) (err error) {
 	return nil
 }
 
+// PubUserStatus publish user's status.
+func (r *RPCXChat) PubUserStatus(args *types.PubUserStatusArgs, reply *types.NoReply) error {
+	return PubUserStatus(args.User, args.Status, args.Info)
+}
+
 // FetchChat fetch chat.
 func (r *RPCXChat) FetchChat(chatID uint64, reply *db.Chat) (err error) {
 	chat, err := FetchChat(chatID)
@@ -108,11 +113,6 @@ func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage)
 		return SendChatNotifyMsg(args.ChatID, args.User, args.Msg)
 	}
 	return nil
-}
-
-// UpdateDeviceInfo update user's client device info.
-func (r *RPCXChat) UpdateDeviceInfo(args *types.UpdateDeviceInfoArgs, reply *types.NoReply) error {
-	return UpdateDeviceInfo(args.User, args.Dev, args.DevID, args.Info)
 }
 
 // FetchNewRoomChatIDs fetch room's new chat ids.

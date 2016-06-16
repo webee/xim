@@ -83,6 +83,7 @@ type Session struct {
 	User       string
 	pushStates map[uint64]*PushState
 	msgTopic   string
+	clientInfo string
 	// roomID->chatID
 	roomsLock sync.RWMutex
 	rooms     map[uint64]uint64
@@ -100,6 +101,20 @@ func newSession(id SessionID, user string) *Session {
 		msgTopic:   fmt.Sprintf(URIXChatUserMsg, id),
 		rooms:      make(map[uint64]uint64),
 	}
+}
+
+// SetClientInfo set session's client info.
+func (s *Session) SetClientInfo(info string) {
+	s.Lock()
+	defer s.Unlock()
+	s.clientInfo = info
+}
+
+// GetClientInfo returns session's client info.
+func (s *Session) GetClientInfo() string {
+	s.Lock()
+	defer s.Unlock()
+	return s.clientInfo
 }
 
 // EnterRoom enter to room.

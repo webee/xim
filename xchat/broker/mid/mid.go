@@ -51,6 +51,10 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 		log.Fatalf("Error register %s: %s", URIXChatPing, err)
 	}
 
+	if err := xchat.Subscribe(URIXChatPubUserInfo, sub(onPubUserInfo)); err != nil {
+		log.Fatalf("Error subscribing to %s: %s", URIXChatPubUserInfo, err)
+	}
+
 	if err := xchat.BasicRegister(URIXChatSendMsg, call(sendMsg)); err != nil {
 		log.Fatalf("Error register %s: %s", URIXChatSendMsg, err)
 	}
@@ -77,11 +81,6 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 
 	if err := xchat.BasicRegister(URIXChatFetchChatList, call(fetchChatList)); err != nil {
 		log.Fatalf("Error register %s: %s", URIXChatFetchChatList, err)
-	}
-
-	// Device
-	if err := xchat.Subscribe(URIXChatPubDeviceInfo, sub(onPubDeviceInfo)); err != nil {
-		log.Fatalf("Error subscribing to %s: %s", URIXChatPubDeviceInfo, err)
 	}
 
 	// Rooms

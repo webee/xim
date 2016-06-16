@@ -9,6 +9,9 @@ const (
 
 	URIXChatPing = "xchat.ping"
 
+	// 用户信息发布
+	URIXChatPubUserInfo = "xchat.user.info.pub"
+
 	// 用户发送消息到会话
 	URIXChatSendMsg = "xchat.user.msg.send"
 
@@ -23,10 +26,6 @@ const (
 
 	// 用户接收消息
 	URIXChatUserMsg = "xchat.user.%d.msg"
-
-	// 设备信息
-	// 发布设备信息
-	URIXChatPubDeviceInfo = "xchat.user.device.info.pub"
 
 	// 房间
 	URIXChatEnterRoom = "xchat.user.room.enter"

@@ -63,12 +63,17 @@ type FetchChatMessagesArgs struct {
 	Desc     bool
 }
 
-// UpdateDeviceInfoArgs is the arguments of UpdateDeviceInfoArgs
-type UpdateDeviceInfoArgs struct {
-	User  string
-	Dev   string
-	DevID string
-	Info  string
+// user status
+const (
+	UserStatusOnline  = "online"
+	UserStatusOffline = "offline"
+)
+
+// PubUserStatusArgs is the arguments of PubUserSTatus
+type PubUserStatusArgs struct {
+	User   string
+	Status string
+	Info   string
 }
 
 // FetchNewRoomChatIDs is the arguments of FetchNewRoomChatIDs
@@ -80,6 +85,7 @@ type FetchNewRoomChatIDs struct {
 // XChatService methods.
 const (
 	RPCXChatEcho                  = "RPCXChat.Echo"
+	RPCXChatPubUserStatus         = "RPCXChat.PubUserStatus"
 	RPCXChatSendMsg               = "RPCXChat.SendMsg"
 	RPCXChatFetchChatMessages     = "RPCXChat.FetchChatMessages"
 	RPCXChatFetchUserChatMessages = "RPCXChat.FetchUserChatMessages"
@@ -88,6 +94,5 @@ const (
 	RPCXChatFetchUserChatList     = "RPCXChat.FetchUserChatList"
 	RPCXChatSyncUserChatRecv      = "RPCXChat.SyncUserChatRecv"
 	RPCXChatFetchChatMembers      = "RPCXChat.FetchChatMembers"
-	RPCXChatUpdateDeviceInfo      = "RPCXChat.UpdateDeviceInfo"
 	RPCXChatFetchNewRoomChatIDs   = "RPCXChat.FetchNewRoomChatIDs"
 )
