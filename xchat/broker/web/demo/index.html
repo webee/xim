@@ -19,6 +19,18 @@
 <script src="http://autobahn.s3.amazonaws.com/autobahnjs/latest/autobahn.min.jgz"></script>
 
 <script>
+    if (!String.prototype.format) {
+      String.prototype.format = function() {
+        var args = arguments;
+        return this.replace(/{(\d+)}/g, function(match, number) {
+          return typeof args[number] != 'undefined'
+            ? args[number]
+            : match
+          ;
+        });
+      };
+    }
+
     var userkey = "demo app user key.";
     var user = document.location.hash.substr(1)||"test";
     var jwt = document.location.search.substr(1);
@@ -101,7 +113,7 @@
 
     function testSendMsg(s, chat_id, i, n, show) {
       if (i<n) {
-        var content = s + i;
+        var content = s.format(i);
         session.call('xchat.user.msg.send', [chat_id, content]).then(
           res=>{
             console.log("res:", res);
