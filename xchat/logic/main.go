@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"runtime"
 	"xim/xchat/logic/logger"
 	"xim/xchat/logic/pub"
@@ -20,7 +19,6 @@ var (
 
 func main() {
 	flag.Parse()
-	log.Println("addrs: ", args.addrs)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	if !args.debug {
 		l.MaxLevel = 6
