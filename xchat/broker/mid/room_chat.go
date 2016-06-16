@@ -29,9 +29,17 @@ type Rooms struct {
 // ByCountDesc implements sort.Interface for []*Chat by members count desc.
 type ByCountDesc []*Chat
 
-func (a ByCountDesc) Len() int           { return len(a) }
-func (a ByCountDesc) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByCountDesc) Less(i, j int) bool { return len(a[i].members) >= len(a[j].members) }
+func (a ByCountDesc) Len() int      { return len(a) }
+func (a ByCountDesc) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByCountDesc) Less(i, j int) bool {
+	if len(a[i].members) > len(a[j].members) {
+		return true
+	}
+	if len(a[i].members) == len(a[j].members) {
+		return a[i].chatID < a[j].chatID
+	}
+	return false
+}
 
 var (
 	areaLimit = int(1000)
