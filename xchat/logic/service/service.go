@@ -73,9 +73,11 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 		if err2 != nil {
 			return nil, fmt.Errorf("no permission: %s", err2.Error())
 		}
-		if chat.Type != "room" {
+		// FIXME: implement custom service.
+		if chat.Type != "room" && user != "_cs" {
 			return nil, fmt.Errorf("no permission: %s", err.Error())
 		}
+
 		// is room chat.
 		chatType = chat.Type
 	} else {
@@ -97,10 +99,18 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 		Msg:      message.Msg,
 		Updated:  updated,
 	}
+	// FIXME: implement custom service.
+	if m.ChatType == "cs" {
+		if m.User != "_cs" {
+			SendChatMsg(m.ChatID, "_cs", fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}", "客服功能正在开发中"))
+		}
+	}
+
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
 		Msg: m,
 	})
+
 	return &m, err
 }
 
