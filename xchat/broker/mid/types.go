@@ -8,6 +8,7 @@ import (
 	pubtypes "xim/xchat/logic/pub/types"
 )
 
+// errors.
 var (
 	ErrBadChatIdentity = errors.New("bad chat identity")
 )

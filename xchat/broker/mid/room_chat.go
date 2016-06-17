@@ -23,7 +23,8 @@ type RoomChats struct {
 // Rooms is the room chats.
 type Rooms struct {
 	sync.RWMutex
-	rooms map[uint64]*RoomChats
+	areaLimit uint32
+	rooms     map[uint64]*RoomChats
 }
 
 // ByCountDesc implements sort.Interface for []*Chat by members count desc.
@@ -42,9 +43,9 @@ func (a ByCountDesc) Less(i, j int) bool {
 }
 
 var (
-	areaLimit = int(1000)
-	rooms     = &Rooms{
-		rooms: make(map[uint64]*RoomChats, 4),
+	rooms = &Rooms{
+		areaLimit: 1000,
+		rooms:     make(map[uint64]*RoomChats, 4),
 	}
 )
 
@@ -67,6 +68,7 @@ func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
 	}
 	sort.Sort(ByCountDesc(chats))
 
+	areaLimit := int(rooms.areaLimit)
 	for _, chat := range chats {
 		if len(chat.members) < areaLimit {
 			chat.members[id] = struct{}{}
@@ -146,6 +148,14 @@ func (rc *RoomChats) HasChat(chatID uint64) bool {
 
 	_, ok := rc.chats[chatID]
 	return ok
+}
+
+// SetAreaLimit set area's limit.
+func (rm *Rooms) SetAreaLimit(limit uint32) {
+	rm.Lock()
+	defer rm.Unlock()
+
+	rm.areaLimit = limit
 }
 
 // Enter adds session to room's chat members.

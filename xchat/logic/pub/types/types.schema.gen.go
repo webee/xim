@@ -573,6 +573,51 @@ func (d *ChatNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 	return i + 24, nil
 }
 
+type SetAreaLimitCmd struct {
+	Limit uint32
+}
+
+func (d *SetAreaLimitCmd) Size() (s uint64) {
+
+	s += 4
+	return
+}
+func (d *SetAreaLimitCmd) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
+	{
+		if uint64(cap(buf)) >= size {
+			buf = buf[:size]
+		} else {
+			buf = make([]byte, size)
+		}
+	}
+	i := uint64(0)
+
+	{
+
+		buf[0+0] = byte(d.Limit >> 0)
+
+		buf[1+0] = byte(d.Limit >> 8)
+
+		buf[2+0] = byte(d.Limit >> 16)
+
+		buf[3+0] = byte(d.Limit >> 24)
+
+	}
+	return buf[:i+4], nil
+}
+
+func (d *SetAreaLimitCmd) Unmarshal(buf []byte) (uint64, error) {
+	i := uint64(0)
+
+	{
+
+		d.Limit = 0 | (uint32(buf[0+0]) << 0) | (uint32(buf[1+0]) << 8) | (uint32(buf[2+0]) << 16) | (uint32(buf[3+0]) << 24)
+
+	}
+	return i + 4, nil
+}
+
 type XMessage struct {
 	Msg interface{}
 }
@@ -588,6 +633,9 @@ func (d *XMessage) Size() (s uint64) {
 
 		case ChatNotifyMessage:
 			v = 1 + 1
+
+		case SetAreaLimitCmd:
+			v = 2 + 1
 
 		}
 
@@ -610,6 +658,12 @@ func (d *XMessage) Size() (s uint64) {
 			}
 
 		case ChatNotifyMessage:
+
+			{
+				s += tt.Size()
+			}
+
+		case SetAreaLimitCmd:
 
 			{
 				s += tt.Size()
@@ -640,6 +694,9 @@ func (d *XMessage) Marshal(buf []byte) ([]byte, error) {
 		case ChatNotifyMessage:
 			v = 1 + 1
 
+		case SetAreaLimitCmd:
+			v = 2 + 1
+
 		}
 
 		{
@@ -668,6 +725,16 @@ func (d *XMessage) Marshal(buf []byte) ([]byte, error) {
 			}
 
 		case ChatNotifyMessage:
+
+			{
+				nbuf, err := tt.Marshal(buf[i+0:])
+				if err != nil {
+					return nil, err
+				}
+				i += uint64(len(nbuf))
+			}
+
+		case SetAreaLimitCmd:
 
 			{
 				nbuf, err := tt.Marshal(buf[i+0:])
@@ -719,6 +786,19 @@ func (d *XMessage) Unmarshal(buf []byte) (uint64, error) {
 
 		case 1 + 1:
 			var tt ChatNotifyMessage
+
+			{
+				ni, err := tt.Unmarshal(buf[i+0:])
+				if err != nil {
+					return 0, err
+				}
+				i += ni
+			}
+
+			d.Msg = tt
+
+		case 2 + 1:
+			var tt SetAreaLimitCmd
 
 			{
 				ni, err := tt.Unmarshal(buf[i+0:])

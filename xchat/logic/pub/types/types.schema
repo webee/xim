@@ -17,9 +17,14 @@ struct ChatNotifyMessage {
 	Updated int64
 }
 
+struct SetAreaLimitCmd {
+	Limit uint32
+}
+
 struct XMessage {
 	Msg union {
 		ChatMessage
 		ChatNotifyMessage
+		SetAreaLimitCmd
 	}
 }

@@ -14,8 +14,14 @@ func handleMsg(ms <-chan interface{}) {
 			go push(&msg)
 		case pubtypes.ChatNotifyMessage:
 			go pushNotify(&msg)
+		case pubtypes.SetAreaLimitCmd:
+			go setAreaLimit(&msg)
 		}
 	}
+}
+
+func setAreaLimit(cmd *pubtypes.SetAreaLimitCmd) {
+	rooms.SetAreaLimit(cmd.Limit)
 }
 
 func pushNotify(msg *pubtypes.ChatNotifyMessage) {
