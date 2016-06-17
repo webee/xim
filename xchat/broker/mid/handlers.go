@@ -61,6 +61,16 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 	// TODO: 添加多种探测功能，rpc, 获取状态等
 	method := args[0].(string)
 
+	if method == "session" {
+		user := args[1].(string)
+		sessions := GetUserSessions(user)
+		ids := []SessionID{}
+		for _, sess := range sessions {
+			ids = append(ids, sess.ID)
+		}
+
+		return &turnpike.CallResult{Args: []interface{}{true, ids}}
+	}
 	payloadSize := 0
 	if len(args) > 0 {
 		payloadSize = int(args[1].(float64))
