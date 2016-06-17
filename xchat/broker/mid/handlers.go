@@ -197,6 +197,10 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	}
 
 	chatType := args[0].(string)
+	if chatType != "user" && chatType != "group" && chatType != "self" {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, "invalid chat type"}}
+	}
+
 	users := []string{s.User}
 	for _, u := range args[1].([]interface{}) {
 		users = append(users, u.(string))
