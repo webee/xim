@@ -47,20 +47,20 @@ type xsess struct {
 }
 
 func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []*Session) {
-	if chatType != RoomChatType {
+	if chatType == types.ChatTypeRoom {
+		ids := rooms.ChatMembers(chatID)
+		for _, id := range ids {
+			x, ok := GetSession(id)
+			if ok {
+				sessions = append(sessions, x)
+			}
+		}
+	} else {
 		members := getChatMembers(chatID, updated)
 
 		for _, member := range members {
 			ss := GetUserSessions(member.User)
 			for _, x := range ss {
-				sessions = append(sessions, x)
-			}
-		}
-	} else {
-		ids := rooms.ChatMembers(chatID)
-		for _, id := range ids {
-			x, ok := GetSession(id)
-			if ok {
 				sessions = append(sessions, x)
 			}
 		}

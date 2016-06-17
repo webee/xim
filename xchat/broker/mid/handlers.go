@@ -248,16 +248,29 @@ func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 	chatID := chatIdentity.ID
+	chatType := chatIdentity.Type
 
-	// fetch user chat.
-	userChat := db.UserChat{}
-	if err := xchatLogic.Call(types.RPCXChatFetchUserChat, &types.FetchUserChatArgs{
-		User:   s.User,
-		ChatID: chatID,
-	}, &userChat); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	var userChat *db.UserChat
+	if chatType == types.ChatTypeRoom {
+		// fetch chat.
+		chat := db.Chat{}
+		if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
+			return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		}
+
+		userChat = chatToUserChat(s.User, &chat)
+	} else {
+		// fetch user chat.
+		uc := db.UserChat{}
+		if err := xchatLogic.Call(types.RPCXChatFetchUserChat, &types.FetchUserChatArgs{
+			User:   s.User,
+			ChatID: chatID,
+		}, &uc); err != nil {
+			return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		}
+		userChat = &uc
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, &userChat}}
+	return &turnpike.CallResult{Args: []interface{}{true, userChat}}
 }
 
 // 获取会话列表
@@ -373,6 +386,22 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 	return &turnpike.CallResult{Args: []interface{}{true, toPushMsgs}}
 }
 
+// helplers
+func chatToUserChat(user string, chat *db.Chat) *db.UserChat {
+	return &db.UserChat{
+		ID:      chat.ID,
+		Type:    chat.Type,
+		Title:   chat.Title,
+		Tag:     chat.Tag,
+		MsgID:   chat.MsgID,
+		Created: chat.Created,
+		Updated: chat.Created,
+		User:    user,
+		CurID:   chat.MsgID,
+		Joined:  time.Now(),
+	}
+}
+
 // 房间
 // 进入房间
 func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
@@ -398,20 +427,8 @@ func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	userChat := db.UserChat{
-		ID:      chat.ID,
-		Type:    chat.Type,
-		Title:   chat.Title,
-		Tag:     chat.Tag,
-		MsgID:   chat.MsgID,
-		Created: chat.Created,
-		Updated: chat.Created,
-		User:    s.User,
-		CurID:   chat.MsgID,
-		Joined:  time.Now(),
-	}
-
-	return &turnpike.CallResult{Args: []interface{}{true, &userChat}}
+	userChat := chatToUserChat(s.User, &chat)
+	return &turnpike.CallResult{Args: []interface{}{true, userChat}}
 }
 
 // 离开房间

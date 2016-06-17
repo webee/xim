@@ -1,5 +1,10 @@
 package types
 
+// chat type
+const (
+	ChatTypeRoom = "room"
+)
+
 // msg kinds.
 const (
 	MsgKindChat       = "chat"

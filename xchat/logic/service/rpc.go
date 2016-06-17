@@ -70,13 +70,18 @@ func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err erro
 
 // FetchUserChatMessages fetch chat's messages between sID and eID.
 func (r *RPCXChat) FetchUserChatMessages(args *types.FetchUserChatMessagesArgs, reply *[]pubtypes.ChatMessage) (err error) {
-	ok, err := IsChatMember(args.ChatID, args.User)
-	if err != nil {
-		return err
-	}
+	var ok bool
 
-	if !ok {
-		return fmt.Errorf("no permission")
+	if args.ChatType != types.ChatTypeRoom {
+		// 房间会话不用检查
+		ok, err = IsChatMember(args.ChatID, args.User)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			return fmt.Errorf("no permission")
+		}
 	}
 
 	msgs, err := FetchChatMessages(args.ChatID, args.ChatType, args.LID, args.RID, args.Limit, args.Desc)
