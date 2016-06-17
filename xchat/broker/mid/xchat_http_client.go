@@ -99,7 +99,6 @@ func (c *XChatHTTPClient) NewChat(chatType string, users []string, title, tag st
 	}
 	req.Header.Add("Authorization", "Bearer "+c.Token())
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Host", "xchat.qinqinwojia.cn")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -131,7 +130,6 @@ func (c *XChatHTTPClient) EnterRoom(roomID uint64, user string) (uint64, error) 
 		return 0, err
 	}
 	req.Header.Add("Authorization", "Bearer "+c.Token())
-	req.Header.Add("Host", "xchat.qinqinwojia.cn")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -164,7 +162,6 @@ func (c *XChatHTTPClient) FetchUserChats(user string, chatType string, tag strin
 		return nil, err
 	}
 	req.Header.Add("Authorization", "Bearer "+c.Token())
-	req.Header.Add("Host", "xchat.qinqinwojia.cn")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
