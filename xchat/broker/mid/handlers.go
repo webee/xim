@@ -141,6 +141,9 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	chatType := chatIdentity.Type
 
 	msg := args[1].(string)
+	if len(msg) > 64*1024 {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "msg excced size limit"}}
+	}
 
 	p := s.GetChatPustState(chatID)
 	p.setSending()
@@ -178,6 +181,10 @@ func onPubMsg(args []interface{}, kwargs map[string]interface{}) {
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
 	msg := args[1].(string)
+	if len(msg) > 16*1024 {
+		// NOTE: msg exceed size limit
+		return
+	}
 
 	xchatLogic.AsyncCall(types.RPCXChatSendMsg, &types.SendMsgArgs{
 		ChatID:   chatID,

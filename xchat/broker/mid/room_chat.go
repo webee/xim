@@ -7,6 +7,8 @@ import (
 	"xim/xchat/logic/service/types"
 )
 
+// TODO: use area to refactor.
+
 // Chat is a chat.
 type Chat struct {
 	chatID  uint64
