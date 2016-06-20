@@ -17,6 +17,7 @@ type Args struct {
 	brokerDebug    bool
 	pprofAddr      string
 	userKeyPath    string
+	csUserKeyPath  string
 	logicRPCAddr   string
 	logicPubAddr   string
 	xchatHostURL   string
@@ -34,6 +35,7 @@ func init() {
 	flag.BoolVar(&args.brokerDebug, "broker-debug", false, "whether to enable broker debug.")
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6060", "debug pprof http address.")
 	flag.StringVar(&args.userKeyPath, "user-key-path", path.Join("conf", env, "xchat/user_key.txt"), "user key file path.")
+	flag.StringVar(&args.csUserKeyPath, "cs-user-key-path", path.Join("conf", env, "xchat/cs_user_key.txt"), "custom service user key file path.")
 	flag.StringVar(&args.addr, "addr", "127.0.0.1:48080", "wamp router websocket listen addr.")
 	flag.StringVar(&args.endpoint, "endpoint", "/ws", "wamp router websocket url endpoint.")
 	flag.StringVar(&args.testWebDir, "test-web-dir", "xchat/broker/web", "test web dir.")

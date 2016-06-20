@@ -13,6 +13,10 @@ func initKafka(addrs []string) (err error) {
 	config.Producer.Return.Successes = true
 	config.Producer.Return.Errors = true
 	kafkaProducer, err = sarama.NewAsyncProducer(addrs, config)
+	if err != nil {
+		return
+	}
+
 	go handling()
 	return
 }

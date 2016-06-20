@@ -4,11 +4,15 @@ package mq
 const (
 	XChatLogsTopic     = "xchat_logs"
 	XChatUserMsgsTopic = "xchat_user_msgs"
+	XChatCSReqs        = "xchat_cs_reqs"
 )
 
 // InitMQ init message queues.
 func InitMQ(kafkaAddrs []string) (close func()) {
-	initKafka(kafkaAddrs)
+	if err := initKafka(kafkaAddrs); err != nil {
+		l.Warning("init kafka failed:", err.Error())
+	}
+
 	return func() {
 		kafkaProducer.Close()
 	}
