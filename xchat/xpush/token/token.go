@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 	"xim/xchat/xpush/kafka"
+	"errors"
 )
 
 const (
@@ -15,6 +16,7 @@ const (
 )
 
 func GetUserDeviceInfo(addr, user string) (*kafka.UserDeviceInfo, error) {
+	log.Println("GetUserDeviceInfo", addr, user)
 	ret := &kafka.UserDeviceInfo{}
 
 	conn, err := redis.Dial("tcp", addr, redis.DialConnectTimeout(30*time.Second),
@@ -31,6 +33,11 @@ func GetUserDeviceInfo(addr, user string) (*kafka.UserDeviceInfo, error) {
 		return ret, err
 	}
 
+	if reply == nil {
+		log.Println("user device info not found.", user)
+		return  ret, errors.New("user device info not found.")
+	}
+
 	var data []byte
 	switch v := reply.(type) {
 	case string:
@@ -38,6 +45,8 @@ func GetUserDeviceInfo(addr, user string) (*kafka.UserDeviceInfo, error) {
 	case []byte:
 		data = v
 	}
+
+	log.Println("GetUserDeviceInfo", string(data))
 
 	err = json.Unmarshal(data, &ret)
 	if err != nil {
