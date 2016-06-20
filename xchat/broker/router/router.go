@@ -23,7 +23,8 @@ func Init() {
 
 // jwt authentication.
 type jwtAuth struct {
-	key []byte
+	key   []byte
+	csKey []byte
 }
 
 func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interface{}, error) {
@@ -33,11 +34,30 @@ func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interfac
 
 func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[string]interface{}, error) {
 	l.Debug("Authenticate: %+v", c)
-	token, err := jwtutils.ParseToken(signature, e.key)
-	if err != nil {
-		return nil, fmt.Errorf("parse token error: %s", err)
+	authmethods, ok := c["authmethods"]
+	if !ok {
+		return nil, fmt.Errorf("no authmethods")
 	}
-	return map[string]interface{}{"user": token.Claims["user"], "role": "user"}, nil
+	methods, ok := authmethods.([]interface{})
+	if !ok || len(methods) < 1 {
+		return nil, fmt.Errorf("bad authmethods")
+	}
+	method := methods[0]
+	switch method {
+	case "jwt":
+		token, err := jwtutils.ParseToken(signature, e.key)
+		if err != nil {
+			return nil, fmt.Errorf("parse token error: %s", err)
+		}
+		return map[string]interface{}{"user": token.Claims["user"], "role": "user"}, nil
+	case "cs:jwt":
+		token, err := jwtutils.ParseToken(signature, e.key)
+		if err != nil {
+			return nil, fmt.Errorf("parse token error: %s", err)
+		}
+		return map[string]interface{}{"user": token.Claims["user"], "role": "user", "app": "cs"}, nil
+	}
+	return nil, fmt.Errorf("unkown authmethod: %s", method)
 }
 
 func roleIsUser(details map[string]interface{}) bool {
@@ -58,7 +78,7 @@ type XChatRouter struct {
 }
 
 // NewXChatRouter creates a xchat router.
-func NewXChatRouter(userKey []byte, debug, testing bool) (*XChatRouter, error) {
+func NewXChatRouter(userKey, csUserKey []byte, debug, testing bool) (*XChatRouter, error) {
 	if debug {
 		turnpike.Debug()
 	}
@@ -68,7 +88,7 @@ func NewXChatRouter(userKey []byte, debug, testing bool) (*XChatRouter, error) {
 			Authorizer:  new(XChatAuthorizer),
 			Interceptor: NewDetailsInterceptor(roleIsUser, nil, "details"),
 			CRAuthenticators: map[string]turnpike.CRAuthenticator{
-				"jwt": &jwtAuth{key: userKey},
+				"jwt": &jwtAuth{key: userKey, csKey: csUserKey},
 			},
 		},
 	}
