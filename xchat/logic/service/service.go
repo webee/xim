@@ -154,6 +154,7 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 // PubUserStatus publish user's status msg.
 func PubUserStatus(user string, status string, info string) error {
 	// TODO: publish to message queue.
+	l.Info("user:%s, status:%s, info:%s", user, status, info)
 	return nil
 }
 
