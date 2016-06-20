@@ -80,7 +80,12 @@ func ConsumeLog() {
 					continue
 				}
 				var udi kafka.UserDeviceInfo
-				err = json.Unmarshal(msg.Info, &udi)
+				info, ok := msg.Info.(string)
+				if !ok {
+					log.Println("UserDeviceInfo convert to string failed.")
+					continue
+				}
+				err = json.Unmarshal([]byte(info), &udi)
 				if err != nil {
 					log.Println("Error: json.Unmarshal failed.", err)
 					continue
