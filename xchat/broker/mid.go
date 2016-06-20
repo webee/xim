@@ -12,7 +12,7 @@ func setupMid(xchatRouter *router.XChatRouter) {
 		Key:            userKey,
 		LogicRPCAddr:   args.logicRPCAddr,
 		LogicPubAddr:   args.logicPubAddr,
-		XChatHostURL:   args.XChatHostURL,
+		XChatHostURL:   args.xchatHostURL,
 		RPCCallTimeout: args.rpcCallTimeout,
 	})
 

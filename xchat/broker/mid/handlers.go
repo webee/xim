@@ -1,6 +1,7 @@
 package mid
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 	"xim/xchat/logic/db"
@@ -125,7 +126,11 @@ func pubUserInfo(args []interface{}, kwargs map[string]interface{}) (result *tur
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	info := args[0].(string)
+	b, err := json.Marshal(&args[0])
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	info := string(b)
 
 	doPubUserInfo(s, info)
 	return &turnpike.CallResult{Args: []interface{}{true}}

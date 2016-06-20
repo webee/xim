@@ -1,4 +1,0 @@
-package xchat
-
-func init() {
-}

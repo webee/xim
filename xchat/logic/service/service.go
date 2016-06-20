@@ -1,9 +1,11 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 	"xim/xchat/logic/db"
+	"xim/xchat/logic/mq"
 	"xim/xchat/logic/pub"
 	pubtypes "xim/xchat/logic/pub/types"
 )
@@ -153,9 +155,18 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 
 // PubUserStatus publish user's status msg.
 func PubUserStatus(user string, status string, info string) error {
-	// TODO: publish to message queue.
-	l.Info("user:%s, status:%s, info:%s", user, status, info)
-	return nil
+	l.Debug("user:%s, status:%s, info:%s", user, status, info)
+	msg := make(map[string]string)
+	msg["user"] = user
+	msg["type"] = status
+	msg["info"] = info
+
+	b, err := json.Marshal(&msg)
+	if err != nil {
+		return err
+	}
+
+	return mq.Publish(mq.XChatLogsTopic, string(b))
 }
 
 // ExitRoom let user exit the room's chat.
