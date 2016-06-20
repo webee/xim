@@ -107,14 +107,7 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 	return &turnpike.CallResult{Args: []interface{}{false, 1, "invalid method"}}
 }
 
-func onPubUserInfo(args []interface{}, kwargs map[string]interface{}) {
-	l.Debug("[pub]%s: %v, %+v\n", URIXChatPubUserInfo, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return
-	}
-
-	info := args[0].(string)
+func doPubUserInfo(s *Session, info string) {
 	s.SetClientInfo(info)
 
 	arguments := &types.PubUserStatusArgs{
@@ -123,6 +116,30 @@ func onPubUserInfo(args []interface{}, kwargs map[string]interface{}) {
 		Info:   info,
 	}
 	xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
+}
+
+func pubUserInfo(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[call]%s: %v, %+v\n", URIXChatPubUserInfo, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+
+	info := args[0].(string)
+
+	doPubUserInfo(s, info)
+	return &turnpike.CallResult{Args: []interface{}{true}}
+}
+
+func onPubUserInfo(args []interface{}, kwargs map[string]interface{}) {
+	l.Debug("[pub]%s: %v, %+v\n", URIXChatPubUserInfo, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return
+	}
+
+	info := args[0].(string)
+	doPubUserInfo(s, info)
 }
 
 // 用户发送消息, 会话消息
