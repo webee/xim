@@ -38,7 +38,7 @@ func PushOfflineMsg(user, dev, token, chatId string) error {
 	userName, err := userinfo.GetUserName(user)
 	if err != nil {
 		log.Println("GetUserName failed.", err)
-		userName = "" // 名字不显示
+		userName = user // 名字不显示
 	}
 	log.Println("#user_name#", user, userName)
 
