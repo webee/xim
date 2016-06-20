@@ -9,7 +9,7 @@ import (
 
 const (
 	XCHAT_LOG_TOPIC = "xchat_logs"
-	XCHAT_MSG_TOPIC = "xchat_msg"
+	XCHAT_MSG_TOPIC = "xchat_user_msgs"
 
 	CONSUME_MSG_GROUP = "consume_msg_group"
 	CONSUME_LOG_GROUP = "consume_log_group"
