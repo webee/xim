@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 	"xim/xchat/xpush/userinfo"
+	"fmt"
 )
 
 const (
@@ -33,7 +34,7 @@ var (
 	iosClient     = xinge.NewClient(ACCESS_ID_IOS_TEST, SECRET_KEY_IOS_TEST)
 )
 
-func PushOfflineMsg(user, dev, token, chatId string) error {
+func PushOfflineMsg(user, dev, token string, chatId int64) error {
 	// use userName as title
 	userName, err := userinfo.GetUserName(user)
 	if err != nil {
@@ -49,7 +50,7 @@ func PushOfflineMsg(user, dev, token, chatId string) error {
 		msg.Style.NId = int(time.Now().Unix())
 		msg.Action.ActionType = 1
 		msg.Action.Activity = ANDROID_ACTIVITY
-		msg.Custom = map[string]string{"chat_id": chatId}
+		msg.Custom = map[string]string{"chat_id": fmt.Sprintf("%d", chatId)}
 
 		resp = androidClient.PushSingleDevice(xinge.Android, token, msg)
 	} else if strings.ToLower(dev) == "ios" {
