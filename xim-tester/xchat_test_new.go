@@ -125,7 +125,7 @@ func newClient(id int, exit chan bool, addr *string) {
 	user := "test"
 
 	// ping and get session id
-	session, err := c.Call(mid.URIXChatPing, nil, map[string]interface{}{
+	session, err := c.Call(mid.URIXChatPing, []interface{}{"net", 0, 0}, map[string]interface{}{
 		"detail": map[string]interface{}{
 			"session": id,
 			"user":    user,
