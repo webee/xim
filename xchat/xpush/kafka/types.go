@@ -32,7 +32,7 @@ type LogInfo struct {
 
 type MsgInfo struct {
 	User     string `json:"user"`
-	ChatId   string `json:"chat_id"`
+	ChatId   int64  `json:"chat_id"`
 	ChatType string `json:"chat_type"`
 	From     string `json:"from"`
 	Msg      string `json:"msg"`
