@@ -114,6 +114,7 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 	go pub.PublishMessage(&pubtypes.XMessage{
 		Msg: m,
 	})
+	go notifyOfflineUsers(message)
 
 	return &m, err
 }

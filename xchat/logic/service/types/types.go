@@ -2,7 +2,11 @@ package types
 
 // chat type
 const (
-	ChatTypeRoom = "room"
+	ChatTypeRoom  = "room"
+	ChatTypeSelf  = "self"
+	ChatTypeUser  = "user"
+	ChatTypeGroup = "group"
+	ChatTypeCS    = "cs"
 )
 
 // msg kinds.
