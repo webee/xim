@@ -4,10 +4,11 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/wvanbergen/kafka/consumergroup"
 	"log"
+	"github.com/wvanbergen/kazoo-go"
 )
 
 const (
-	XCHAT_LOG_TOPIC = "xchat_log"
+	XCHAT_LOG_TOPIC = "xchat_logs"
 	XCHAT_MSG_TOPIC = "xchat_msg"
 
 	CONSUME_MSG_GROUP = "consume_msg_group"
@@ -108,11 +109,15 @@ func Consume(addr []string, topic string, partition int32, offset int64, chanMsg
 }
 
 // 按组消费kafka消息
-func ConsumeGroup(zkaddr []string, group, topic string, index, offset int, msgChan chan []byte) error {
+func ConsumeGroup(zkaddr string, group, topic string, index, offset int, msgChan chan []byte) error {
 	config := consumergroup.NewConfig()
 	config.Offsets.Initial = sarama.OffsetOldest
 
-	cg, err := consumergroup.JoinConsumerGroup(group, []string{topic}, zkaddr, config)
+	log.Println("zkAddr", zkaddr)
+	var zkNodes []string
+	zkNodes, config.Zookeeper.Chroot = kazoo.ParseConnectionString(zkaddr)
+
+	cg, err := consumergroup.JoinConsumerGroup(group, []string{topic}, zkNodes, config)
 	if err != nil {
 		log.Println("JoinConsumerGroup failed.", err)
 		return err
