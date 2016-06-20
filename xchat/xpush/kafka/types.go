@@ -13,6 +13,7 @@ type UserDeviceInfo struct {
 	DeviceModel string `json:"device_model"`
 	Update      int64  `json:"update"`
 }
+
 //
 //type OnLineInfo struct {
 //	User    string         `json:"user"`
@@ -24,14 +25,14 @@ type UserDeviceInfo struct {
 //}
 
 type LogInfo struct {
-	Type string                 `json:"type"`
-	User string                 `json:"user"`
-	Info /*map[string]*/interface{} `json:"info,omitempty"`
+	Type string `json:"type"`
+	User string `json:"user"`
+	Info string `json:"info,omitempty"`
 }
 
 type MsgInfo struct {
 	User     string `json:"user"`
-	ChatId   string `json:"chat_id"`
+	ChatId   int64  `json:"chat_id"`
 	ChatType string `json:"chat_type"`
 	From     string `json:"from"`
 	Msg      string `json:"msg"`
@@ -53,6 +54,7 @@ func UnmarshalLogInfo(data []byte) (*LogInfo, error) {
 	err := json.Unmarshal(data, li)
 	return li, err
 }
+
 //
 //func UnmarshalOffLineInfo(data []byte, oli *LogInfo) error {
 //	return json.Unmarshal(data, oli)

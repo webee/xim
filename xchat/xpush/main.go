@@ -13,6 +13,7 @@ import (
 	"xim/xchat/xpush/kafka"
 	"xim/xchat/xpush/push"
 	"xim/xchat/xpush/token"
+	"time"
 )
 
 var (
@@ -80,16 +81,12 @@ func ConsumeLog() {
 					continue
 				}
 				var udi kafka.UserDeviceInfo
-				info, ok := msg.Info.(string)
-				if !ok {
-					log.Println("UserDeviceInfo convert to string failed.")
-					continue
-				}
-				err = json.Unmarshal([]byte(info), &udi)
+				err = json.Unmarshal([]byte(msg.Info), &udi)
 				if err != nil {
 					log.Println("Error: json.Unmarshal failed.", err)
 					continue
 				}
+				udi.Update = time.Now().Unix()
 				err = token.SetUserDeviceInfo(args.redisAddr, msg.User, &udi)
 				if err != nil {
 					log.Println("Error: SetUserDeviceInfo failed.", err)
@@ -104,7 +101,7 @@ func ConsumeLog() {
 						log.Println("LogOnLine success.")
 					}
 				} else if "offline" == logType {
-					err = apilog.LogOnLine(msg.User, udi.Source, map[string]interface{}{"test": "testapilog"})
+					err = apilog.LogOffLine(msg.User, udi.Source, map[string]interface{}{"test": "testapilog"})
 					if err != nil {
 						log.Println("LogOffLine failed.", err)
 					} else {

@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 	"xim/xchat/xpush/userinfo"
+	"fmt"
 )
 
 const (
@@ -33,26 +34,26 @@ var (
 	iosClient     = xinge.NewClient(ACCESS_ID_IOS_TEST, SECRET_KEY_IOS_TEST)
 )
 
-func PushOfflineMsg(user, dev, token, chatId string) error {
+func PushOfflineMsg(user, dev, token string, chatId int64) error {
 	// use userName as title
 	userName, err := userinfo.GetUserName(user)
 	if err != nil {
 		log.Println("GetUserName failed.", err)
-		userName = "" // 名字不显示
+		userName = user // 名字不显示
 	}
 	log.Println("#user_name#", user, userName)
 
 	var resp xinge.Response
 	if strings.ToLower(dev) == "android" {
-		msg := xinge.DefaultMessage(userName, "Hello HanMeimei")
+		msg := xinge.DefaultMessage(userName, "我给你发了一条消息，赶紧打开吧^_^")
 		msg.Style.Clearable = 1
 		msg.Style.NId = int(time.Now().Unix())
 		msg.Action.ActionType = 1
 		msg.Action.Activity = ANDROID_ACTIVITY
-		msg.Custom = map[string]string{"chat_id": chatId}
+		msg.Custom = map[string]string{"chat_id": fmt.Sprintf("%d", chatId)}
 
 		resp = androidClient.PushSingleDevice(xinge.Android, token, msg)
-	} else if strings.ToLower(dev) == "ios" {
+	} else if strings.ToLower(dev) == "iphone" {
 		resp = iosClient.PushSingleIosDevice(token, userName, 5, map[string]string{"hello": "hello there"})
 	}
 

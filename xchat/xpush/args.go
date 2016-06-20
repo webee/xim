@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"strings"
+	"log"
 )
 
 // Args is app's arguments.
@@ -14,7 +15,7 @@ type Args struct {
 	dbDatasourceName string
 	dbMaxConn        int
 	kfkAddr          []string
-	zkAddr           []string
+	zkAddr           string
 	redisAddr        string
 }
 
@@ -33,10 +34,9 @@ func init() {
 	var tmpStr string
 	flag.StringVar(&tmpStr, "kfk-addr", "localhost:9092", "the kafka addr")
 	args.kfkAddr = strings.Split(tmpStr, ";")
+	log.Println(args.kfkAddr)
 
-	flag.StringVar(&tmpStr, "zk-addr", "localhost:2181", "the zookeeper addr")
-	args.zkAddr = strings.Split(tmpStr, ";")
-
+	flag.StringVar(&args.zkAddr, "zk-addr", "localhost:2181/kafka", "the zookeeper addr")
 	flag.StringVar(&args.redisAddr, "redis-addr", "localhost:6379", "the redis addr")
 
 }
