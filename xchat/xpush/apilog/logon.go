@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"github.com/go-mangos/mangos/protocol/req"
 )
 
 const (
@@ -29,7 +30,7 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 	v := url.Values{}
 	v.Add("uid", userId)
 	v.Add("source", source)
-	v.Add("params", `{"type": "test", "content": "test"}`)
+	v.Add("params", json.Marshal(params))
 	req, err := http.NewRequest("POST", API_LOG_HOST+uri+"?"+v.Encode(), nil)
 	if err != nil {
 		log.Println("http.NewRequest failed.", err)
