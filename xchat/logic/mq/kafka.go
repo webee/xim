@@ -1,6 +1,8 @@
 package mq
 
-import "github.com/Shopify/sarama"
+import (
+	"github.com/Shopify/sarama"
+)
 
 var (
 	kafkaProducer sarama.AsyncProducer
@@ -27,13 +29,15 @@ func publishToKafka(topic string, msg string) error {
 }
 
 func handling() {
+	successes := kafkaProducer.Successes()
+	errors := kafkaProducer.Errors()
 	for {
 		select {
-		case pm := <-kafkaProducer.Successes():
+		case pm := <-successes:
 			if pm != nil {
 				l.Debug("pub msg success, partition:%d offset:%d key:%v valus:%s", pm.Partition, pm.Offset, pm.Key, pm.Value)
 			}
-		case err := <-kafkaProducer.Errors():
+		case err := <-errors:
 			if err != nil {
 				l.Warning("pub msg error, partition:%d offset:%d key:%v valus:%s error(%v)", err.Msg.Partition, err.Msg.Offset, err.Msg.Key, err.Msg.Value, err.Err)
 			}
