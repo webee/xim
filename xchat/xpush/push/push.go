@@ -44,7 +44,7 @@ func PushOfflineMsg(user, source, token string, chatId int64) error {
 	log.Println("#user_name#", user, userName)
 
 	var resp xinge.Response
-	if strings.ToLower(source) == "appstore" {
+	if strings.ToLower(source) != "appstore" {
 		msg := xinge.DefaultMessage(userName, "发来一条消息")
 		msg.Style.Clearable = 1
 		msg.Style.NId = int(time.Now().Unix())
