@@ -30,7 +30,13 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 	v := url.Values{}
 	v.Add("uid", userId)
 	v.Add("source", source)
-	v.Add("params", json.Marshal(params))
+	ret, err := json.Marshal(params)
+	if err != nil {
+		log.Println("json.Marshal failed.", err)
+		v.Add("params", "")
+	} else {
+		v.Add("params", string(ret))
+	}
 	req, err := http.NewRequest("POST", API_LOG_HOST+uri+"?"+v.Encode(), nil)
 	if err != nil {
 		log.Println("http.NewRequest failed.", err)
@@ -63,7 +69,4 @@ func LogOnLine(userID, source string, params map[string]interface{}) error {
 func LogOffLine(userID, source string, params map[string]interface{}) error {
 	return ApiLog(API_LOG_OFFLINE, userID, source, params)
 }
-//
-//func main() {
-//	LogOnLine("88888888", "google", nil)
-//}
+
