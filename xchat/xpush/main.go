@@ -9,11 +9,11 @@ import (
 
 	"encoding/json"
 	"strings"
+	"time"
 	"xim/xchat/xpush/apilog"
 	"xim/xchat/xpush/kafka"
 	"xim/xchat/xpush/push"
 	"xim/xchat/xpush/token"
-	"time"
 )
 
 var (
@@ -92,16 +92,22 @@ func ConsumeLog() {
 					log.Println("Error: SetUserDeviceInfo failed.", err)
 				}
 
+				params := make(map[string]interface{}, 8)
+				params["device_token"] = udi.DeviceToken
+				params["device_id"] = udi.DeviceId
+				params["os_version"] = udi.OsVersion
+				params["device_model"] = udi.DeviceModel
+
 				logType := strings.ToLower(msg.Type)
 				if "online" == logType {
-					err = apilog.LogOnLine(msg.User, udi.Source, map[string]interface{}{"param": msg.Info})
+					err = apilog.LogOnLine(msg.User, udi.Source, params)
 					if err != nil {
 						log.Println("LogOnLine failed.", err)
 					} else {
 						log.Println("LogOnLine success.")
 					}
 				} else if "offline" == logType {
-					err = apilog.LogOffLine(msg.User, udi.Source, map[string]interface{}{"param": msg.Info})
+					err = apilog.LogOffLine(msg.User, udi.Source, params)
 					if err != nil {
 						log.Println("LogOffLine failed.", err)
 					} else {
