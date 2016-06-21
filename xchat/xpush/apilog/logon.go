@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"github.com/go-mangos/mangos/protocol/req"
 )
 
 const (
