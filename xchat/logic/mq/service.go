@@ -7,10 +7,17 @@ const (
 	XChatCSReqs        = "xchat_cs_reqs"
 )
 
+// Publish publish msg to topic.
+var (
+	Publish = nilPublish
+)
+
 // InitMQ init message queues.
 func InitMQ(kafkaAddrs []string) (close func()) {
 	if err := initKafka(kafkaAddrs); err != nil {
 		l.Warning("init kafka failed:", err.Error())
+	} else {
+		Publish = publishToKafka
 	}
 
 	return func() {
@@ -18,7 +25,6 @@ func InitMQ(kafkaAddrs []string) (close func()) {
 	}
 }
 
-// Publish publish msg to topic.
-func Publish(topic string, msg string) error {
-	return publishToKafka(topic, msg)
+func nilPublish(topic string, msg string) error {
+	return nil
 }

@@ -1,6 +1,8 @@
 package mq
 
-import "github.com/Shopify/sarama"
+import (
+	"github.com/Shopify/sarama"
+)
 
 var (
 	kafkaProducer sarama.AsyncProducer
