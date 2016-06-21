@@ -32,6 +32,7 @@ func main() {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
 
+	push.NewPushClient(args.xgtest)
 	ConsumeMsg()
 	ConsumeLog()
 

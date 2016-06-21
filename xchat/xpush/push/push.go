@@ -30,9 +30,19 @@ const (
 )
 
 var (
-	androidClient = xinge.NewClient(ACCESS_ID_ANDROID_TEST, SECRET_KEY_ANDROID_TEST)
-	iosClient     = xinge.NewClient(ACCESS_ID_IOS_TEST, SECRET_KEY_IOS_TEST)
+	androidClient *xinge.Client
+	iosClient     *xinge.Client
 )
+
+func NewPushClient(testing bool) {
+	if testing {
+		androidClient = xinge.NewClient(ACCESS_ID_ANDROID_TEST, SECRET_KEY_ANDROID_TEST)
+		iosClient = xinge.NewClient(ACCESS_ID_IOS_TEST, SECRET_KEY_IOS_TEST)
+	} else {
+		androidClient = xinge.NewClient(ACCESS_ID_ANDROID, SECRET_KEY_ANDROID)
+		iosClient = xinge.NewClient(ACCESS_ID_IOS, SECRET_KEY_IOS)
+	}
+}
 
 func PushOfflineMsg(user, source, token string, chatId int64) error {
 	// use userName as title
