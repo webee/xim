@@ -31,8 +31,16 @@
       };
     }
 
-    var userkey = "demo app user key.";
-    var user = document.location.hash.substr(1)||"test";
+    function decode_ns_user(user) {
+      var parts = user.split(':')
+      if (parts.length > 1) {
+        return {ns:parts[0], user:parts[1], full_user:user}
+      }
+      return {ns:'', user:user, full_user:user}
+    }
+
+    var anyUserkey = "demo app user key.";
+    var user = decode_ns_user(document.location.hash.substr(1)||"test:test");
     var jwt = document.location.search.substr(1);
     // the URL of the WAMP Router (Crossbar.io)
     //
@@ -50,13 +58,17 @@
             var oPayload = {};
             var tEnd = KJUR.jws.IntDate.get('now + 1day');
             oPayload.exp = tEnd;
-            oPayload.user = user;
+            oPayload.user = user.user;
+            oPayload.ns = user.ns;
 
             // Sign JWT, password=616161
             var sHeader = JSON.stringify(oHeader);
             var sPayload = JSON.stringify(oPayload);
 
-            return KJUR.jws.JWS.sign("HS256", sHeader, sPayload, userkey);
+            if (!!user.ns) {
+              return user.ns + ':' + KJUR.jws.JWS.sign("HS256", sHeader, sPayload, anyUserkey);
+            }
+            return KJUR.jws.JWS.sign("HS256", sHeader, sPayload, anyUserkey);
         } else {
             throw "don't know how to authenticate using '" + method + "'";
         }
@@ -94,7 +106,7 @@
           console.log("res:", res);
           var args = res.args;
           if (args[0]) {
-            newMsg("chat", {chat_id: chat_id, user:"*"+user+"*", id: args[1], ts: args[2], msg: content});
+            newMsg("chat", {chat_id: chat_id, user:"*"+user.full_user+"*", id: args[1], ts: args[2], msg: content});
             txt.value = "";
           } else {
             alert("error:" + args[2]);
@@ -128,7 +140,7 @@
             var args = res.args;
             if (args[0]) {
               if (show) {
-                newMsg("chat", {chat_id: chat_id, user:"*test*", id: args[1], ts: args[2], msg: content});
+                newMsg("chat", {chat_id: chat_id, user:"*"+user.full_user+"*", id: args[1], ts: args[2], msg: content});
               }
             } else {
               console.error("error:" + args[2]);
@@ -169,9 +181,9 @@
         var msg_div = document.getElementById("msg");
         var p = document.createElement("p");
         if (kind==="chat") {
-          p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user+ ">" + msg.id + " : " + msg.msg;
+          p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user+ "#" + msg.id + " 「" + msg.msg + "」";
         } else if (kind==="chat_notify") {
-          p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user+ " : " + msg.msg;
+          p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user+ " 「" + msg.msg + "」";
         }
         msg_div.insertBefore(p, msg_div.firstChild);
       }

@@ -3,6 +3,7 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"xim/utils/jwtutils"
 
 	"xim/xchat/broker/logger"
@@ -21,10 +22,24 @@ func Init() {
 	l = logger.Logger.GetLogger("router")
 }
 
+func decodeNSJwt(t string) (ns string, token string) {
+	parts := strings.SplitN(t, ":", 2)
+	if len(parts) > 1 {
+		return parts[0], parts[1]
+	}
+	return "", t
+}
+
+func encodeNSUser(ns, u string) (user string) {
+	if ns == "" {
+		return u
+	}
+	return ns + ":" + u
+}
+
 // jwt authentication.
 type jwtAuth struct {
-	key   []byte
-	csKey []byte
+	keys map[string][]byte
 }
 
 func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interface{}, error) {
@@ -34,30 +49,18 @@ func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interfac
 
 func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[string]interface{}, error) {
 	l.Debug("Authenticate: %+v", c)
-	authmethods, ok := c["authmethods"]
+
+	ns, t := decodeNSJwt(signature)
+	key, ok := e.keys[ns]
 	if !ok {
-		return nil, fmt.Errorf("no authmethods")
+		return nil, fmt.Errorf("unknown user namespace: %s", ns)
 	}
-	methods, ok := authmethods.([]interface{})
-	if !ok || len(methods) < 1 {
-		return nil, fmt.Errorf("bad authmethods")
+
+	token, err := jwtutils.ParseToken(t, key)
+	if err != nil {
+		return nil, fmt.Errorf("parse token error: %s", err)
 	}
-	method := methods[0]
-	switch method {
-	case "jwt":
-		token, err := jwtutils.ParseToken(signature, e.key)
-		if err != nil {
-			return nil, fmt.Errorf("parse token error: %s", err)
-		}
-		return map[string]interface{}{"user": token.Claims["user"], "role": "user"}, nil
-	case "cs:jwt":
-		token, err := jwtutils.ParseToken(signature, e.key)
-		if err != nil {
-			return nil, fmt.Errorf("parse token error: %s", err)
-		}
-		return map[string]interface{}{"user": token.Claims["user"], "role": "user", "app": "cs"}, nil
-	}
-	return nil, fmt.Errorf("unkown authmethod: %s", method)
+	return map[string]interface{}{"user": encodeNSUser(ns, token.Claims["user"].(string)), "role": "user"}, nil
 }
 
 func roleIsUser(details map[string]interface{}) bool {
@@ -78,7 +81,7 @@ type XChatRouter struct {
 }
 
 // NewXChatRouter creates a xchat router.
-func NewXChatRouter(userKey, csUserKey []byte, debug, testing bool) (*XChatRouter, error) {
+func NewXChatRouter(userKeys map[string][]byte, debug, testing bool) (*XChatRouter, error) {
 	if debug {
 		turnpike.Debug()
 	}
@@ -88,7 +91,7 @@ func NewXChatRouter(userKey, csUserKey []byte, debug, testing bool) (*XChatRoute
 			Authorizer:  new(XChatAuthorizer),
 			Interceptor: NewDetailsInterceptor(roleIsUser, nil, "details"),
 			CRAuthenticators: map[string]turnpike.CRAuthenticator{
-				"jwt": &jwtAuth{key: userKey, csKey: csUserKey},
+				"jwt": &jwtAuth{userKeys},
 			},
 		},
 	}
