@@ -58,6 +58,7 @@ func GetUserDeviceInfo(addr, user string) (*kafka.UserDeviceInfo, error) {
 }
 
 func SetUserDeviceInfo(addr, user string, udi *kafka.UserDeviceInfo) error {
+	log.Println("SetUserDeviceInfo", user, udi)
 	conn, err := redis.Dial("tcp", addr, redis.DialConnectTimeout(30*time.Second),
 		redis.DialReadTimeout(10*time.Second), redis.DialWriteTimeout(10*time.Second))
 	if err != nil {

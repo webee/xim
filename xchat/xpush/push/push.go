@@ -2,13 +2,13 @@
 package push
 
 import (
-	"github.com/LibiChai/xinge"
-	"time"
 	"errors"
+	"fmt"
+	"github.com/LibiChai/xinge"
 	"log"
 	"strings"
+	"time"
 	"xim/xchat/xpush/userinfo"
-	"fmt"
 )
 
 const (
@@ -44,17 +44,19 @@ func PushOfflineMsg(user, source, token string, chatId int64) error {
 	log.Println("#user_name#", user, userName)
 
 	var resp xinge.Response
+	szChatId := fmt.Sprintf("%d", chatId)
 	if strings.ToLower(source) != "appstore" {
 		msg := xinge.DefaultMessage(userName, "发来一条消息")
 		msg.Style.Clearable = 1
 		msg.Style.NId = int(time.Now().Unix())
 		msg.Action.ActionType = 1
 		msg.Action.Activity = ANDROID_ACTIVITY
-		msg.Custom = map[string]string{"chat_id": fmt.Sprintf("%d", chatId)}
+		msg.Custom = map[string]string{"chat_id": szChatId}
 
 		resp = androidClient.PushSingleDevice(xinge.Android, token, msg)
-	} else {//if strings.ToLower(dev) == "iphone" {
-		resp = iosClient.PushSingleIosDevice(token, userName + "发来一条消息", 5, map[string]string{"hello": "hello there"})
+	} else { //if strings.ToLower(dev) == "iphone" {
+		resp = iosClient.PushSingleIosDevice(token, userName+"发来一条消息", 1,
+			map[string]string{"chat_id": szChatId})
 	}
 
 	if resp.Code != 0 {
