@@ -45,7 +45,7 @@ func PushOfflineMsg(user, dev, token string, chatId int64) error {
 
 	var resp xinge.Response
 	if strings.ToLower(dev) == "android" {
-		msg := xinge.DefaultMessage(userName, "我给你发了一条消息，赶紧打开吧^_^")
+		msg := xinge.DefaultMessage(userName, "发来一条消息")
 		msg.Style.Clearable = 1
 		msg.Style.NId = int(time.Now().Unix())
 		msg.Action.ActionType = 1
@@ -54,7 +54,7 @@ func PushOfflineMsg(user, dev, token string, chatId int64) error {
 
 		resp = androidClient.PushSingleDevice(xinge.Android, token, msg)
 	} else if strings.ToLower(dev) == "iphone" {
-		resp = iosClient.PushSingleIosDevice(token, userName, 5, map[string]string{"hello": "hello there"})
+		resp = iosClient.PushSingleIosDevice(token, userName + "发来一条消息", 5, map[string]string{"hello": "hello there"})
 	}
 
 	if resp.Code != 0 {

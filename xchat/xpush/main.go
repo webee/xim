@@ -94,14 +94,14 @@ func ConsumeLog() {
 
 				logType := strings.ToLower(msg.Type)
 				if "online" == logType {
-					err = apilog.LogOnLine(msg.User, udi.Source, map[string]interface{}{"test": "testapilog"})
+					err = apilog.LogOnLine(msg.User, udi.Source, map[string]interface{}{"param": msg.Info})
 					if err != nil {
 						log.Println("LogOnLine failed.", err)
 					} else {
 						log.Println("LogOnLine success.")
 					}
 				} else if "offline" == logType {
-					err = apilog.LogOffLine(msg.User, udi.Source, map[string]interface{}{"test": "testapilog"})
+					err = apilog.LogOffLine(msg.User, udi.Source, map[string]interface{}{"param": msg.Info})
 					if err != nil {
 						log.Println("LogOffLine failed.", err)
 					} else {
