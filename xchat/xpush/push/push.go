@@ -34,7 +34,7 @@ var (
 	iosClient     = xinge.NewClient(ACCESS_ID_IOS_TEST, SECRET_KEY_IOS_TEST)
 )
 
-func PushOfflineMsg(user, dev, token string, chatId int64) error {
+func PushOfflineMsg(user, source, token string, chatId int64) error {
 	// use userName as title
 	userName, err := userinfo.GetUserName(user)
 	if err != nil {
@@ -44,7 +44,7 @@ func PushOfflineMsg(user, dev, token string, chatId int64) error {
 	log.Println("#user_name#", user, userName)
 
 	var resp xinge.Response
-	if strings.ToLower(dev) == "android" {
+	if strings.ToLower(source) == "appstore" {
 		msg := xinge.DefaultMessage(userName, "发来一条消息")
 		msg.Style.Clearable = 1
 		msg.Style.NId = int(time.Now().Unix())
@@ -53,7 +53,7 @@ func PushOfflineMsg(user, dev, token string, chatId int64) error {
 		msg.Custom = map[string]string{"chat_id": fmt.Sprintf("%d", chatId)}
 
 		resp = androidClient.PushSingleDevice(xinge.Android, token, msg)
-	} else if strings.ToLower(dev) == "iphone" {
+	} else {//if strings.ToLower(dev) == "iphone" {
 		resp = iosClient.PushSingleIosDevice(token, userName + "发来一条消息", 5, map[string]string{"hello": "hello there"})
 	}
 
