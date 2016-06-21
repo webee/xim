@@ -104,8 +104,8 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 	}
 	// FIXME: implement custom service.
 	if m.ChatType == "cs" {
-		if m.User != "_cs" {
-			SendChatMsg(m.ChatID, "_cs", fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}",
+		if m.User != "cs:cs" {
+			SendChatMsg(m.ChatID, "cs:cs", fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}",
 				"您好，由于现在咨询人数较多，可能无法及时回复您，您可以先完整描述您的问题，我们会尽快为您解决~"))
 		}
 	}
