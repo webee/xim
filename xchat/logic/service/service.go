@@ -66,6 +66,11 @@ func FetchChatMessages(chatID uint64, chatType string, lID, rID uint64, limit in
 	return ms, nil
 }
 
+// default users.
+const (
+	CSUser = "cs:cs"
+)
+
 // SendChatMsg sends chat message.
 func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage, error) {
 	var updated int64
@@ -77,7 +82,7 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 			return nil, fmt.Errorf("no permission: %s", err2.Error())
 		}
 		// FIXME: implement custom service.
-		if chat.Type != "room" && user != "_cs" {
+		if chat.Type != "room" && user != CSUser {
 			return nil, fmt.Errorf("no permission: %s", err.Error())
 		}
 
@@ -104,8 +109,8 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 	}
 	// FIXME: implement custom service.
 	if m.ChatType == "cs" {
-		if m.User != "cs:cs" {
-			SendChatMsg(m.ChatID, "cs:cs", fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}",
+		if m.User != CSUser {
+			SendChatMsg(m.ChatID, CSUser, fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}",
 				"您好，由于现在咨询人数较多，可能无法及时回复您，您可以先完整描述您的问题，我们会尽快为您解决~"))
 		}
 	}
