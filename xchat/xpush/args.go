@@ -19,6 +19,8 @@ type Args struct {
 	redisAddr        string
 	xgtest           bool
 	pushInterval     int64
+	apiLogHost       string
+	userInfoHost     string
 }
 
 var (
@@ -42,4 +44,6 @@ func init() {
 	flag.StringVar(&args.redisAddr, "redis-addr", "localhost:6379", "the redis addr")
 	flag.BoolVar(&args.xgtest, "xgtest", true, "is xinge test environment")
 	flag.Int64Var(&args.pushInterval, "pushInterval", 60, "push offline msg interval")
+	flag.StringVar(&args.apiLogHost, "apiLogHost", "http://apilogdoc.engdd.com", "api log host")
+	flag.StringVar(&args.userInfoHost, "userInfoHost", "http://test.engdd.com", "user info host")
 }

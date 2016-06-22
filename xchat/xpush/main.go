@@ -14,6 +14,7 @@ import (
 	"xim/xchat/xpush/kafka"
 	"xim/xchat/xpush/push"
 	"xim/xchat/xpush/token"
+	"xim/xchat/xpush/userinfo"
 )
 
 var (
@@ -31,6 +32,9 @@ func main() {
 	if args.debug {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
+
+	apilog.InitApiLogHost(args.apiLogHost)
+	userinfo.InitUserInfoHost(args.userInfoHost)
 
 	defer token.InitRedisPool(args.redisAddr, "")()
 	push.NewPushClient(args.xgtest)
