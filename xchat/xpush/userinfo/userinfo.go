@@ -83,7 +83,6 @@ type PushInterval struct {
 
 const (
 	USER_NAME_CACHE_VALID_PERIOD = 600
-	OFFLINE_MSG_PUSH_INTERVAL    = 60 // Second
 )
 
 var (
@@ -93,10 +92,10 @@ var (
 	UserPushInterval = make(map[string]PushInterval, 10000)
 )
 
-func CheckLastPushTime(user string) (int64, bool) {
+func CheckLastPushTime(user string, interval int64) (int64, bool) {
 	now := time.Now().Unix()
 	ts, ok := UserPushInterval[user]
-	if ok && now-ts.ts < OFFLINE_MSG_PUSH_INTERVAL {
+	if ok && now-ts.ts < interval {
 		return ts.ts, false
 	} else {
 		UserPushInterval[user] = PushInterval{now} // 更新最后发送时间

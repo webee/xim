@@ -44,20 +44,20 @@ func NewPushClient(testing bool) {
 	}
 }
 
-func PushOfflineMsg(user, source, token string, chatId int64) error {
-	log.Println("PushOfflineMsg", user)
-	ts, ok := userinfo.CheckLastPushTime(user)
+func PushOfflineMsg(from, to, source, token string, chatId, interval int64) error {
+	log.Println("PushOfflineMsg", to)
+	ts, ok := userinfo.CheckLastPushTime(to, interval)
 	if !ok {
-		log.Println("PushOfflineMsg too frequently messages, so ignore some.", user, ts)
+		log.Println("PushOfflineMsg too frequently messages, so ignore some.", to, ts)
 		return nil
 	}
 	// use userName as title
-	userName, err := userinfo.GetUserName(user)
+	userName, err := userinfo.GetUserName(from)
 	if err != nil {
 		log.Println("GetUserName failed.", err)
-		userName = user // 名字不显示
+		userName = from // 名字不显示
 	}
-	log.Println("#user_name#", user, userName)
+	log.Println("#user_name#", from, userName)
 
 	var resp xinge.Response
 	szChatId := fmt.Sprintf("%d", chatId)
