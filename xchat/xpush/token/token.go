@@ -17,9 +17,14 @@ var (
 	redisConnPool *dbutils.RedisConnPool
 )
 
-func InitRedisPool(addr, password string) {
+func InitRedisPool(addr, password string) (func()){
 	netAddr := &netutils.NetAddr{Network:"tcp", LAddr:addr}
 	redisConnPool = dbutils.NewRedisConnPool(netAddr, password, 32, 64, 30 * time.Second)
+	return func() {
+		if !redisConnPool.IsClosed() {
+			redisConnPool.Close()
+		}
+	}
 }
 
 func GetUserDeviceInfo( user string) (*kafka.UserDeviceInfo, error) {
