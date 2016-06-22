@@ -32,7 +32,9 @@ func main() {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
 
+	token.InitRedisPool(args.redisAddr, "")
 	push.NewPushClient(args.xgtest)
+
 	ConsumeMsg()
 	ConsumeLog()
 
