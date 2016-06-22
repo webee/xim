@@ -45,6 +45,12 @@ func NewPushClient(testing bool) {
 }
 
 func PushOfflineMsg(user, source, token string, chatId int64) error {
+	log.Println("PushOfflineMsg", user)
+	ts, ok := userinfo.CheckLastPushTime(user)
+	if !ok {
+		log.Println("PushOfflineMsg too frequently messages, so ignore some.", user, ts)
+		return nil
+	}
 	// use userName as title
 	userName, err := userinfo.GetUserName(user)
 	if err != nil {

@@ -77,12 +77,32 @@ type UserInfo struct {
 	update int64
 }
 
-const VALID_PERIOD = 600
+type PushInterval struct {
+	ts int64
+}
+
+const (
+	USER_NAME_CACHE_VALID_PERIOD = 600
+	OFFLINE_MSG_PUSH_INTERVAL    = 60 // Second
+)
 
 var (
-	UserInfoCache = make(map[string]*UserInfo, 10000)
-	URL           = "http://test.engdd.com"
+	UserInfoCache    = make(map[string]*UserInfo, 10000)
+	URL              = "http://test.engdd.com"
+	Produce_URL      = ""
+	UserPushInterval = make(map[string]PushInterval, 10000)
 )
+
+func CheckLastPushTime(user string) (int64, bool) {
+	now := time.Now().Unix()
+	ts, ok := UserPushInterval[user]
+	if ok && now-ts.ts < OFFLINE_MSG_PUSH_INTERVAL {
+		return ts.ts, false
+	} else {
+		UserPushInterval[user] = PushInterval{now} // 更新最后发送时间
+		return ts.ts, true
+	}
+}
 
 func FetchUserName(uid string) (string, error) {
 	uri := SecuritySuffix(fmt.Sprintf("/login/findOtherUser/1/%s?", uid))
@@ -135,7 +155,7 @@ func GetUserName(uid string) (string, error) {
 	ui, ok := UserInfoCache[uid]
 	if ok {
 		// 检查缓存是否过期
-		if ui.update+VALID_PERIOD > time.Now().Unix() {
+		if ui.update+USER_NAME_CACHE_VALID_PERIOD > time.Now().Unix() {
 			log.Println("hit the cache", uid, ui.Name)
 			return ui.Name, nil
 		}
