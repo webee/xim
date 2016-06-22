@@ -55,7 +55,7 @@ func ConsumeMsg() {
 					log.Println("kafka.UnmarshalMsgInfo failed.", err)
 					continue
 				}
-				udi, err := token.GetUserDeviceInfo(args.redisAddr, msg.User)
+				udi, err := token.GetUserDeviceInfo(msg.User)
 				if err != nil {
 					log.Println("GetUserDeviceInfo failed.", err)
 				} else {
@@ -89,11 +89,6 @@ func ConsumeLog() {
 					log.Println("Error: json.Unmarshal failed.", err)
 					continue
 				}
-				udi.Update = time.Now().Unix()
-				err = token.SetUserDeviceInfo(args.redisAddr, msg.User, &udi)
-				if err != nil {
-					log.Println("Error: SetUserDeviceInfo failed.", err)
-				}
 
 				params := make(map[string]interface{}, 8)
 				params["device_token"] = udi.DeviceToken
@@ -103,6 +98,12 @@ func ConsumeLog() {
 
 				logType := strings.ToLower(msg.Type)
 				if "online" == logType {
+					// 设置token
+					udi.Update = time.Now().Unix()
+					err = token.SetUserDeviceInfo(msg.User, &udi)
+					if err != nil {
+						log.Println("Error: SetUserDeviceInfo failed.", err)
+					}
 					err = apilog.LogOnLine(msg.User, udi.Source, params)
 					if err != nil {
 						log.Println("LogOnLine failed.", err)

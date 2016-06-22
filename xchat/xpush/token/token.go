@@ -22,8 +22,8 @@ func InitRedisPool(addr, password string) {
 	redisConnPool = dbutils.NewRedisConnPool(netAddr, password, 32, 64, 30 * time.Second)
 }
 
-func GetUserDeviceInfo(addr, user string) (*kafka.UserDeviceInfo, error) {
-	log.Println("GetUserDeviceInfo", addr, user)
+func GetUserDeviceInfo( user string) (*kafka.UserDeviceInfo, error) {
+	log.Println("GetUserDeviceInfo", user)
 	ret := &kafka.UserDeviceInfo{}
 
 	conn, err := redisConnPool.Get()
@@ -63,7 +63,7 @@ func GetUserDeviceInfo(addr, user string) (*kafka.UserDeviceInfo, error) {
 	return ret, nil
 }
 
-func SetUserDeviceInfo(addr, user string, udi *kafka.UserDeviceInfo) error {
+func SetUserDeviceInfo(user string, udi *kafka.UserDeviceInfo) error {
 	log.Println("SetUserDeviceInfo", user, udi)
 	conn, err := redisConnPool.Get()
 	if err != nil {
