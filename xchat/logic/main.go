@@ -10,6 +10,7 @@ import (
 	"xim/utils/nanorpc"
 	"xim/utils/pprofutils"
 
+	"xim/xchat/logic/cache"
 	"xim/xchat/logic/db"
 	"xim/xchat/logic/mq"
 )
@@ -31,6 +32,7 @@ func main() {
 	}
 
 	defer db.InitDB(args.dbDriverName, args.dbDatasourceName, args.dbMaxConn)()
+	defer cache.InitCache(args.redisNetAddr, args.redisPassword, args.redisDB)()
 	defer mq.InitMQ(args.kafkaAddrs.List())()
 	defer pub.StartPublisher(args.pubAddrs.List(), args.dial)()
 	defer nanorpc.StartRPCServer(args.addrs.List(), args.dial, new(service.RPCXChat))()

@@ -31,8 +31,10 @@ func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	l.Debug("join: %s", s)
 	// 上线状态
 	arguments := &types.PubUserStatusArgs{
-		User:   s.User,
-		Status: types.UserStatusOnline,
+		InstanceID: instanceID,
+		SessionID:  uint64(s.ID),
+		User:       s.User,
+		Status:     types.UserStatusOnline,
 	}
 	xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
 }
@@ -48,9 +50,11 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 
 		// 离线状态
 		arguments := &types.PubUserStatusArgs{
-			User:   s.User,
-			Status: types.UserStatusOffline,
-			Info:   s.GetClientInfo(),
+			InstanceID: instanceID,
+			SessionID:  uint64(s.ID),
+			User:       s.User,
+			Status:     types.UserStatusOffline,
+			Info:       s.GetClientInfo(),
 		}
 		xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
 	}
@@ -116,9 +120,11 @@ func doPubUserInfo(s *Session, info string) {
 	s.SetClientInfo(info)
 
 	arguments := &types.PubUserStatusArgs{
-		User:   s.User,
-		Status: types.UserStatusOnline,
-		Info:   info,
+		InstanceID: instanceID,
+		SessionID:  uint64(s.ID),
+		User:       s.User,
+		Status:     types.UserStatusOnline,
+		Info:       info,
 	}
 	xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
 }

@@ -84,11 +84,19 @@ const (
 	UserStatusOffline = "offline"
 )
 
-// PubUserStatusArgs is the arguments of PubUserSTatus
+// PubUserStatusArgs is the arguments of PubUserStatus
 type PubUserStatusArgs struct {
-	User   string
-	Status string
-	Info   string
+	InstanceID uint64
+	SessionID  uint64
+	User       string
+	Status     string
+	Info       string
+}
+
+// SyncOnlineUsersArgs is the arguments of SyncOnlineUsers
+type SyncOnlineUsersArgs struct {
+	InstanceID uint64
+	Users      map[uint64]string
 }
 
 // FetchNewRoomChatIDs is the arguments of FetchNewRoomChatIDs
@@ -101,6 +109,7 @@ type FetchNewRoomChatIDs struct {
 const (
 	RPCXChatPing                  = "RPCXChat.Ping"
 	RPCXChatPubUserStatus         = "RPCXChat.PubUserStatus"
+	RPCXChatSyncOnlineUsers       = "RPCXChat.SyncOnlineUsers"
 	RPCXChatSendMsg               = "RPCXChat.SendMsg"
 	RPCXChatFetchChatMessages     = "RPCXChat.FetchChatMessages"
 	RPCXChatFetchUserChatMessages = "RPCXChat.FetchUserChatMessages"

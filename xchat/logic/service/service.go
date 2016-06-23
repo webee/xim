@@ -160,9 +160,10 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 }
 
 // PubUserStatus publish user's status msg.
-func PubUserStatus(user string, status string, info string) error {
-	l.Debug("user:%s, status:%s, info:%s", user, status, info)
+func PubUserStatus(instanceID, sessionID uint64, user string, status string, info string) error {
+	l.Debug("instance:%d, session:%d, user:%s, status:%s, info:%s", instanceID, sessionID, user, status, info)
 	// 记录用户在线状态
+	UpdateUserStatus(instanceID, sessionID, user, status)
 
 	// 发送上下线日志
 	if info != "" {
@@ -179,20 +180,6 @@ func PubUserStatus(user string, status string, info string) error {
 		return mq.Publish(mq.XChatLogsTopic, string(b))
 	}
 	return nil
-}
-
-// ExitRoom let user exit the room's chat.
-func ExitRoom(roomID, chatID uint64, user string) error {
-	ok, err := db.IsRoomChat(roomID, chatID)
-	if err != nil {
-		return err
-	}
-
-	if !ok {
-		return fmt.Errorf("chat is not own to room")
-	}
-
-	return db.RemoveChatMembers(chatID, []string{user})
 }
 
 // FetchNewRoomChatIDs fetch room chats' ids.

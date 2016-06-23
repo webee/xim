@@ -22,17 +22,23 @@ func (c *RedisConn) Close() {
 
 // RedisConnPool is a redis connection pool.
 type RedisConnPool struct {
-	pools.ResourcePool
+	*pools.ResourcePool
 }
 
 // NewRedisConnPool creates a redis connection pool.
-func NewRedisConnPool(netAddr *netutils.NetAddr, password string, capacity, maxCap int, idleTimeout time.Duration) *RedisConnPool {
+func NewRedisConnPool(netAddr *netutils.NetAddr, password string, db, capacity, maxCap int, idleTimeout time.Duration) *RedisConnPool {
 	p := pools.NewResourcePool(func() (pools.Resource, error) {
 		c, err := redis.Dial(netAddr.Network, netAddr.LAddr, redis.DialPassword(password))
-		return &RedisConn{c}, err
+		conn := &RedisConn{c}
+		_, err = conn.Do("SELECT", db)
+		if err != nil {
+			conn.Close()
+			return nil, err
+		}
+		return conn, err
 	}, capacity, maxCap, idleTimeout)
 	return &RedisConnPool{
-		*p,
+		p,
 	}
 }
 

@@ -19,7 +19,15 @@ func (r *RPCXChat) Ping(args *types.PingArgs, reply *string) (err error) {
 
 // PubUserStatus publish user's status.
 func (r *RPCXChat) PubUserStatus(args *types.PubUserStatusArgs, reply *types.NoReply) error {
-	return PubUserStatus(args.User, args.Status, args.Info)
+	return PubUserStatus(args.InstanceID, args.SessionID, args.User, args.Status, args.Info)
+}
+
+// SyncOnlineUsers update online users.
+func (r *RPCXChat) SyncOnlineUsers(args *types.SyncOnlineUsersArgs, reply *types.NoReply) error {
+	for sessionID, user := range args.Users {
+		UpdateUserStatus(args.InstanceID, sessionID, user, types.UserStatusOnline)
+	}
+	return nil
 }
 
 // FetchChat fetch chat.

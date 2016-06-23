@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"time"
+	"xim/xchat/logic/cache"
 	"xim/xchat/logic/db"
 	"xim/xchat/logic/mq"
 	"xim/xchat/logic/service/types"
@@ -46,8 +47,24 @@ func notifyOfflineUsers(msg *db.Message) {
 		return
 	}
 
+	users := []string{}
 	for _, member := range members {
-		m.User = member.User
+		if member.User != msg.User {
+			users = append(users, member.User)
+		}
+	}
+	if len(users) == 0 {
+		return
+	}
+
+	offlineUsers, err := cache.GetOfflineUsers(users...)
+	if err != nil {
+		l.Warning("get offline users error: %s", err.Error())
+		return
+	}
+
+	for _, user := range offlineUsers {
+		m.User = user
 		b, err := json.Marshal(&m)
 		if err != nil {
 			l.Warning("json encoding error: %s", err.Error())

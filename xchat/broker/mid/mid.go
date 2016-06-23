@@ -2,6 +2,9 @@ package mid
 
 import (
 	"log"
+	"math"
+	"math/rand"
+	"time"
 	"xim/utils/nanorpc"
 	"xim/xchat/broker/logger"
 	"xim/xchat/broker/router"
@@ -16,6 +19,7 @@ var (
 )
 
 var (
+	instanceID  uint64
 	xchatLogic  *nanorpc.Client
 	xchatSub    *pub.Subscriber
 	xchat       *turnpike.Client
@@ -25,10 +29,13 @@ var (
 
 func init() {
 	l = logger.Logger.GetLogger("mid")
+	rand.Seed(time.Now().UnixNano())
 }
 
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
+	instanceID = uint64(rand.Int63n(math.MaxInt64))
+
 	initXChatHTTPClient(config.Key, config.XChatHostURL)
 
 	var err error
@@ -107,4 +114,7 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 
 	xchatSub = pub.NewSubscriber(config.LogicPubAddr, 128)
 	go handleMsg(xchatSub.Msgs())
+
+	// tasks
+	go TaskUpdatingOnlineUsers()
 }

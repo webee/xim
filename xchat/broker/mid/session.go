@@ -122,6 +122,12 @@ func (s *Session) EnterRoom(roomID uint64) (chatID uint64, err error) {
 	s.roomsLock.Lock()
 	defer s.roomsLock.Unlock()
 
+	chatID, ok := s.rooms[roomID]
+	if ok {
+		// 已经加入
+		return chatID, nil
+	}
+
 	chatID, err = rooms.Enter(roomID, s.ID)
 	if err != nil {
 		return
@@ -234,6 +240,9 @@ func RemoveSession(id SessionID) (s *Session) {
 
 	us := userSessions[s.User]
 	delete(us, id)
+	if len(us) == 0 {
+		delete(userSessions, s.User)
+	}
 
 	return s
 }
@@ -259,4 +268,17 @@ func GetUserSessions(user string) []*Session {
 		}
 	}
 	return ss
+}
+
+// GetOnlineSessionUsers get online session users.
+func GetOnlineSessionUsers() map[uint64]string {
+	sessLock.RLock()
+	defer sessLock.RUnlock()
+	users := map[uint64]string{}
+	for user, sesses := range userSessions {
+		for i := range sesses {
+			users[uint64(i)] = user
+		}
+	}
+	return users
 }

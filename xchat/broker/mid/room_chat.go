@@ -72,6 +72,11 @@ func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
 
 	areaLimit := int(rooms.areaLimit)
 	for _, chat := range chats {
+		if _, ok := chat.members[id]; ok {
+			// 已经加入
+			return chat.chatID, nil
+		}
+
 		if len(chat.members) < areaLimit {
 			chat.members[id] = struct{}{}
 			return chat.chatID, nil

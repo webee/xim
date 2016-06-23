@@ -21,6 +21,9 @@ type Args struct {
 	dbDriverName     string
 	dbDatasourceName string
 	dbMaxConn        int
+	redisNetAddr     string
+	redisPassword    string
+	redisDB          int
 }
 
 var (
@@ -51,4 +54,7 @@ func init() {
 	flag.StringVar(&args.dbDriverName, "db-driver-name", "postgres", "database driver name.")
 	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", readFile(path.Join("conf", env, "xchat/dbconn.txt")), "database datasoure name.")
 	flag.IntVar(&args.dbMaxConn, "db-max-conn", 200, "database connection pool max connections.")
+	flag.StringVar(&args.redisNetAddr, "redis-net-addr", "tcp@localhost:6379", "redis network address.")
+	flag.StringVar(&args.redisPassword, "redis-password", "", "redis password.")
+	flag.IntVar(&args.redisDB, "redis-db", 1, "redis db.")
 }

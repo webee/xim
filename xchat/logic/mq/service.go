@@ -26,5 +26,6 @@ func InitMQ(kafkaAddrs []string) (close func()) {
 }
 
 func nilPublish(topic string, msg string) error {
+	l.Info("nil publish: %s, %s", topic, msg)
 	return nil
 }
