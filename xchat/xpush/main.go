@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"runtime"
 	"xim/utils/pprofutils"
 	"xim/xchat/logic/logger"
@@ -53,19 +52,19 @@ func ConsumeMsg() {
 		for {
 			select {
 			case data := <-consumeMsgChan:
-				log.Println("###consumeMsg###", string(data))
+				l.Info("###consumeMsg###%s", string(data))
 				msg, err := kafka.UnmarshalMsgInfo(data)
 				if err != nil {
-					log.Println("kafka.UnmarshalMsgInfo failed.", err)
+					l.Error("kafka.UnmarshalMsgInfo failed. %v", err)
 					continue
 				}
 				udi, err := token.GetUserDeviceInfo(msg.User)
 				if err != nil {
-					log.Println("GetUserDeviceInfo failed.", err)
+					l.Error("GetUserDeviceInfo failed. %v", err)
 				} else {
 					err = push.PushOfflineMsg(msg.From, msg.User, udi.Source, udi.DeviceToken, msg.ChatId, args.pushInterval)
 					if err != nil {
-						log.Println("push.PushOfflineMsg failed.", err)
+						l.Error("push.PushOfflineMsg failed. %v", err)
 					}
 				}
 			}
@@ -81,16 +80,16 @@ func ConsumeLog() {
 		for {
 			select {
 			case data := <-consumeLogChan:
-				log.Println("###consumeLog###", string(data))
+				l.Info("###consumeLog### %s", string(data))
 				msg, err := kafka.UnmarshalLogInfo(data)
 				if err != nil {
-					log.Println("kafka.UnmarshalLogInfo failed.", err)
+					l.Error("kafka.UnmarshalLogInfo failed. %v", err)
 					continue
 				}
 				var udi kafka.UserDeviceInfo
 				err = json.Unmarshal([]byte(msg.Info), &udi)
 				if err != nil {
-					log.Println("Error: json.Unmarshal failed.", err)
+					l.Error("Error: json.Unmarshal failed. %v", err)
 					continue
 				}
 
@@ -106,23 +105,23 @@ func ConsumeLog() {
 					udi.Update = time.Now().Unix()
 					err = token.SetUserDeviceInfo(msg.User, &udi)
 					if err != nil {
-						log.Println("Error: SetUserDeviceInfo failed.", err)
+						l.Error("Error: SetUserDeviceInfo failed. %v", err)
 					}
 					err = apilog.LogOnLine(msg.User, udi.Source, params)
 					if err != nil {
-						log.Println("LogOnLine failed.", err)
+						l.Error("LogOnLine failed. %v", err)
 					} else {
-						log.Println("LogOnLine success.")
+						l.Debug("LogOnLine success.")
 					}
 				} else if "offline" == logType {
 					err = apilog.LogOffLine(msg.User, udi.Source, params)
 					if err != nil {
-						log.Println("LogOffLine failed.", err)
+						l.Error("LogOffLine failed. %v", err)
 					} else {
-						log.Println("LogOffLine success.")
+						l.Debug("LogOffLine success.")
 					}
 				} else {
-					log.Println("Error: Unknown log type")
+					l.Error("Error: Unknown log type")
 				}
 			}
 		}

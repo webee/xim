@@ -31,9 +31,6 @@ func init() {
 	flag.BoolVar(&args.testing, "testing", false, "whether to serv a testing page.")
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6061", "debug pprof http address.")
-	flag.StringVar(&args.dbDriverName, "db-driver-name", "postgres", "database driver name.")
-	flag.StringVar(&args.dbDatasourceName, "db-datasource-name", "postgres://xchat:xchat1234@localhost:5432/xchat?sslmode=disable", "database datasoure name.")
-	flag.IntVar(&args.dbMaxConn, "db-max-conn", 200, "database connection pool max connections.")
 
 	var tmpStr string
 	flag.StringVar(&tmpStr, "kfk-addr", "localhost:9092", "the kafka addr")
@@ -43,7 +40,7 @@ func init() {
 	flag.StringVar(&args.zkAddr, "zk-addr", "localhost:2181/kafka", "the zookeeper addr")
 	flag.StringVar(&args.redisAddr, "redis-addr", "localhost:6379", "the redis addr")
 	flag.BoolVar(&args.xgtest, "xgtest", true, "is xinge test environment")
-	flag.Int64Var(&args.pushInterval, "pushInterval", 60, "push offline msg interval")
-	flag.StringVar(&args.apiLogHost, "apiLogHost", "http://apilogdoc.engdd.com", "api log host")
-	flag.StringVar(&args.userInfoHost, "userInfoHost", "http://test.engdd.com", "user info host")
+	flag.Int64Var(&args.pushInterval, "push-interval", 60, "push offline msg interval")
+	flag.StringVar(&args.apiLogHost, "apilog-host", "http://apilogdoc.engdd.com", "api log host")
+	flag.StringVar(&args.userInfoHost, "user-info-host", "http://test.engdd.com", "user info host")
 }
