@@ -2,13 +2,13 @@
 package push
 
 import (
-	"github.com/LibiChai/xinge"
-	"time"
 	"errors"
+	"fmt"
+	"github.com/LibiChai/xinge"
 	"log"
 	"strings"
+	"time"
 	"xim/xchat/xpush/userinfo"
-	"fmt"
 )
 
 const (
@@ -30,31 +30,49 @@ const (
 )
 
 var (
-	androidClient = xinge.NewClient(ACCESS_ID_ANDROID_TEST, SECRET_KEY_ANDROID_TEST)
-	iosClient     = xinge.NewClient(ACCESS_ID_IOS_TEST, SECRET_KEY_IOS_TEST)
+	androidClient *xinge.Client
+	iosClient     *xinge.Client
 )
 
-func PushOfflineMsg(user, dev, token string, chatId int64) error {
+func NewPushClient(testing bool) {
+	if testing {
+		androidClient = xinge.NewClient(ACCESS_ID_ANDROID_TEST, SECRET_KEY_ANDROID_TEST)
+		iosClient = xinge.NewClient(ACCESS_ID_IOS_TEST, SECRET_KEY_IOS_TEST)
+	} else {
+		androidClient = xinge.NewClient(ACCESS_ID_ANDROID, SECRET_KEY_ANDROID)
+		iosClient = xinge.NewClient(ACCESS_ID_IOS, SECRET_KEY_IOS)
+	}
+}
+
+func PushOfflineMsg(from, to, source, token string, chatId, interval int64) error {
+	log.Println("PushOfflineMsg", to)
+	ts, ok := userinfo.CheckLastPushTime(to, interval)
+	if !ok {
+		log.Println("PushOfflineMsg too frequently messages, so ignore some.", to, ts)
+		return nil
+	}
 	// use userName as title
-	userName, err := userinfo.GetUserName(user)
+	userName, err := userinfo.GetUserName(from)
 	if err != nil {
 		log.Println("GetUserName failed.", err)
-		userName = user // 名字不显示
+		userName = from // 名字不显示
 	}
-	log.Println("#user_name#", user, userName)
+	log.Println("#user_name#", from, userName)
 
 	var resp xinge.Response
-	if strings.ToLower(dev) == "android" {
+	szChatId := fmt.Sprintf("%d", chatId)
+	if strings.ToLower(source) != "appstore" {
 		msg := xinge.DefaultMessage(userName, "发来一条消息")
 		msg.Style.Clearable = 1
 		msg.Style.NId = int(time.Now().Unix())
 		msg.Action.ActionType = 1
 		msg.Action.Activity = ANDROID_ACTIVITY
-		msg.Custom = map[string]string{"chat_id": fmt.Sprintf("%d", chatId)}
+		msg.Custom = map[string]string{"chat_id": szChatId}
 
 		resp = androidClient.PushSingleDevice(xinge.Android, token, msg)
-	} else if strings.ToLower(dev) == "iphone" {
-		resp = iosClient.PushSingleIosDevice(token, userName + "发来一条消息", 5, map[string]string{"hello": "hello there"})
+	} else { //if strings.ToLower(dev) == "iphone" {
+		resp = iosClient.PushSingleIosDevice(token, userName+"发来一条消息", 1,
+			map[string]string{"chat_id": szChatId})
 	}
 
 	if resp.Code != 0 {

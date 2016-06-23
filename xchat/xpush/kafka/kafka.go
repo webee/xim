@@ -5,7 +5,6 @@ import (
 	"github.com/wvanbergen/kafka/consumergroup"
 	"log"
 	"github.com/wvanbergen/kazoo-go"
-	"time"
 )
 
 const (
@@ -113,7 +112,7 @@ func Consume(addr []string, topic string, partition int32, offset int64, chanMsg
 func ConsumeGroup(zkaddr string, group, topic string, index, offset int, msgChan chan []byte) error {
 	config := consumergroup.NewConfig()
 	config.Offsets.Initial = sarama.OffsetOldest
-	config.Offsets.CommitInterval = 30 * time.Second
+	//config.Offsets.CommitInterval = 30 * time.Second
 
 	log.Println("zkAddr", zkaddr)
 	var zkNodes []string
@@ -137,6 +136,7 @@ func ConsumeGroup(zkaddr string, group, topic string, index, offset int, msgChan
 			msgChan <- msg.Value
 			log.Printf("{index:%d} key: %s, value: %s, topic: %s, partition: %d, offset: %d", index,
 				string(msg.Key), string(msg.Value), msg.Topic, msg.Partition, msg.Offset)
+			cg.CommitUpto(msg)
 		}
 	}
 

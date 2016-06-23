@@ -1,31 +1,42 @@
 package token
 
-//package main
-
 import (
 	"encoding/json"
-	"github.com/garyburd/redigo/redis"
 	"log"
 	"time"
 	"xim/xchat/xpush/kafka"
 	"errors"
+	"xim/utils/dbutils"
+	"xim/utils/netutils"
 )
 
 const (
 	USER_DEV_INFO_KEY = "user:dev:info"
 )
+var (
+	redisConnPool *dbutils.RedisConnPool
+)
 
-func GetUserDeviceInfo(addr, user string) (*kafka.UserDeviceInfo, error) {
-	log.Println("GetUserDeviceInfo", addr, user)
+func InitRedisPool(addr, password string) (func()){
+	netAddr := &netutils.NetAddr{Network:"tcp", LAddr:addr}
+	redisConnPool = dbutils.NewRedisConnPool(netAddr, password, 32, 64, 30 * time.Second)
+	return func() {
+		if !redisConnPool.IsClosed() {
+			redisConnPool.Close()
+		}
+	}
+}
+
+func GetUserDeviceInfo( user string) (*kafka.UserDeviceInfo, error) {
+	log.Println("GetUserDeviceInfo", user)
 	ret := &kafka.UserDeviceInfo{}
 
-	conn, err := redis.Dial("tcp", addr, redis.DialConnectTimeout(30*time.Second),
-		redis.DialReadTimeout(10*time.Second), redis.DialWriteTimeout(10*time.Second))
+	conn, err := redisConnPool.Get()
 	if err != nil {
-		log.Println("redis.Dial failed.", err)
+		log.Println("redisConnPool.Get failed.", err)
 		return ret, err
 	}
-	defer conn.Close()
+	defer redisConnPool.Put(conn)
 
 	reply, err := conn.Do("hget", USER_DEV_INFO_KEY, user)
 	if err != nil {
@@ -57,14 +68,14 @@ func GetUserDeviceInfo(addr, user string) (*kafka.UserDeviceInfo, error) {
 	return ret, nil
 }
 
-func SetUserDeviceInfo(addr, user string, udi *kafka.UserDeviceInfo) error {
-	conn, err := redis.Dial("tcp", addr, redis.DialConnectTimeout(30*time.Second),
-		redis.DialReadTimeout(10*time.Second), redis.DialWriteTimeout(10*time.Second))
+func SetUserDeviceInfo(user string, udi *kafka.UserDeviceInfo) error {
+	log.Println("SetUserDeviceInfo", user, udi)
+	conn, err := redisConnPool.Get()
 	if err != nil {
-		log.Println("redis.Dial failed.", err)
+		log.Println("redisConnPool.Get failed.", err)
 		return err
 	}
-	defer conn.Close()
+	defer redisConnPool.Put(conn)
 
 	json, err := json.Marshal(udi)
 	if err != nil {
@@ -80,4 +91,3 @@ func SetUserDeviceInfo(addr, user string, udi *kafka.UserDeviceInfo) error {
 
 	return nil
 }
-

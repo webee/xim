@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"strings"
 	"log"
+	"strings"
 )
 
 // Args is app's arguments.
@@ -17,6 +17,8 @@ type Args struct {
 	kfkAddr          []string
 	zkAddr           string
 	redisAddr        string
+	xgtest           bool
+	pushInterval     int64
 }
 
 var (
@@ -38,5 +40,6 @@ func init() {
 
 	flag.StringVar(&args.zkAddr, "zk-addr", "localhost:2181/kafka", "the zookeeper addr")
 	flag.StringVar(&args.redisAddr, "redis-addr", "localhost:6379", "the redis addr")
-
+	flag.BoolVar(&args.xgtest, "xgtest", true, "is xinge test environment")
+	flag.Int64Var(&args.pushInterval, "pushInterval", 60, "push offline msg interval")
 }
