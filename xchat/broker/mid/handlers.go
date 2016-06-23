@@ -29,6 +29,12 @@ func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	s := getSessionFromDetails(details, true)
 	AddSession(s)
 	l.Debug("join: %s", s)
+	// 上线状态
+	arguments := &types.PubUserStatusArgs{
+		User:   s.User,
+		Status: types.UserStatusOnline,
+	}
+	xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
 }
 
 // 处理用户断开注销
@@ -40,15 +46,13 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 		s.ExitAllRooms()
 		l.Debug("left: %s", s)
 
-		clientInfo := s.GetClientInfo()
-		if clientInfo != "" {
-			arguments := &types.PubUserStatusArgs{
-				User:   s.User,
-				Status: types.UserStatusOffline,
-				Info:   clientInfo,
-			}
-			xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
+		// 离线状态
+		arguments := &types.PubUserStatusArgs{
+			User:   s.User,
+			Status: types.UserStatusOffline,
+			Info:   s.GetClientInfo(),
 		}
+		xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
 	}
 }
 
@@ -293,6 +297,25 @@ func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		userChat = &uc
 	}
 	return &turnpike.CallResult{Args: []interface{}{true, userChat}}
+}
+
+// 获取会话成员信息
+func fetchChatMembers(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChatMembers, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+	// chatIdentity, err := ParseChatIdentity(args[0].(string))
+	// if err != nil {
+	// 	return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	// }
+	// chatID := chatIdentity.ID
+	// chatType := chatIdentity.Type
+
+	members := []string{}
+	// TODO
+	return &turnpike.CallResult{Args: []interface{}{true, members}}
 }
 
 // 获取会话列表

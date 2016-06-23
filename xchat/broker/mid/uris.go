@@ -18,11 +18,12 @@ const (
 	// 用户发布消息到会话
 	URIXChatPubMsg = "xchat.user.msg.pub"
 
-	URIXChatNewChat       = "xchat.user.chat.new"
-	URIXChatFetchChat     = "xchat.user.chat.fetch"
-	URIXChatFetchChatList = "xchat.user.chat.list"
-	URIXChatFetchChatMsgs = "xchat.user.chat.msgs"
-	URIXChatSyncChatRecv  = "xchat.user.chat.recv.sync"
+	URIXChatNewChat          = "xchat.user.chat.new"
+	URIXChatFetchChat        = "xchat.user.chat.fetch"
+	URIXChatFetchChatList    = "xchat.user.chat.list"
+	URIXChatFetchChatMembers = "xchat.user.chat.members"
+	URIXChatFetchChatMsgs    = "xchat.user.chat.msgs"
+	URIXChatSyncChatRecv     = "xchat.user.chat.recv.sync"
 
 	// 用户接收消息
 	URIXChatUserMsg = "xchat.user.%d.msg"

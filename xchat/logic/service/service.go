@@ -162,17 +162,23 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 // PubUserStatus publish user's status msg.
 func PubUserStatus(user string, status string, info string) error {
 	l.Debug("user:%s, status:%s, info:%s", user, status, info)
-	msg := make(map[string]string)
-	msg["user"] = user
-	msg["type"] = status
-	msg["info"] = info
+	// 记录用户在线状态
 
-	b, err := json.Marshal(&msg)
-	if err != nil {
-		return err
+	// 发送上下线日志
+	if info != "" {
+		msg := make(map[string]string)
+		msg["user"] = user
+		msg["type"] = status
+		msg["info"] = info
+
+		b, err := json.Marshal(&msg)
+		if err != nil {
+			return err
+		}
+
+		return mq.Publish(mq.XChatLogsTopic, string(b))
 	}
-
-	return mq.Publish(mq.XChatLogsTopic, string(b))
+	return nil
 }
 
 // ExitRoom let user exit the room's chat.
