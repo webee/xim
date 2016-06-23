@@ -38,7 +38,7 @@ type UserInstanceStatus struct {
 }
 
 func (ui *UserInstance) String() string {
-	return fmt.Sprintf("%d.%s", ui.InstanceID, ui.User)
+	return fmt.Sprintf("%s.%s.%s", strconv.FormatUint(ui.InstanceID, 36), strconv.FormatUint(ui.SessionID, 36), ui.User)
 }
 
 func genUserKey(user string) string {
@@ -46,7 +46,7 @@ func genUserKey(user string) string {
 }
 
 func genUserInstanceKey(user string, instanceID, sessionID uint64) string {
-	return fmt.Sprintf("x.u.%d.%d.%s", instanceID, sessionID, user)
+	return fmt.Sprintf("x.u.%s.%s.%s", strconv.FormatUint(instanceID, 36), strconv.FormatUint(sessionID, 36), user)
 }
 
 // ParseUserInstanceFromKey parse user instance from user instance key.
@@ -55,11 +55,11 @@ func ParseUserInstanceFromKey(s string) (*UserInstance, error) {
 	if len(parts) < 4 {
 		return nil, ErrInvalidUserInstanceKey
 	}
-	instanceID, err := strconv.ParseUint(parts[2], 10, 64)
+	instanceID, err := strconv.ParseUint(parts[2], 36, 64)
 	if err != nil {
 		return nil, err
 	}
-	sessionID, err := strconv.ParseUint(parts[3], 10, 64)
+	sessionID, err := strconv.ParseUint(parts[3], 36, 64)
 	if err != nil {
 		return nil, err
 	}
