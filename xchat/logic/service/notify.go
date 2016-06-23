@@ -14,7 +14,7 @@ type offlineMsg struct {
 	From     string    `json:"from"`
 	ChatID   uint64    `json:"chat_id"`
 	ChatType string    `json:"chat_type"`
-	MsgID    uint64    `json:"msg_id"`
+	Kind     string    `json:"kind"`
 	Msg      string    `json:"msg"`
 	Ts       time.Time `json:"ts"`
 }
@@ -27,21 +27,21 @@ var (
 	}
 )
 
-func notifyOfflineUsers(msg *db.Message) {
-	if !offlineNotifyEnabledChatTypes[msg.ChatType] {
+func notifyOfflineUsers(from string, chatID uint64, kind, chatType, msg string, ts time.Time) {
+	if !offlineNotifyEnabledChatTypes[chatType] {
 		return
 	}
 
 	m := offlineMsg{
-		From:     msg.User,
-		ChatID:   msg.ChatID,
-		ChatType: msg.ChatType,
-		MsgID:    msg.ID,
-		Msg:      msg.Msg,
-		Ts:       msg.Ts,
+		From:     from,
+		ChatID:   chatID,
+		Kind:     kind,
+		ChatType: chatType,
+		Msg:      msg,
+		Ts:       ts,
 	}
 
-	members, err := db.GetChatMembers(msg.ChatID)
+	members, err := db.GetChatMembers(chatID)
 	if err != nil {
 		l.Warning("get chat members error: %s", err.Error())
 		return
@@ -49,7 +49,7 @@ func notifyOfflineUsers(msg *db.Message) {
 
 	users := []string{}
 	for _, member := range members {
-		if member.User != msg.User {
+		if member.User != from {
 			users = append(users, member.User)
 		}
 	}

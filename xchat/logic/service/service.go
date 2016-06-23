@@ -8,6 +8,7 @@ import (
 	"xim/xchat/logic/mq"
 	"xim/xchat/logic/pub"
 	pubtypes "xim/xchat/logic/pub/types"
+	"xim/xchat/logic/service/types"
 )
 
 // Ping is a test service.
@@ -119,7 +120,7 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 	go pub.PublishMessage(&pubtypes.XMessage{
 		Msg: m,
 	})
-	go notifyOfflineUsers(message)
+	go notifyOfflineUsers(message.User, message.ChatID, types.MsgKindChat, message.ChatType, message.Msg, message.Ts)
 
 	return &m, err
 }
@@ -144,11 +145,12 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 		chatType = userChat.Type
 	}
 
+	ts := time.Now()
 	m := pubtypes.ChatNotifyMessage{
 		ChatID:   chatID,
 		ChatType: chatType,
 		User:     user,
-		Ts:       time.Now().Unix(),
+		Ts:       ts.Unix(),
 		Msg:      msg,
 		Updated:  updated,
 	}
@@ -156,6 +158,8 @@ func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
 	go pub.PublishMessage(&pubtypes.XMessage{
 		Msg: m,
 	})
+	go notifyOfflineUsers(m.User, m.ChatID, types.MsgKindChatNotify, m.ChatType, m.Msg, ts)
+
 	return nil
 }
 
