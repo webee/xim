@@ -11,5 +11,6 @@ xchat-app
 xchat-broker
 xchat-logic
 xchat-proxy
+xchat-http-api
 examples/*
 !examples/*.go
