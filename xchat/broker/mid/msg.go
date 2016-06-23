@@ -8,6 +8,7 @@ import (
 )
 
 func handleMsg(ms <-chan interface{}) {
+	// TODO: use instanceID to distinguish this broker send msgs.
 	for m := range ms {
 		switch msg := m.(type) {
 		case pubtypes.ChatMessage:

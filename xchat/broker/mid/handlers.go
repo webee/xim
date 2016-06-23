@@ -181,6 +181,7 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	p.setSending()
 	defer p.doneSending()
 
+	// TODO: add instanceID to mark this broker send msgs.
 	var message pubtypes.ChatMessage
 	if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
 		ChatID:   chatID,
@@ -218,6 +219,7 @@ func onPubMsg(args []interface{}, kwargs map[string]interface{}) {
 		return
 	}
 
+	// TODO: add instanceID to mark this broker send msgs.
 	xchatLogic.AsyncCall(types.RPCXChatSendMsg, &types.SendMsgArgs{
 		ChatID:   chatID,
 		ChatType: chatType,
