@@ -1,11 +1,15 @@
 {
 	"ImportPath": "xim",
 	"GoVersion": "go1.6",
-	"GodepVersion": "v62",
+	"GodepVersion": "v71",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
+		{
+			"ImportPath": "github.com/LibiChai/xinge",
+			"Rev": "cdd9e505974f6a41946c7f743ba794461e1c1456"
+		},
 		{
 			"ImportPath": "github.com/Shopify/sarama",
 			"Comment": "v1.9.0-26-g19422bf",
@@ -189,6 +193,10 @@
 			"Rev": "1881a9bccb818787f68c52bfba648c6cf34c34fa"
 		},
 		{
+			"ImportPath": "github.com/samuel/go-zookeeper/zk",
+			"Rev": "4b20de542e40ed2b89d65ae195fc20a330919b92"
+		},
+		{
 			"ImportPath": "github.com/ugorji/go/codec",
 			"Rev": "a396ed22fc049df733440d90efe17475e3929ccb"
 		},
@@ -200,6 +208,14 @@
 			"ImportPath": "github.com/webee/ttlcache",
 			"Comment": "1.0.1-5-g1e620d0",
 			"Rev": "1e620d05755a61b370757c07a39532bc01c0f596"
+		},
+		{
+			"ImportPath": "github.com/wvanbergen/kafka/consumergroup",
+			"Rev": "6df90f1eb4669ee0ae66616f90e64770da8ff462"
+		},
+		{
+			"ImportPath": "github.com/wvanbergen/kazoo-go",
+			"Rev": "0f768712ae6f76454f987c3356177e138df258f8"
 		},
 		{
 			"ImportPath": "github.com/youtube/vitess/go/acl",
