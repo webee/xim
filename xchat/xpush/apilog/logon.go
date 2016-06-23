@@ -2,7 +2,6 @@ package apilog
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -38,14 +37,14 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 	v.Add("source", source)
 	ret, err := json.Marshal(params)
 	if err != nil {
-		log.Println("json.Marshal failed.", err)
+		l.Error("json.Marshal failed. %v", err)
 		v.Add("params", "")
 	} else {
 		v.Add("params", string(ret))
 	}
 	req, err := http.NewRequest("POST", ApiLogHost+uri+"?"+v.Encode(), nil)
 	if err != nil {
-		log.Println("http.NewRequest failed.", err)
+		l.Error("http.NewRequest failed. %v", err)
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -54,7 +53,7 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("client.Do failed.", err)
+		l.Error("client.Do failed. %v", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -63,7 +62,7 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 	var result map[string]interface{}
 	decoder.Decode(&result)
 
-	log.Println(result)
+	l.Debug("%v", result)
 
 	return nil
 }

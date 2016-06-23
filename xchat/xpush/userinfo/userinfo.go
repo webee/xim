@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -113,13 +112,13 @@ func FetchUserName(uid string) (string, error) {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
-		log.Println("http.NewRequest failed.", err)
+		l.Error("http.NewRequest failed. %v", err)
 		return "", err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("client.Do failed.", err)
+		l.Error("client.Do failed. %v", err)
 		return "", err
 	}
 
@@ -129,7 +128,7 @@ func FetchUserName(uid string) (string, error) {
 	var ret map[string]interface{}
 	err = decoder.Decode(&ret)
 	if err != nil {
-		log.Println("json.Decode failed.", err)
+		l.Error("json.Decode failed. %v", err)
 		return "", err
 	}
 
@@ -143,7 +142,7 @@ func FetchUserName(uid string) (string, error) {
 			if ok {
 				name, ok := fullName.(string)
 				if ok {
-					log.Println("#fetch_user_name", uid, name)
+					l.Info("#fetch_user_name# %s %s", uid, name)
 					return name, nil
 				}
 			}
@@ -158,14 +157,14 @@ func GetUserName(uid string) (string, error) {
 	if ok {
 		// 检查缓存是否过期
 		if ui.update+USER_NAME_CACHE_VALID_PERIOD > time.Now().Unix() {
-			log.Println("hit the cache", uid, ui.Name)
+			l.Debug("hit the cache", uid, ui.Name)
 			return ui.Name, nil
 		}
 	}
 
 	fullName, err := FetchUserName(uid)
 	if err != nil {
-		log.Println("FetchUserName failed.", err)
+		l.Error("FetchUserName failed. %s, %v", uid, err)
 		return "", err
 	}
 	// 设置缓存，后续可改为异步设置

@@ -3,7 +3,6 @@ package kafka
 import (
 	"github.com/Shopify/sarama"
 	"github.com/wvanbergen/kafka/consumergroup"
-	"log"
 	"github.com/wvanbergen/kazoo-go"
 )
 
@@ -21,12 +20,12 @@ func SyncProduce(addr []string, topic, msg string, partition int32) error {
 	config.Producer.Partitioner = sarama.NewManualPartitioner
 	producer, err := sarama.NewSyncProducer(addr, config)
 	if err != nil {
-		log.Println("NewSyncProducer failed.", err)
+		l.Error("NewSyncProducer failed. %v", err)
 		return err
 	}
 	defer func() {
 		if err := producer.Close(); err != nil {
-			log.Println("producer close failed.", err)
+			l.Error("producer close failed. %v", err)
 		}
 	}()
 
@@ -34,10 +33,10 @@ func SyncProduce(addr []string, topic, msg string, partition int32) error {
 		Value: sarama.StringEncoder(msg)}
 	partition, offset, err := producer.SendMessage(m)
 	if err != nil {
-		log.Println("produce msg failed", err)
+		l.Error("produce msg failed. %v", err)
 		return err
 	} else {
-		log.Println("msg send to partion", partition, "offset", offset, msg)
+		l.Info("msg send to partion %d offset %d %s.", partition, offset, msg)
 	}
 	return nil
 }
@@ -47,12 +46,12 @@ func AsyncProduce(addr []string, topic string, msgChan chan []byte) error {
 	config := sarama.NewConfig()
 	producer, err := sarama.NewAsyncProducer(addr, config)
 	if err != nil {
-		log.Println("NewAsyncProducer failed.", err)
+		l.Error("NewAsyncProducer failed. %v", err)
 		return err
 	}
 	defer func() {
 		if err := producer.Close(); err != nil {
-			log.Println("producer close failed.", err)
+			l.Error("producer close failed., %v", err)
 		}
 	}()
 
@@ -61,7 +60,7 @@ func AsyncProduce(addr []string, topic string, msgChan chan []byte) error {
 		case msg := <-msgChan:
 			producer.Input() <- &sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(msg)}
 		case err := <-producer.Errors():
-			log.Println("failed to produce message.", err)
+			l.Error("failed to produce message. %v", err)
 		}
 	}
 	return nil
@@ -73,7 +72,7 @@ func Consume(addr []string, topic string, partition int32, offset int64, chanMsg
 	//config.Consumer.Offsets.Initial = sarama.OffsetOldest
 	consumer, err := sarama.NewConsumer(addr, config)
 	if err != nil {
-		log.Println("NewConsumer failed.", err)
+		l.Error("NewConsumer failed. %v", err)
 		return err
 	}
 	//
@@ -86,20 +85,20 @@ func Consume(addr []string, topic string, partition int32, offset int64, chanMsg
 
 	partitionConsumer, err := consumer.ConsumePartition(topic, partition, offset)
 	if err != nil {
-		log.Println("ConsumePartition failed.", err)
+		l.Error("ConsumePartition failed. %v", err)
 		return err
 	}
 
 	defer func() {
 		if consumer.Close(); err != nil {
-			log.Println("close consume failed.", err)
+			l.Error("close consume failed. %v", err)
 		}
 	}()
 
 	for {
 		select {
 		case msg := <-partitionConsumer.Messages():
-			log.Printf("key: %s, value: %s, topic: %s, partition: %d, offset: %d",
+			l.Debug("key: %s, value: %s, topic: %s, partition: %d, offset: %d",
 				string(msg.Key), string(msg.Value), msg.Topic, msg.Partition, msg.Offset)
 			chanMsg <- msg.Value
 		}
@@ -114,19 +113,19 @@ func ConsumeGroup(zkaddr string, group, topic string, index, offset int, msgChan
 	config.Offsets.Initial = sarama.OffsetOldest
 	//config.Offsets.CommitInterval = 30 * time.Second
 
-	log.Println("zkAddr", zkaddr)
+	l.Info("zkAddr", zkaddr)
 	var zkNodes []string
 	zkNodes, config.Zookeeper.Chroot = kazoo.ParseConnectionString(zkaddr)
 
 	cg, err := consumergroup.JoinConsumerGroup(group, []string{topic}, zkNodes, config)
 	if err != nil {
-		log.Println("JoinConsumerGroup failed.", err)
+		l.Error("JoinConsumerGroup failed. %v", err)
 		return err
 	}
 
 	defer func() {
 		if err := cg.Close(); err != nil {
-			log.Println("cg close failed.", err)
+			l.Error("cg close failed. %v", err)
 		}
 	}()
 
@@ -134,7 +133,7 @@ func ConsumeGroup(zkaddr string, group, topic string, index, offset int, msgChan
 		select {
 		case msg := <-cg.Messages():
 			msgChan <- msg.Value
-			log.Printf("{index:%d} key: %s, value: %s, topic: %s, partition: %d, offset: %d", index,
+			l.Debug("{index:%d} key: %s, value: %s, topic: %s, partition: %d, offset: %d", index,
 				string(msg.Key), string(msg.Value), msg.Topic, msg.Partition, msg.Offset)
 			cg.CommitUpto(msg)
 		}

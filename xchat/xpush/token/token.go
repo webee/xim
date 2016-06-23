@@ -2,7 +2,6 @@ package token
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 	"xim/xchat/xpush/kafka"
 	"errors"
@@ -28,24 +27,24 @@ func InitRedisPool(addr, password string) (func()){
 }
 
 func GetUserDeviceInfo( user string) (*kafka.UserDeviceInfo, error) {
-	log.Println("GetUserDeviceInfo", user)
+	l.Info("GetUserDeviceInfo %s", user)
 	ret := &kafka.UserDeviceInfo{}
 
 	conn, err := redisConnPool.Get()
 	if err != nil {
-		log.Println("redisConnPool.Get failed.", err)
+		l.Error("redisConnPool.Get failed. %v", err)
 		return ret, err
 	}
 	defer redisConnPool.Put(conn)
 
 	reply, err := conn.Do("hget", USER_DEV_INFO_KEY, user)
 	if err != nil {
-		log.Println("redis.Send failed.", err)
+		l.Error("redis.Send failed. %v", err)
 		return ret, err
 	}
 
 	if reply == nil {
-		log.Println("user device info not found.", user)
+		l.Info("user device info not found. %s", user)
 		return  ret, errors.New("user device info not found.")
 	}
 
@@ -57,11 +56,11 @@ func GetUserDeviceInfo( user string) (*kafka.UserDeviceInfo, error) {
 		data = v
 	}
 
-	log.Println("GetUserDeviceInfo", string(data))
+	l.Info("GetUserDeviceInfo %s", string(data))
 
 	err = json.Unmarshal(data, &ret)
 	if err != nil {
-		log.Println("json.Unmarshal failed.", err)
+		l.Error("json.Unmarshal failed. %v", err)
 		return ret, err
 	}
 
@@ -69,25 +68,25 @@ func GetUserDeviceInfo( user string) (*kafka.UserDeviceInfo, error) {
 }
 
 func SetUserDeviceInfo(user string, udi *kafka.UserDeviceInfo) error {
-	log.Println("SetUserDeviceInfo", user, udi)
+	l.Info("SetUserDeviceInfo %s %v", user, *udi)
 	conn, err := redisConnPool.Get()
 	if err != nil {
-		log.Println("redisConnPool.Get failed.", err)
+		l.Error("redisConnPool.Get failed. %v", err)
 		return err
 	}
 	defer redisConnPool.Put(conn)
 
 	json, err := json.Marshal(udi)
 	if err != nil {
-		log.Println("json.Marshal failed.", err)
+		l.Error("json.Marshal failed. %v", err)
 		return err
 	}
 	reply, err := conn.Do("hset", USER_DEV_INFO_KEY, user, string(json))
 	if err != nil {
-		log.Println("redis.Send failed.", err)
+		l.Error("redis.Send failed. %v", err)
 		return err
 	}
-	log.Println(reply)
+	l.Info("%v", reply)
 
 	return nil
 }

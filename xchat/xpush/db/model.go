@@ -1,7 +1,6 @@
 package db
 
 import (
-	"xim/xchat/async/kafka"
 )
 
 type UserDeviceInfo struct {
