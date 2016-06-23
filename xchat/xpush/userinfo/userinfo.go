@@ -88,9 +88,12 @@ const (
 var (
 	UserInfoCache    = make(map[string]*UserInfo, 10000)
 	URL              = "http://test.engdd.com"
-	Produce_URL      = ""
 	UserPushInterval = make(map[string]PushInterval, 10000)
 )
+
+func InitUserInfoHost(host string)  {
+	URL = host
+}
 
 func CheckLastPushTime(user string, interval int64) (int64, bool) {
 	now := time.Now().Unix()

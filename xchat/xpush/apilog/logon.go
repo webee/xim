@@ -8,9 +8,12 @@ import (
 )
 
 const (
-	API_LOG_HOST    = "http://apilogdoc.engdd.com"
 	API_LOG_ONLINE  = "/apilog/usr/online"
 	API_LOG_OFFLINE = "/apilog/usr/offline"
+)
+
+var (
+	ApiLogHost = "http://apilogdoc.engdd.com"
 )
 
 type Log struct {
@@ -22,6 +25,10 @@ type Log struct {
 type OffLine struct {
 	User int
 	Info map[string]interface{}
+}
+
+func InitApiLogHost(host string) {
+	ApiLogHost = host
 }
 
 func ApiLog(uri, userId, source string, params map[string]interface{}) error {
@@ -36,7 +43,7 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 	} else {
 		v.Add("params", string(ret))
 	}
-	req, err := http.NewRequest("POST", API_LOG_HOST+uri+"?"+v.Encode(), nil)
+	req, err := http.NewRequest("POST", ApiLogHost+uri+"?"+v.Encode(), nil)
 	if err != nil {
 		log.Println("http.NewRequest failed.", err)
 		return err
