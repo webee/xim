@@ -33,7 +33,7 @@ func main() {
 	router.Init()
 	userKeys := map[string][]byte{
 		"":     userKey,
-		"test": csUserKey,
+		"test": testUserKey,
 		"cs":   csUserKey,
 	}
 	xchatRouter, err := router.NewXChatRouter(userKeys, args.brokerDebug, args.testing)
