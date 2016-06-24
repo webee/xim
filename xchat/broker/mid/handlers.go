@@ -515,12 +515,21 @@ func joinChat(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	// chatIdentity, err := ParseChatIdentity(args[0].(string))
-	// if err != nil {
-	// 	return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
-	// }
-	// chatID := chatIdentity.ID
-	// chatType := chatIdentity.Type
+	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	chatID := chatIdentity.ID
+	chatType := chatIdentity.Type
+
+	if err := xchatLogic.Call(types.RPCXChatJoinChat, &types.JoinChatArgs{
+		ChatID:   chatID,
+		ChatType: chatType,
+		Ns:       s.Ns,
+		User:     s.User,
+	}, nil); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
 
 	return &turnpike.CallResult{Args: []interface{}{true}}
 }
@@ -532,12 +541,21 @@ func exitChat(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	// chatIdentity, err := ParseChatIdentity(args[0].(string))
-	// if err != nil {
-	// 	return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
-	// }
-	// chatID := chatIdentity.ID
-	// chatType := chatIdentity.Type
+	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	chatID := chatIdentity.ID
+	chatType := chatIdentity.Type
+
+	if err := xchatLogic.Call(types.RPCXChatExitChat, &types.ExitChatArgs{
+		ChatID:   chatID,
+		ChatType: chatType,
+		Ns:       s.Ns,
+		User:     s.User,
+	}, nil); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
 
 	return &turnpike.CallResult{Args: []interface{}{true}}
 }
