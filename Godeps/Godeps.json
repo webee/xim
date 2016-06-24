@@ -120,43 +120,43 @@
 		},
 		{
 			"ImportPath": "github.com/labstack/echo",
-			"Comment": "v2.0.2-1-gfa80ead",
-			"Rev": "fa80ead5e2739b8e63076081e275d80c96cd7ad7"
+			"Comment": "v2.0.2-3-g08f7147",
+			"Rev": "08f714750872c45b6f3893a9803dc52822971ae3"
 		},
 		{
 			"ImportPath": "github.com/labstack/echo/engine",
-			"Comment": "v2.0.2-1-gfa80ead",
-			"Rev": "fa80ead5e2739b8e63076081e275d80c96cd7ad7"
+			"Comment": "v2.0.2-3-g08f7147",
+			"Rev": "08f714750872c45b6f3893a9803dc52822971ae3"
 		},
 		{
 			"ImportPath": "github.com/labstack/echo/engine/standard",
-			"Comment": "v2.0.2-1-gfa80ead",
-			"Rev": "fa80ead5e2739b8e63076081e275d80c96cd7ad7"
+			"Comment": "v2.0.2-3-g08f7147",
+			"Rev": "08f714750872c45b6f3893a9803dc52822971ae3"
 		},
 		{
 			"ImportPath": "github.com/labstack/echo/log",
-			"Comment": "v2.0.2-1-gfa80ead",
-			"Rev": "fa80ead5e2739b8e63076081e275d80c96cd7ad7"
+			"Comment": "v2.0.2-3-g08f7147",
+			"Rev": "08f714750872c45b6f3893a9803dc52822971ae3"
 		},
 		{
 			"ImportPath": "github.com/labstack/echo/middleware",
-			"Comment": "v2.0.2-1-gfa80ead",
-			"Rev": "fa80ead5e2739b8e63076081e275d80c96cd7ad7"
+			"Comment": "v2.0.2-3-g08f7147",
+			"Rev": "08f714750872c45b6f3893a9803dc52822971ae3"
 		},
 		{
 			"ImportPath": "github.com/labstack/gommon/bytes",
-			"Comment": "v0.0.3-54-gb5f03e3",
-			"Rev": "b5f03e345acd2096591b6f738cb8d2b9b3231c50"
+			"Comment": "v0.0.3-54-g722aa12",
+			"Rev": "722aa12d41c236ce78ff48eac1cafe0107ecdc9d"
 		},
 		{
 			"ImportPath": "github.com/labstack/gommon/color",
-			"Comment": "v0.0.3-54-gb5f03e3",
-			"Rev": "b5f03e345acd2096591b6f738cb8d2b9b3231c50"
+			"Comment": "v0.0.3-54-g722aa12",
+			"Rev": "722aa12d41c236ce78ff48eac1cafe0107ecdc9d"
 		},
 		{
 			"ImportPath": "github.com/labstack/gommon/log",
-			"Comment": "v0.0.3-54-gb5f03e3",
-			"Rev": "b5f03e345acd2096591b6f738cb8d2b9b3231c50"
+			"Comment": "v0.0.3-54-g722aa12",
+			"Rev": "722aa12d41c236ce78ff48eac1cafe0107ecdc9d"
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
@@ -170,8 +170,8 @@
 		},
 		{
 			"ImportPath": "github.com/mattn/go-colorable",
-			"Comment": "v0.0.4-1-ge8a10dd",
-			"Rev": "e8a10ddc7d2a7fe255f6fd7f501070a4cb62c183"
+			"Comment": "v0.0.5",
+			"Rev": "9056b7a9f2d1f2d96498d6d146acd1f9d5ed3d59"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-isatty",
