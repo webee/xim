@@ -30,6 +30,7 @@ func main() {
 	if args.debug {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
+	setupKeys()
 
 	defer db.InitDB(args.dbDriverName, args.dbDatasourceName, args.dbMaxConn)()
 	defer cache.InitCache(args.redisNetAddr, args.redisPassword, args.redisDB)()
