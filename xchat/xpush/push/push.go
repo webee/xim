@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	xg "xim/xchat/xpush/push/xg"
+	xg "xim/xchat/xpush/xg"
 	"xim/xchat/xpush/userinfo"
 	"xim/xchat/xpush/xinge"
 )
