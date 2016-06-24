@@ -17,7 +17,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"github.com/aiwuTech/httpclient"
+	"xim/xchat/xpush/xg/httpclient"
 	"log"
 	"net/url"
 	"sort"
