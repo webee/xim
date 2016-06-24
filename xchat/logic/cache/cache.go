@@ -46,7 +46,7 @@ func genUserKey(user string) string {
 }
 
 func genUserInstanceKey(user string, instanceID, sessionID uint64) string {
-	return fmt.Sprintf("x.u.%s.%s.%s", strconv.FormatUint(instanceID, 36), strconv.FormatUint(sessionID, 36), user)
+	return fmt.Sprintf("x.i.%s.%s.%s", strconv.FormatUint(instanceID, 36), strconv.FormatUint(sessionID, 36), user)
 }
 
 // ParseUserInstanceFromKey parse user instance from user instance key.
