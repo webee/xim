@@ -51,12 +51,7 @@ func Start(c *Config) {
 func setup(e *echo.Echo) {
 	gXChatAPI := e.Group("/xchat/api")
 
-	c := middleware.DefaultJWTAuthConfig
-	c.ContextKey = "token"
-	c.SigningKey = config.Key
-	c.Extractor = jwtFromHeaderOrQueryParam
-
-	gXChatAPI.Use(middleware.JWTAuthWithConfig(c))
+	gXChatAPI.Use(JWT("token", config.Key))
 	gXChatAPI.Use(RequireIsAdminUser)
 	gXChatAPI.GET("/test/", test)
 
@@ -65,15 +60,4 @@ func setup(e *echo.Echo) {
 
 func test(c echo.Context) error {
 	return c.String(http.StatusOK, "OK")
-}
-
-func jwtFromHeaderOrQueryParam(c echo.Context) (string, error) {
-	token, err := middleware.JWTFromHeader(c)
-	if err != nil {
-		token = c.FormValue("jwt")
-	}
-	if token != "" {
-		return token, nil
-	}
-	return "", err
 }

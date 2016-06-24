@@ -54,9 +54,10 @@ func (c *XChatHTTPClient) url(uri string, params ...interface{}) string {
 
 // NewToken request a new app token.
 func (c *XChatHTTPClient) NewToken() (string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
-	token.Claims["is_admin"] = true
-	token.Claims["exp"] = time.Now().Add(30 * 24 * time.Hour).Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"is_admin": true,
+		"exp":      time.Now().Add(30 * 24 * time.Hour).Unix(),
+	})
 	return token.SignedString(c.userKey)
 }
 
@@ -78,7 +79,8 @@ func (c *XChatHTTPClient) Token() string {
 			}
 			c.token = token
 			t, _ := jwt.Parse(token, nil)
-			c.tokenExp = int64(t.Claims["exp"].(float64))
+			claims := t.Claims.(jwt.MapClaims)
+			c.tokenExp = int64(claims["exp"].(float64))
 		}
 	}
 	return c.token

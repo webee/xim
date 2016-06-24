@@ -56,11 +56,11 @@ func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[
 		return nil, fmt.Errorf("unknown user namespace: %s", ns)
 	}
 
-	token, err := jwtutils.ParseToken(t, key)
+	claims, err := jwtutils.ParseToken(t, key)
 	if err != nil {
 		return nil, fmt.Errorf("parse token error: %s", err)
 	}
-	return map[string]interface{}{"user": encodeNSUser(ns, token.Claims["user"].(string)), "role": "user"}, nil
+	return map[string]interface{}{"user": encodeNSUser(ns, claims["user"].(string)), "role": "user"}, nil
 }
 
 func roleIsUser(details map[string]interface{}) bool {
