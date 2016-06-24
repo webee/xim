@@ -508,6 +508,40 @@ func exitRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 	return &turnpike.CallResult{Args: []interface{}{true}}
 }
 
+func joinChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatJoinChat, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+
+	// chatIdentity, err := ParseChatIdentity(args[0].(string))
+	// if err != nil {
+	// 	return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	// }
+	// chatID := chatIdentity.ID
+	// chatType := chatIdentity.Type
+
+	return &turnpike.CallResult{Args: []interface{}{true}}
+}
+
+func exitChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
+	l.Debug("[rpc]%s: %v, %+v\n", URIXChatExitChat, args, kwargs)
+	s := getSessionFromDetails(kwargs["details"], false)
+	if s == nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
+	}
+
+	// chatIdentity, err := ParseChatIdentity(args[0].(string))
+	// if err != nil {
+	// 	return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	// }
+	// chatID := chatIdentity.ID
+	// chatType := chatIdentity.Type
+
+	return &turnpike.CallResult{Args: []interface{}{true}}
+}
+
 // 客服
 // 获取我的客服会话
 func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {

@@ -25,6 +25,10 @@ const (
 	URIXChatFetchChatMsgs    = "xchat.user.chat.msgs"
 	URIXChatSyncChatRecv     = "xchat.user.chat.recv.sync"
 
+	// 会话
+	URIXChatJoinChat = "xchat.user.chat.join"
+	URIXChatExitChat = "xchat.user.chat.exit"
+
 	// 用户接收消息
 	URIXChatUserMsg = "xchat.user.%d.msg"
 

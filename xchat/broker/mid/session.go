@@ -94,11 +94,18 @@ func (s *Session) String() string {
 	return fmt.Sprintf("[%d]->%s", s.ID, s.User)
 }
 
+func encodeNSUser(ns, u string) (user string) {
+	if ns == "" {
+		return u
+	}
+	return ns + ":" + u
+}
+
 func newSession(id SessionID, ns, user string) *Session {
 	return &Session{
 		ID:         id,
 		Ns:         ns,
-		User:       user,
+		User:       encodeNSUser(ns, user),
 		pushStates: make(map[uint64]*PushState),
 		msgTopic:   fmt.Sprintf(URIXChatUserMsg, id),
 		rooms:      make(map[uint64]uint64),

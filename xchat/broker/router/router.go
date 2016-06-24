@@ -30,13 +30,6 @@ func decodeNSJwt(t string) (ns string, token string) {
 	return "", t
 }
 
-func encodeNSUser(ns, u string) (user string) {
-	if ns == "" {
-		return u
-	}
-	return ns + ":" + u
-}
-
 // jwt authentication.
 type jwtAuth struct {
 	keys map[string][]byte
@@ -60,7 +53,7 @@ func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[
 	if err != nil {
 		return nil, fmt.Errorf("parse token error: %s", err)
 	}
-	return map[string]interface{}{"user": encodeNSUser(ns, claims["user"].(string)), "role": "user", "ns": ns}, nil
+	return map[string]interface{}{"ns": ns, "user": claims["user"].(string), "role": "user"}, nil
 }
 
 func roleIsUser(details map[string]interface{}) bool {
