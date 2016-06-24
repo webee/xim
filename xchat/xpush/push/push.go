@@ -3,7 +3,7 @@ package push
 import (
 	"errors"
 	"fmt"
-	"github.com/LibiChai/xinge"
+	"xim/xchat/xpush/xinge"
 	"strings"
 	"time"
 	"xim/xchat/xpush/userinfo"
