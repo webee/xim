@@ -114,14 +114,14 @@ func (r *RPCXChat) FetchChatMessages(args *types.FetchChatMessagesArgs, reply *[
 func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage) (err error) {
 	switch args.Kind {
 	case types.MsgKindChat:
-		msg, err := SendChatMsg(args.ChatID, args.User, args.Msg)
+		msg, err := SendChatMsg(args.ChatID, args.ChatType, args.User, args.Msg)
 		if err != nil {
 			return err
 		}
 		*reply = *msg
 		return nil
 	case types.MsgKindChatNotify:
-		return SendChatNotifyMsg(args.ChatID, args.User, args.Msg)
+		return SendChatNotifyMsg(args.ChatID, args.ChatType, args.User, args.Msg)
 	}
 	return nil
 }

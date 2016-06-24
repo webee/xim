@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 	"xim/xchat/logic/db"
 	"xim/xchat/logic/mq"
@@ -87,12 +88,11 @@ const (
 )
 
 // SendChatMsg sends chat message.
-func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage, error) {
+func SendChatMsg(chatID uint64, chatType string, user string, msg string) (*pubtypes.ChatMessage, error) {
 	var updated int64
-	var chatType string
-	userChat, err := db.GetUserChat(user, chatID)
+	userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 	if err != nil {
-		chat, err2 := db.GetChat(chatID)
+		chat, err2 := db.GetChatWithType(chatID, chatType)
 		if err2 != nil {
 			return nil, fmt.Errorf("no permission: %s", err2.Error())
 		}
@@ -100,12 +100,8 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 		if chat.Type != "room" && user != CSUser {
 			return nil, fmt.Errorf("no permission: %s", err.Error())
 		}
-
-		// is room chat.
-		chatType = chat.Type
 	} else {
 		updated = userChat.Updated.Unix()
-		chatType = userChat.Type
 	}
 
 	message, err := db.NewMsg(chatID, chatType, user, msg)
@@ -124,9 +120,17 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 	}
 	// FIXME: implement custom service.
 	if m.ChatType == "cs" {
-		if m.User != CSUser {
-			SendChatMsg(m.ChatID, CSUser, fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}",
-				"您好，由于现在咨询人数较多，可能无法及时回复您，您可以先完整描述您的问题，我们会尽快为您解决~"))
+		if !strings.HasPrefix(m.User, "cs:") {
+			var ms []db.Member
+			// 判断是否有客服人员接入
+			ms, err = db.GetChatMembers(chatID)
+			if err == nil && len(ms) == 1 && ms[0].User == m.User {
+				// 还没接入
+				// TODO: remove this if custom service has implemented.
+				SendChatMsg(m.ChatID, m.ChatType, CSUser, fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}",
+					"您好，由于现在咨询人数较多，可能无法及时回复您，您可以先完整描述您的问题，我们会尽快为您解决~"))
+				go publishCSRequest(m.User, m.ChatID, types.MsgKindChat, m.ID, m.Msg, message.Ts)
+			}
 		}
 	}
 
@@ -140,23 +144,19 @@ func SendChatMsg(chatID uint64, user string, msg string) (*pubtypes.ChatMessage,
 }
 
 // SendChatNotifyMsg sends chat notify message.
-func SendChatNotifyMsg(chatID uint64, user string, msg string) error {
+func SendChatNotifyMsg(chatID uint64, chatType string, user string, msg string) error {
 	var updated int64
-	var chatType string
-	userChat, err := db.GetUserChat(user, chatID)
+	userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 	if err != nil {
-		chat, err2 := db.GetChat(chatID)
+		chat, err2 := db.GetChatWithType(chatID, chatType)
 		if err2 != nil {
 			return fmt.Errorf("no permission: %s", err2.Error())
 		}
 		if chat.Type != "room" {
 			return fmt.Errorf("no permission: %s", err.Error())
 		}
-		// is room chat.
-		chatType = chat.Type
 	} else {
 		updated = userChat.Updated.Unix()
-		chatType = userChat.Type
 	}
 
 	ts := time.Now()
