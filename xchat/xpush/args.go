@@ -13,9 +13,6 @@ type Args struct {
 	testing           bool
 	debug             bool
 	pprofAddr         string
-	dbDriverName      string
-	dbDatasourceName  string
-	dbMaxConn         int
 	kfkAddr           []string
 	zkAddr            string
 	redisAddr         string
