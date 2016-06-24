@@ -44,7 +44,7 @@ func init() {
 
 	flag.StringVar(&args.zkAddr, "zk-addr", "localhost:2181/kafka", "the zookeeper addr")
 	flag.StringVar(&args.redisAddr, "redis-addr", "localhost:6379", "the redis addr")
-	flag.BoolVar(&args.xgtest, "xgtest", true, "is xinge test environment")
+	flag.BoolVar(&args.xgtest, "xgtest", false, "is xinge test environment")
 	flag.Int64Var(&args.pushInterval, "push-interval", 60, "push offline msg interval")
 	flag.StringVar(&args.apiLogHost, "apilog-host", "http://apilogdoc.engdd.com", "api log host")
 	flag.StringVar(&args.userInfoHost, "user-info-host", "http://test.engdd.com", "user info host")
