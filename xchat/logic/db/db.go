@@ -1,6 +1,9 @@
 package db
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/jmoiron/sqlx"
 	// use pg driver
 	_ "github.com/lib/pq"
@@ -26,51 +29,49 @@ func GetChatMembers(chatID uint64) (members []Member, err error) {
 	return
 }
 
-// AddGroupMembers add users to group.
-func AddGroupMembers(chatID uint64, users []string) (err error) {
-	tx, err := db.Beginx()
-	if err != nil {
-		return err
-	}
-
-	chat := Chat{}
-	if err := tx.Get(&chat, `SELECT msg_id FROM xchat_chat where id=$1 and type='group'`, chatID); err != nil {
-		return err
-	}
-
-	for _, user := range users {
-		tx.Exec(`INSERT INTO xchat_member(chat_id, "user", created, cur_id) VALUES($1, $2, now(), $4)`, chatID, user, chat.MsgID)
-	}
-	tx.Exec(`UPDATE xchat_chat SET updated=now() WHERE id=$1`, chatID)
-
-	if err = tx.Commit(); err != nil {
-		if errRollback := tx.Rollback(); errRollback != nil {
-			err = errRollback
-			return
+// AddChatMembers add users to chat.
+func AddChatMembers(chatID uint64, users []string, limit int) (err error) {
+	return Transaction(db, func(tx *sqlx.Tx) error {
+		if limit > 0 {
+			var count int
+			if err := tx.Get(&count, `SELECT count(*) FROM xchat_member WHERE chat_id=$1`, chatID); err != nil {
+				return err
+			}
+			if count > limit {
+				return errors.New("too many members")
+			}
 		}
-	}
-	return
+
+		chat := Chat{}
+		if err := tx.Get(&chat, `SELECT msg_id FROM xchat_chat where id=$1`, chatID); err != nil {
+			return err
+		}
+
+		for _, user := range users {
+			if _, err := tx.Exec(`INSERT INTO xchat_member(chat_id, "user", joined, cur_id) VALUES($1, $2, now(), $3)`, chatID, user, chat.MsgID); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.Exec(`UPDATE xchat_chat SET updated=now() WHERE id=$1`, chatID); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // RemoveChatMembers removes users from chat.
 func RemoveChatMembers(chatID uint64, users []string) (err error) {
-	tx, err := db.Beginx()
-	if err != nil {
-		return err
-	}
-
-	for _, user := range users {
-		_, err = tx.Exec(`DELETE FROM xchat_member WHERE chat_id=$1 and "user"=$2`, chatID, user)
-	}
-	tx.Exec(`UPDATE xchat_chat SET updated=now() WHERE id=$1`, chatID)
-
-	if err = tx.Commit(); err != nil {
-		if errRollback := tx.Rollback(); errRollback != nil {
-			err = errRollback
-			return
+	return Transaction(db, func(tx *sqlx.Tx) error {
+		for _, user := range users {
+			if _, err = tx.Exec(`DELETE FROM xchat_member WHERE chat_id=$1 and "user"=$2`, chatID, user); err != nil {
+				return err
+			}
 		}
-	}
-	return
+		if _, err := tx.Exec(`UPDATE xchat_chat SET updated=now() WHERE id=$1`, chatID); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // IsRoomChat judges whether chat is own to room.
@@ -164,22 +165,22 @@ func GetOrCreateNewRoomChatIDs(roomID uint64, chatIDs []uint64) (ids []uint64, e
 	}
 
 	// new chat.
-	tx, err := db.Beginx()
-	if err != nil {
-		return
-	}
-
 	var chatID uint64
-	tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, is_deleted, created, updated) VALUES('room', $1, '_room', 0, false, now(), now()) RETURNING id`, roomID)
-	var area uint32
-	tx.Get(&area, `SELECT count(area) FROM xchat_roomchat WHERE room_id=$1`, roomID)
-	tx.Exec(`INSERT INTO xchat_roomchat(room_id, area, chat_id) VALUES($1, $2, $3)`, roomID, area, chatID)
-
-	if err = tx.Commit(); err != nil {
-		if errRollback := tx.Rollback(); errRollback != nil {
-			err = errRollback
-			return
+	err = Transaction(db, func(tx *sqlx.Tx) (err error) {
+		if err = tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, is_deleted, created, updated) VALUES('room', $1, '_room', 0, false, now(), now()) RETURNING id`, roomID); err != nil {
+			return err
 		}
+		var area uint32
+		if err = tx.Get(&area, `SELECT count(area) FROM xchat_roomchat WHERE room_id=$1`, roomID); err != nil {
+			return err
+		}
+		if _, err = tx.Exec(`INSERT INTO xchat_roomchat(room_id, area, chat_id) VALUES($1, $2, $3)`, roomID, area, chatID); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	ids = append(ids, chatID)
 	return
@@ -193,32 +194,45 @@ func SyncUserChatRecv(user string, chatID uint64, msgID uint64) (err error) {
 
 // NewMsg insert a new message.
 func NewMsg(chatID uint64, chatType string, user string, msg string) (message *Message, err error) {
-	// 插入消息
+	err = Transaction(db, func(tx *sqlx.Tx) error {
+		message = &Message{
+			ChatID:   chatID,
+			ChatType: chatType,
+			User:     user,
+			Msg:      msg,
+		}
+
+		if err = tx.Get(message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 RETURNING msg_id as id`, chatID); err != nil {
+			return err
+		}
+		if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, chat_type, id, uid, ts, msg) values($1, $2, $3, $4, now(), $5) RETURNING ts`, chatID, chatType, message.ID, user, msg); err != nil {
+			return err
+		}
+		return nil
+	})
+	return
+}
+
+// Transaction is a transaction wrapper.
+func Transaction(db *sqlx.DB, txFunc func(*sqlx.Tx) error) (err error) {
 	tx, err := db.Beginx()
 	if err != nil {
 		return
 	}
-
-	message = &Message{
-		ChatID:   chatID,
-		ChatType: chatType,
-		User:     user,
-		Msg:      msg,
-	}
-
-	if err = tx.Get(message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 RETURNING msg_id as id`, chatID); err != nil {
-		return
-	}
-
-	if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, chat_type, id, uid, ts, msg) values($1, $2, $3, $4, now(), $5) RETURNING ts`, chatID, chatType, message.ID, user, msg); err != nil {
-		return
-	}
-
-	if err = tx.Commit(); err != nil {
-		if errRollback := tx.Rollback(); errRollback != nil {
-			err = errRollback
+	defer func() {
+		if p := recover(); p != nil {
+			switch p := p.(type) {
+			case error:
+				err = p
+			default:
+				err = fmt.Errorf("%s", p)
+			}
+		}
+		if err != nil {
+			tx.Rollback()
 			return
 		}
-	}
-	return
+		err = tx.Commit()
+	}()
+	return txFunc(tx)
 }

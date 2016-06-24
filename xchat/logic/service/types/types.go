@@ -99,6 +99,22 @@ type SyncOnlineUsersArgs struct {
 	Users      map[uint64]string
 }
 
+// JoinChatArgs is the arguments of JoinChat.
+type JoinChatArgs struct {
+	ChatID   uint64
+	ChatType string
+	Ns       string
+	User     string
+}
+
+// ExitChatArgs is the arguments of ExitChat.
+type ExitChatArgs struct {
+	ChatID   uint64
+	ChatType string
+	Ns       string
+	User     string
+}
+
 // FetchNewRoomChatIDs is the arguments of FetchNewRoomChatIDs
 type FetchNewRoomChatIDs struct {
 	RoomID  uint64
@@ -119,4 +135,6 @@ const (
 	RPCXChatSyncUserChatRecv      = "RPCXChat.SyncUserChatRecv"
 	RPCXChatFetchChatMembers      = "RPCXChat.FetchChatMembers"
 	RPCXChatFetchNewRoomChatIDs   = "RPCXChat.FetchNewRoomChatIDs"
+	RPCXChatJoinChat              = "RPCXChat.JoinChat"
+	RPCXChatExitChat              = "RPCXChat.ExitChat"
 )

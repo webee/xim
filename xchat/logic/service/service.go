@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 	"xim/xchat/logic/db"
@@ -9,6 +10,19 @@ import (
 	"xim/xchat/logic/pub"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
+)
+
+// constants
+const (
+	NSDefault = ""
+	NSCs      = "cs"
+	NSTest    = "test"
+)
+
+// errors
+var (
+	ErrNoPermission     = errors.New("no permission")
+	ErrIllegalOperation = errors.New("illegal operation")
 )
 
 // Ping is a test service.
@@ -189,4 +203,43 @@ func PubUserStatus(instanceID, sessionID uint64, user string, status string, inf
 // FetchNewRoomChatIDs fetch room chats' ids.
 func FetchNewRoomChatIDs(roomID uint64, chatIDs []uint64) ([]uint64, error) {
 	return db.GetOrCreateNewRoomChatIDs(roomID, chatIDs)
+}
+
+// JoinChat add user to chat.
+func JoinChat(chatID uint64, chatType string, ns, user string) error {
+	var limit int
+	// 加入规则
+	// 只有cs和group会话可以加入
+	// cs只可以加入cs会话
+	switch chatType {
+	case types.ChatTypeCS:
+		if ns != NSCs {
+			return ErrNoPermission
+		}
+		limit = 1
+	case types.ChatTypeGroup:
+		if ns == NSCs {
+			return ErrNoPermission
+		}
+	default:
+		return ErrNoPermission
+	}
+
+	return db.AddChatMembers(chatID, []string{user}, limit)
+}
+
+// ExitChat remove user from chat.
+func ExitChat(chatID uint64, chatType string, ns, user string) error {
+	// 退出规则
+	// 只有cs和group会话可以既出
+	switch chatType {
+	case types.ChatTypeCS:
+		if ns != NSCs {
+			return ErrIllegalOperation
+		}
+	case types.ChatTypeGroup:
+	default:
+		return ErrIllegalOperation
+	}
+	return db.RemoveChatMembers(chatID, []string{user})
 }
