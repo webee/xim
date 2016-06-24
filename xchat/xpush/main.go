@@ -31,11 +31,12 @@ func main() {
 	if args.debug {
 		pprofutils.StartPProfListen(args.pprofAddr)
 	}
+	setupKeys()
 
 	apilog.InitApiLogHost(args.apiLogHost)
 	userinfo.InitUserInfoHost(args.userInfoHost)
 
-	defer token.InitRedisPool(args.redisAddr, "")()
+	defer token.InitRedisPool(args.redisAddr, args.redisPassword)()
 	push.NewPushClient(args.xgtest)
 
 	ConsumeMsg()

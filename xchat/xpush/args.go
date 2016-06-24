@@ -3,24 +3,28 @@ package main
 import (
 	"flag"
 	"log"
+	"path"
 	"strings"
+	"xim/utils/envutils"
 )
 
 // Args is app's arguments.
 type Args struct {
-	testing          bool
-	debug            bool
-	pprofAddr        string
-	dbDriverName     string
-	dbDatasourceName string
-	dbMaxConn        int
-	kfkAddr          []string
-	zkAddr           string
-	redisAddr        string
-	xgtest           bool
-	pushInterval     int64
-	apiLogHost       string
-	userInfoHost     string
+	testing           bool
+	debug             bool
+	pprofAddr         string
+	dbDriverName      string
+	dbDatasourceName  string
+	dbMaxConn         int
+	kfkAddr           []string
+	zkAddr            string
+	redisAddr         string
+	xgtest            bool
+	pushInterval      int64
+	apiLogHost        string
+	userInfoHost      string
+	redisPassword     string
+	redisPasswordPath string
 }
 
 var (
@@ -28,6 +32,7 @@ var (
 )
 
 func init() {
+	env := envutils.GetEnvDefault("XCHAT_ENV", "dev")
 	flag.BoolVar(&args.testing, "testing", false, "whether to serv a testing page.")
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6061", "debug pprof http address.")
@@ -43,4 +48,5 @@ func init() {
 	flag.Int64Var(&args.pushInterval, "push-interval", 60, "push offline msg interval")
 	flag.StringVar(&args.apiLogHost, "apilog-host", "http://apilogdoc.engdd.com", "api log host")
 	flag.StringVar(&args.userInfoHost, "user-info-host", "http://test.engdd.com", "user info host")
+	flag.StringVar(&args.redisPasswordPath, "redis-password-path", path.Join("conf", env, "xchat/redis_password.txt"), "redis password file path.")
 }
