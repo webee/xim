@@ -17,12 +17,12 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"xim/xchat/xpush/xg/httpclient"
 	"log"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
+	"xim/xchat/xpush/xg/httpclient"
 )
 
 type Request struct {
