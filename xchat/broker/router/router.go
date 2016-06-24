@@ -60,7 +60,7 @@ func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[
 	if err != nil {
 		return nil, fmt.Errorf("parse token error: %s", err)
 	}
-	return map[string]interface{}{"user": encodeNSUser(ns, claims["user"].(string)), "role": "user"}, nil
+	return map[string]interface{}{"user": encodeNSUser(ns, claims["user"].(string)), "role": "user", "ns": ns}, nil
 }
 
 func roleIsUser(details map[string]interface{}) bool {

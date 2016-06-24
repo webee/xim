@@ -80,6 +80,7 @@ func (p *PushState) getTask(id uint64, isSender bool) (task chan []*Message, las
 type Session struct {
 	sync.Mutex
 	ID         SessionID
+	Ns         string
 	User       string
 	pushStates map[uint64]*PushState
 	msgTopic   string
@@ -93,9 +94,10 @@ func (s *Session) String() string {
 	return fmt.Sprintf("[%d]->%s", s.ID, s.User)
 }
 
-func newSession(id SessionID, user string) *Session {
+func newSession(id SessionID, ns, user string) *Session {
 	return &Session{
 		ID:         id,
+		Ns:         ns,
 		User:       user,
 		pushStates: make(map[uint64]*PushState),
 		msgTopic:   fmt.Sprintf(URIXChatUserMsg, id),

@@ -18,7 +18,7 @@ func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
 		return s
 	}
 	if forceCreate {
-		return newSession(id, details["user"].(string))
+		return newSession(id, details["ns"].(string), details["user"].(string))
 	}
 	return nil
 }
