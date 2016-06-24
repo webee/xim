@@ -63,7 +63,13 @@ func ConsumeMsg() {
 				if err != nil {
 					l.Error("GetUserDeviceInfo failed. %v", err)
 				} else {
-					err = push.PushOfflineMsg(msg.From, msg.User, udi.Source, udi.DeviceToken, msg.ChatId, args.pushInterval)
+					var env byte
+					if args.xgtest {
+						env = 2
+					} else {
+						env = 1
+					}
+					err = push.PushOfflineMsg(msg.From, msg.User, udi.Source, udi.DeviceToken, msg.ChatId, args.pushInterval, env)
 					if err != nil {
 						l.Error("push.PushOfflineMsg failed. %v", err)
 					}
