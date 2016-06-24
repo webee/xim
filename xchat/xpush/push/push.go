@@ -3,9 +3,9 @@ package push
 import (
 	"errors"
 	"fmt"
-	xg "xim/xchat/xpush/xg"
 	"strings"
 	"time"
+	xg "xim/xchat/xpush/push/xg"
 	"xim/xchat/xpush/userinfo"
 	"xim/xchat/xpush/xinge"
 )
@@ -75,7 +75,7 @@ func PushOfflineMsg(from, to, source, token string, chatId, interval int64, env 
 		}
 		return nil
 	} else {
-		aps := &xg.ApsAttr{Alert: userName + "发来一条消息", Badge: 1}
+		aps := &xg.ApsAttr{Alert: userName + "发来一条消息", Badge: 1, Sound: "bingbong.aiff"}
 		message := &xg.IosMessage{aps, map[string]interface{}{"chat_id": szChatId}}
 		reqPush := &xg.ReqPush{
 			PushType:     xg.PushType_single_device,
