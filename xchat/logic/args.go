@@ -25,6 +25,7 @@ type Args struct {
 	redisPassword     string
 	redisPasswordPath string
 	redisDB           int
+	poolSize          int
 }
 
 var (
@@ -58,4 +59,5 @@ func init() {
 	flag.StringVar(&args.redisNetAddr, "redis-net-addr", "tcp@localhost:6379", "redis network address.")
 	flag.StringVar(&args.redisPasswordPath, "redis-password-path", path.Join("conf", env, "xchat/redis_password.txt"), "redis password file path.")
 	flag.IntVar(&args.redisDB, "redis-db", 1, "redis db.")
+	flag.IntVar(&args.poolSize, "pool-size", 64, "cache pool size.")
 }

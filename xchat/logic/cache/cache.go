@@ -79,13 +79,13 @@ var (
 )
 
 // InitCache initialize the cache.
-func InitCache(redisNetAddr, redisPassword string, db int) (close func()) {
+func InitCache(redisNetAddr, redisPassword string, db int, poolSize int) (close func()) {
 	netAddr, err := netutils.ParseNetAddr(redisNetAddr)
 	if err != nil {
 		l.Critical("bad redis net addr: %s", redisNetAddr)
 		os.Exit(1)
 	}
-	redisConnPool = dbutils.NewRedisConnPool(netAddr, redisPassword, db, 64, 128, 30*time.Second)
+	redisConnPool = dbutils.NewRedisConnPool(netAddr, redisPassword, db, poolSize, 2*poolSize, 30*time.Second)
 
 	go running()
 

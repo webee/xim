@@ -33,7 +33,7 @@ func main() {
 	setupKeys()
 
 	defer db.InitDB(args.dbDriverName, args.dbDatasourceName, args.dbMaxConn)()
-	defer cache.InitCache(args.redisNetAddr, args.redisPassword, args.redisDB)()
+	defer cache.InitCache(args.redisNetAddr, args.redisPassword, args.redisDB, args.poolSize)()
 	defer mq.InitMQ(args.kafkaAddrs.List())()
 	defer pub.StartPublisher(args.pubAddrs.List(), args.dial)()
 	defer nanorpc.StartRPCServer(args.addrs.List(), args.dial, new(service.RPCXChat))()
