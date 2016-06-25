@@ -36,7 +36,7 @@ func main() {
 	apilog.InitApiLogHost(args.apiLogHost)
 	userinfo.InitUserInfoHost(args.userInfoHost)
 
-	defer token.InitRedisPool(args.redisAddr, args.redisPassword)()
+	defer token.InitRedisPool(args.redisAddr, args.redisPassword, args.poolSize)()
 	push.NewPushClient(args.xgtest)
 
 	ConsumeMsg()

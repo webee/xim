@@ -22,6 +22,7 @@ type Args struct {
 	userInfoHost      string
 	redisPassword     string
 	redisPasswordPath string
+	poolSize          int
 }
 
 var (
@@ -46,4 +47,5 @@ func init() {
 	flag.StringVar(&args.apiLogHost, "apilog-host", "http://apilogdoc.engdd.com", "api log host")
 	flag.StringVar(&args.userInfoHost, "user-info-host", "http://test.engdd.com", "user info host")
 	flag.StringVar(&args.redisPasswordPath, "redis-password-path", path.Join("conf", env, "xchat/redis_password.txt"), "redis password file path.")
+	flag.IntVar(&args.poolSize, "pool-size", 32, "cache pool size.")
 }

@@ -2,23 +2,24 @@ package token
 
 import (
 	"encoding/json"
-	"time"
-	"xim/xchat/xpush/kafka"
 	"errors"
+	"time"
 	"xim/utils/dbutils"
 	"xim/utils/netutils"
+	"xim/xchat/xpush/kafka"
 )
 
 const (
 	USER_DEV_INFO_KEY = "user:dev:info"
 )
+
 var (
 	redisConnPool *dbutils.RedisConnPool
 )
 
-func InitRedisPool(addr, password string) (func()){
-	netAddr := &netutils.NetAddr{Network:"tcp", LAddr:addr}
-	redisConnPool = dbutils.NewRedisConnPool(netAddr, password, 0, 32, 64, 30 * time.Second)
+func InitRedisPool(addr, password string, poolSize int) func() {
+	netAddr := &netutils.NetAddr{Network: "tcp", LAddr: addr}
+	redisConnPool = dbutils.NewRedisConnPool(netAddr, password, 0, poolSize, 2*poolSize, 30*time.Second)
 	return func() {
 		if !redisConnPool.IsClosed() {
 			redisConnPool.Close()
@@ -26,7 +27,7 @@ func InitRedisPool(addr, password string) (func()){
 	}
 }
 
-func GetUserDeviceInfo( user string) (*kafka.UserDeviceInfo, error) {
+func GetUserDeviceInfo(user string) (*kafka.UserDeviceInfo, error) {
 	l.Info("GetUserDeviceInfo %s", user)
 	ret := &kafka.UserDeviceInfo{}
 
@@ -45,7 +46,7 @@ func GetUserDeviceInfo( user string) (*kafka.UserDeviceInfo, error) {
 
 	if reply == nil {
 		l.Info("user device info not found. %s", user)
-		return  ret, errors.New("user device info not found.")
+		return ret, errors.New("user device info not found.")
 	}
 
 	var data []byte
