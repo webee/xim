@@ -29,6 +29,9 @@ type RedisConnPool struct {
 func NewRedisConnPool(netAddr *netutils.NetAddr, password string, db, capacity, maxCap int, idleTimeout time.Duration) *RedisConnPool {
 	p := pools.NewResourcePool(func() (pools.Resource, error) {
 		c, err := redis.Dial(netAddr.Network, netAddr.LAddr, redis.DialPassword(password))
+		if err != nil {
+			return nil, err
+		}
 		conn := &RedisConn{c}
 		_, err = conn.Do("SELECT", db)
 		if err != nil {
