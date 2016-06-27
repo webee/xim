@@ -1,4 +1,4 @@
-package token
+package db
 
 import (
 	"xim/xchat/logic/logger"
