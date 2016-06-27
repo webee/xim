@@ -2,6 +2,7 @@ package mid
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	pubtypes "xim/xchat/logic/pub/types"
 )
@@ -290,4 +291,15 @@ func GetOnlineSessionUsers() map[uint64]string {
 		}
 	}
 	return users
+}
+
+func copyCurrentSessions() map[string]string {
+	sessLock.RLock()
+	defer sessLock.RUnlock()
+	res := make(map[string]string)
+	for k, s := range sessions {
+		res[strconv.FormatUint(uint64(k), 10)] = s.User
+	}
+
+	return res
 }

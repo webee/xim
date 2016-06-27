@@ -81,6 +81,11 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 
 		return &turnpike.CallResult{Args: []interface{}{true, ids}}
 	}
+	if method == "sessions" {
+		v := copyCurrentSessions()
+		return &turnpike.CallResult{Args: []interface{}{true, v}}
+	}
+
 	payloadSize := 0
 	if len(args) > 0 {
 		payloadSize = int(args[1].(float64))
