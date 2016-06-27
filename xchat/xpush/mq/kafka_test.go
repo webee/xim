@@ -52,3 +52,12 @@ func TestAsyncProduce2(t *testing.T) {
 	}
 	log.Println(string(ret))
 }
+
+func TestConsumeGroup(t *testing.T) {
+	msgChan := make(chan []byte, 1024)
+	ConsumeGroup("localhost:2181/kafka", CONSUME_MSG_GROUP, XCHAT_MSG_TOPIC, 0, 0, msgChan)
+	for {
+		msg := <- msgChan
+		log.Println(msg)
+	}
+}

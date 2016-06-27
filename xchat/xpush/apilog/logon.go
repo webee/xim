@@ -62,9 +62,13 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 
 	decoder := json.NewDecoder(resp.Body)
 	var result map[string]interface{}
-	decoder.Decode(&result)
+	err = decoder.Decode(&result)
+	if err != nil {
+		l.Warning("deocde apilog response failed. %s", err.Error())
+		return err
+	}
 
-	l.Debug("%v", result)
+	l.Info("%v", result)
 
 	return nil
 }

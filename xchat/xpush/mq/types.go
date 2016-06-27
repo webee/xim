@@ -36,6 +36,7 @@ type MsgInfo struct {
 	ChatType string `json:"chat_type"`
 	From     string `json:"from"`
 	Msg      string `json:"msg"`
+	Ts       string `json:"ts"`
 }
 
 //
