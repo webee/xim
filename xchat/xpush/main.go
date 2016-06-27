@@ -34,13 +34,11 @@ func main() {
 	}
 	setupKeys()
 
-	l.Info(args.redisPassword)
-
 	apilog.InitAPILogHost(args.apiLogHost)
 	userinfo.InitUserInfoHost(args.userInfoHost)
 
 	defer db.InitRedisPool(args.redisAddr, args.redisPassword, args.poolSize)()
-	if args.testing {
+	if !args.testing {
 		push.NewPushClient(push.AndroidTest, push.IosTest)
 	} else {
 		push.NewPushClient(push.AndroidProd, push.IosProd)
@@ -80,7 +78,7 @@ func consumeMsg() {
 						l.Warning("time.Parse failed. %s", err.Error())
 						continue
 					}
-					l.Info("%d %d", timestamp.Unix(), time.Now().Unix())
+
 					if timestamp.Unix()+int64(60) > time.Now().Unix() {
 						content, err := immsg.ParseMsg([]byte(msg.Msg))
 						err = push.OfflineMsg(msg.From, msg.User, udi.Source,

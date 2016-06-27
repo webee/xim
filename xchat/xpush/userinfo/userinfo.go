@@ -164,7 +164,7 @@ func GetUserName(uid string) (string, error) {
 	if ok {
 		// 检查缓存是否过期
 		if ui.update+userNameCacheValidPeriod > time.Now().Unix() {
-			l.Debug("hit the cache", uid, ui.Name)
+			l.Debug("hit the cache, %s %s", uid, ui.Name)
 			return ui.Name, nil
 		}
 	}
