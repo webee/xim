@@ -38,7 +38,7 @@ func main() {
 	userinfo.InitUserInfoHost(args.userInfoHost)
 
 	defer db.InitRedisPool(args.redisAddr, args.redisPassword, args.poolSize)()
-	if !args.testing {
+	if args.testing {
 		push.NewPushClient(push.AndroidTest, push.IosTest)
 	} else {
 		push.NewPushClient(push.AndroidProd, push.IosProd)
@@ -61,32 +61,30 @@ func consumeMsg() {
 	go mq.ConsumeGroup(args.zkAddr, mq.ConsumeMsgGroup, mq.XchatMsgTopic, 0, 0, consumeMsgChan)
 	go func() {
 		for {
-			select {
-			case data := <-consumeMsgChan:
-				l.Info("###consumeMsg###%s", string(data))
-				msg, err := mq.UnmarshalMsgInfo(data)
+			data := <-consumeMsgChan
+			l.Info("###consumeMsg###%s", string(data))
+			msg, err := mq.UnmarshalMsgInfo(data)
+			if err != nil {
+				l.Warning("mq.UnmarshalMsgInfo failed. %s", err.Error())
+				continue
+			}
+			udi, err := db.GetUserDeviceInfo(msg.User)
+			if err != nil {
+				l.Warning("GetUserDeviceInfo failed. %s", err.Error())
+			} else {
+				timestamp, err := time.Parse(time.RFC3339Nano, msg.Ts)
 				if err != nil {
-					l.Warning("mq.UnmarshalMsgInfo failed. %s", err.Error())
+					l.Warning("time.Parse failed. %s", err.Error())
 					continue
 				}
-				udi, err := db.GetUserDeviceInfo(msg.User)
-				if err != nil {
-					l.Warning("GetUserDeviceInfo failed. %s", err.Error())
-				} else {
-					timestamp, err := time.Parse(time.RFC3339Nano, msg.Ts)
-					if err != nil {
-						l.Warning("time.Parse failed. %s", err.Error())
-						continue
-					}
 
-					if timestamp.Unix()+int64(60) > time.Now().Unix() {
-						content, err := immsg.ParseMsg([]byte(msg.Msg))
-						err = push.OfflineMsg(msg.From, msg.User, udi.Source,
-							udi.DeviceToken, content, msg.ChatID,
-							args.pushInterval, env)
-						if err != nil {
-							l.Warning("push.PushOfflineMsg failed. %s", err.Error())
-						}
+				if timestamp.Unix()+int64(60) > time.Now().Unix() {
+					content, err := immsg.ParseMsg([]byte(msg.Msg))
+					err = push.OfflineMsg(msg.From, msg.User, udi.Source,
+						udi.DeviceToken, content, msg.ChatID,
+						args.pushInterval, env)
+					if err != nil {
+						l.Warning("push.PushOfflineMsg failed. %s", err.Error())
 					}
 				}
 			}
