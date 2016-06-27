@@ -3,7 +3,6 @@ package immsg
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 )
 
 // message type
@@ -29,17 +28,20 @@ const (
 // ParseMsg parse im message.
 func ParseMsg(data []byte) (msg string, err error) {
 	var m map[string]interface{}
-	json.Unmarshal(data, &m)
-	fmt.Println(m)
+	err = json.Unmarshal(data, &m)
+	if err != nil {
+		return msg, err
+	}
+
 	msgType, ok := m["messageType"]
 	if !ok {
 		return msg, errors.New("no message type")
 	}
-	t, ok := msgType.(int)
+	t, ok := msgType.(float64)
 	if !ok {
 		return msg, errors.New("wrong messag type")
 	}
-	switch t {
+	switch int(t) {
 	case MHIMMessageText:
 		msg, ok = m["text"].(string)
 		if !ok {
@@ -47,6 +49,8 @@ func ParseMsg(data []byte) (msg string, err error) {
 		}
 	case MHIMMessageImage:
 		msg = "[图片]"
+	case MHIMMessageLocation:
+		msg = "[地理位置]"
 	case MHIMMessageVoice:
 		msg = "[语音]"
 	case MHIMMessageVideo:
