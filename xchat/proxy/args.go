@@ -20,11 +20,11 @@ type Args struct {
 
 var (
 	args = Args{
-		pubAddrs: argsutils.NewStringSlice("tcp://:16783", "ipc:///tmp/xchat.proxy.pub.sock"),
-		subAddrs: argsutils.NewStringSlice("tcp://:16784", "ipc:///tmp/xchat.proxy.sub.sock"),
+		pubAddrs: argsutils.NewStringSlice("tcp://:16783"),
+		subAddrs: argsutils.NewStringSlice("tcp://:16784"),
 
-		repAddrs: argsutils.NewStringSlice("tcp://:16787", "ipc:///tmp/xchat.proxy.rep.sock"),
-		reqAddrs: argsutils.NewStringSlice("tcp://:16788", "ipc:///tmp/xchat.proxy.req.sock"),
+		repAddrs: argsutils.NewStringSlice("tcp://:16787"),
+		reqAddrs: argsutils.NewStringSlice("tcp://:16788"),
 	}
 )
 
