@@ -39,8 +39,10 @@ func main() {
 
 	defer db.InitRedisPool(args.redisAddr, args.redisPassword, args.poolSize)()
 	if args.testing {
+		l.Info("testing push")
 		push.NewPushClient(push.AndroidTest, push.IosTest)
 	} else {
+		l.Info("product push")
 		push.NewPushClient(push.AndroidProd, push.IosProd)
 	}
 	consumeMsg()
