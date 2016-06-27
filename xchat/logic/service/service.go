@@ -127,8 +127,8 @@ func SendChatMsg(chatID uint64, chatType string, user string, msg string) (*pubt
 			if err == nil && len(ms) == 1 && ms[0].User == m.User {
 				// 还没接入
 				// TODO: remove this if custom service has implemented.
-				SendChatMsg(m.ChatID, m.ChatType, CSUser, fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}",
-					"您好，由于现在咨询人数较多，可能无法及时回复您，您可以先完整描述您的问题，我们会尽快为您解决~"))
+				//SendChatMsg(m.ChatID, m.ChatType, CSUser, fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}",
+				//	"您好，由于现在咨询人数较多，可能无法及时回复您，您可以先完整描述您的问题，我们会尽快为您解决~"))
 				go publishCSRequest(m.User, m.ChatID, types.MsgKindChat, m.ID, m.Msg, message.Ts)
 			}
 		}
