@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"xim/xchat/xpush/userinfo"
 )
 
 const (
@@ -42,7 +43,8 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 	} else {
 		v.Add("params", string(ret))
 	}
-	req, err := http.NewRequest("POST", ApiLogHost+uri+"?"+v.Encode(), nil)
+	signed := userinfo.SecuritySuffix(uri+"?"+v.Encode())
+	req, err := http.NewRequest("POST", ApiLogHost+signed, nil)
 	if err != nil {
 		l.Error("http.NewRequest failed. %v", err)
 		return err

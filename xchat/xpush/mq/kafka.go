@@ -1,4 +1,4 @@
-package kafka
+package mq
 
 import (
 	"github.com/Shopify/sarama"

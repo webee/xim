@@ -1,4 +1,4 @@
-package token
+package db
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"time"
 	"xim/utils/dbutils"
 	"xim/utils/netutils"
-	"xim/xchat/xpush/kafka"
+	"xim/xchat/xpush/mq"
 )
 
 const (
@@ -27,9 +27,9 @@ func InitRedisPool(addr, password string, poolSize int) func() {
 	}
 }
 
-func GetUserDeviceInfo(user string) (*kafka.UserDeviceInfo, error) {
+func GetUserDeviceInfo(user string) (*mq.UserDeviceInfo, error) {
 	l.Info("GetUserDeviceInfo %s", user)
-	ret := &kafka.UserDeviceInfo{}
+	ret := &mq.UserDeviceInfo{}
 
 	conn, err := redisConnPool.Get()
 	if err != nil {
@@ -68,7 +68,7 @@ func GetUserDeviceInfo(user string) (*kafka.UserDeviceInfo, error) {
 	return ret, nil
 }
 
-func SetUserDeviceInfo(user string, udi *kafka.UserDeviceInfo) error {
+func SetUserDeviceInfo(user string, udi *mq.UserDeviceInfo) error {
 	l.Info("SetUserDeviceInfo %s %v", user, *udi)
 	conn, err := redisConnPool.Get()
 	if err != nil {

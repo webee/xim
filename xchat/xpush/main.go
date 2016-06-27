@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 	"xim/xchat/xpush/apilog"
-	"xim/xchat/xpush/kafka"
+	"xim/xchat/xpush/mq"
 	"xim/xchat/xpush/push"
-	"xim/xchat/xpush/token"
+	"xim/xchat/xpush/db"
 	"xim/xchat/xpush/userinfo"
 )
 
@@ -36,7 +36,7 @@ func main() {
 	apilog.InitApiLogHost(args.apiLogHost)
 	userinfo.InitUserInfoHost(args.userInfoHost)
 
-	defer token.InitRedisPool(args.redisAddr, args.redisPassword, args.poolSize)()
+	defer db.InitRedisPool(args.redisAddr, args.redisPassword, args.poolSize)()
 	push.NewPushClient(args.xgtest)
 
 	ConsumeMsg()
@@ -48,18 +48,18 @@ func main() {
 // 消费消息
 func ConsumeMsg() {
 	consumeMsgChan := make(chan []byte, 1024)
-	go kafka.ConsumeGroup(args.zkAddr, kafka.CONSUME_MSG_GROUP, kafka.XCHAT_MSG_TOPIC, 0, 0, consumeMsgChan)
+	go mq.ConsumeGroup(args.zkAddr, mq.CONSUME_MSG_GROUP, mq.XCHAT_MSG_TOPIC, 0, 0, consumeMsgChan)
 	go func() {
 		for {
 			select {
 			case data := <-consumeMsgChan:
 				l.Info("###consumeMsg###%s", string(data))
-				msg, err := kafka.UnmarshalMsgInfo(data)
+				msg, err := mq.UnmarshalMsgInfo(data)
 				if err != nil {
-					l.Error("kafka.UnmarshalMsgInfo failed. %v", err)
+					l.Error("mq.UnmarshalMsgInfo failed. %v", err)
 					continue
 				}
-				udi, err := token.GetUserDeviceInfo(msg.User)
+				udi, err := db.GetUserDeviceInfo(msg.User)
 				if err != nil {
 					l.Error("GetUserDeviceInfo failed. %v", err)
 				} else {
@@ -82,18 +82,18 @@ func ConsumeMsg() {
 // 消费登录日志
 func ConsumeLog() {
 	consumeLogChan := make(chan []byte, 1024)
-	go kafka.ConsumeGroup(args.zkAddr, kafka.CONSUME_LOG_GROUP, kafka.XCHAT_LOG_TOPIC, 0, 0, consumeLogChan)
+	go mq.ConsumeGroup(args.zkAddr, mq.CONSUME_LOG_GROUP, mq.XCHAT_LOG_TOPIC, 0, 0, consumeLogChan)
 	go func() {
 		for {
 			select {
 			case data := <-consumeLogChan:
 				l.Info("###consumeLog### %s", string(data))
-				msg, err := kafka.UnmarshalLogInfo(data)
+				msg, err := mq.UnmarshalLogInfo(data)
 				if err != nil {
-					l.Error("kafka.UnmarshalLogInfo failed. %v", err)
+					l.Error("mq.UnmarshalLogInfo failed. %v", err)
 					continue
 				}
-				var udi kafka.UserDeviceInfo
+				var udi mq.UserDeviceInfo
 				err = json.Unmarshal([]byte(msg.Info), &udi)
 				if err != nil {
 					l.Error("Error: json.Unmarshal failed. %v", err)
@@ -110,7 +110,7 @@ func ConsumeLog() {
 				if "online" == logType {
 					// 设置token
 					udi.Update = time.Now().Unix()
-					err = token.SetUserDeviceInfo(msg.User, &udi)
+					err = db.SetUserDeviceInfo(msg.User, &udi)
 					if err != nil {
 						l.Error("Error: SetUserDeviceInfo failed. %v", err)
 					}

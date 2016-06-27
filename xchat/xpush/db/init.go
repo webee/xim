@@ -1,4 +1,4 @@
-package kafka
+package db
 
 import (
 	"xim/xchat/logic/logger"
@@ -12,5 +12,5 @@ var (
 )
 
 func init() {
-	l = logger.Logger.GetLogger("kafka")
+	l = logger.Logger.GetLogger("token")
 }
