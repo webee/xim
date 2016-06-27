@@ -80,6 +80,7 @@ func consumeMsg() {
 						l.Warning("time.Parse failed. %s", err.Error())
 						continue
 					}
+					l.Info("%d %d", timestamp.Unix(), time.Now().Unix())
 					if timestamp.Unix()+int64(60) > time.Now().Unix() {
 						content, err := immsg.ParseMsg([]byte(msg.Msg))
 						err = push.OfflineMsg(msg.From, msg.User, udi.Source,
