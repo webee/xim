@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"time"
 	"xim/xchat/logic/mq"
+	"xim/xchat/logic/service/types"
 )
 
 type csReq struct {
 	User   string    `json:"user"`
-	ChatID uint64    `json:"chat_id"`
+	ChatID string    `json:"chat_id"`
 	Kind   string    `json:"kind"`
 	MsgID  uint64    `json:"msg_id"`
 	Msg    string    `json:"msg"`
@@ -16,9 +17,13 @@ type csReq struct {
 }
 
 func publishCSRequest(user string, chatID uint64, kind string, msgID uint64, msg string, ts time.Time) {
+	chatIdentity := ChatIdentity{
+		ID:   chatID,
+		Type: types.ChatTypeCS,
+	}
 	m := csReq{
 		User:   user,
-		ChatID: chatID,
+		ChatID: chatIdentity.String(),
 		Kind:   kind,
 		MsgID:  msgID,
 		Msg:    msg,

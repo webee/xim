@@ -2,8 +2,8 @@ package server
 
 import (
 	"net/http"
-	apiTypes "xim/xchat/broker/mid"
 	pubtypes "xim/xchat/logic/pub/types"
+	"xim/xchat/logic/service"
 	"xim/xchat/logic/service/types"
 
 	"github.com/labstack/echo"
@@ -23,7 +23,7 @@ func sendMsg(c echo.Context) error {
 		return err
 	}
 
-	chatIdentity, err := apiTypes.ParseChatIdentity(args.ChatID)
+	chatIdentity, err := service.ParseChatIdentity(args.ChatID)
 	if err != nil {
 		return err
 	}

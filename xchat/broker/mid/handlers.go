@@ -6,6 +6,7 @@ import (
 	"time"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
+	"xim/xchat/logic/service"
 	"xim/xchat/logic/service/types"
 
 	"gopkg.in/jcelliott/turnpike.v2"
@@ -165,7 +166,7 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -207,7 +208,7 @@ func onPubMsg(args []interface{}, kwargs map[string]interface{}) {
 		return
 	}
 
-	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		return
 	}
@@ -253,7 +254,7 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	chatIdentity, err := ParseChatIdentity(xchatID)
+	chatIdentity, err := service.ParseChatIdentity(xchatID)
 	if err != nil {
 		return
 	}
@@ -277,7 +278,7 @@ func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
-	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -314,7 +315,7 @@ func fetchChatMembers(args []interface{}, kwargs map[string]interface{}) (result
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
-	// chatIdentity, err := ParseChatIdentity(args[0].(string))
+	// chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	// if err != nil {
 	// 	return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	// }
@@ -358,7 +359,7 @@ func syncChatRecv(args []interface{}, kwargs map[string]interface{}) (result *tu
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
-	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -384,7 +385,7 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 	// params
-	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -497,7 +498,7 @@ func exitRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	chatIdentity, err := ParseChatIdentity(args[1].(string))
+	chatIdentity, err := service.ParseChatIdentity(args[1].(string))
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -515,7 +516,7 @@ func joinChat(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -541,7 +542,7 @@ func exitChat(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	chatIdentity, err := ParseChatIdentity(args[0].(string))
+	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -574,7 +575,7 @@ func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
 
-	chatIdentity, err := ParseChatIdentity(xchatID)
+	chatIdentity, err := service.ParseChatIdentity(xchatID)
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
