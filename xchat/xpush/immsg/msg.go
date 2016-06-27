@@ -41,9 +41,8 @@ func ParseMsg(data []byte) (msg string, err error) {
 	}
 	switch t {
 	case MHIMMessageText:
-		m, ok := m["text"].(string)
+		msg, ok = m["text"].(string)
 		if !ok {
-			msg = m
 			err = errors.New("Wrong test message")
 		}
 	case MHIMMessageImage:
