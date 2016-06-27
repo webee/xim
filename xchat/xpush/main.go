@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 	"xim/xchat/xpush/apilog"
+	"xim/xchat/xpush/db"
 	"xim/xchat/xpush/mq"
 	"xim/xchat/xpush/push"
-	"xim/xchat/xpush/db"
 	"xim/xchat/xpush/userinfo"
 )
 
@@ -69,9 +69,16 @@ func ConsumeMsg() {
 					} else {
 						env = 1
 					}
-					err = push.PushOfflineMsg(msg.From, msg.User, udi.Source, udi.DeviceToken, msg.ChatId, args.pushInterval, env)
+					timestamp, err := time.Parse(time.RFC3339Nano, msg.Ts)
 					if err != nil {
-						l.Error("push.PushOfflineMsg failed. %v", err)
+						l.Warning("time.Parse failed. %s", err.Error())
+						continue
+					}
+					if timestamp.Unix()+int64(60) > time.Now().Unix() {
+						err = push.PushOfflineMsg(msg.From, msg.User, udi.Source, udi.DeviceToken, msg.ChatId, args.pushInterval, env)
+						if err != nil {
+							l.Error("push.PushOfflineMsg failed. %v", err)
+						}
 					}
 				}
 			}

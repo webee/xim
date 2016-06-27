@@ -135,7 +135,10 @@ func ConsumeGroup(zkaddr string, group, topic string, index, offset int, msgChan
 			msgChan <- msg.Value
 			l.Debug("{index:%d} key: %s, value: %s, topic: %s, partition: %d, offset: %d", index,
 				string(msg.Key), string(msg.Value), msg.Topic, msg.Partition, msg.Offset)
-			cg.CommitUpto(msg)
+			err := cg.CommitUpto(msg)
+			if err != nil {
+				l.Warning("consumeGroup.CommitUpto failed. %s", err.Error())
+			}
 		}
 	}
 
