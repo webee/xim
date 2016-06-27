@@ -125,14 +125,14 @@ func ConsumeLog() {
 					if err != nil {
 						l.Error("LogOnLine failed. %v", err)
 					} else {
-						l.Debug("LogOnLine success.")
+						l.Info("LogOnLine success.")
 					}
 				} else if "offline" == logType {
 					err = apilog.LogOffLine(msg.User, udi.Source, params)
 					if err != nil {
 						l.Error("LogOffLine failed. %v", err)
 					} else {
-						l.Debug("LogOffLine success.")
+						l.Info("LogOffLine success.")
 					}
 				} else {
 					l.Error("Error: Unknown log type")
