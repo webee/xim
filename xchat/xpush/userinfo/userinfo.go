@@ -12,10 +12,11 @@ import (
 	"time"
 )
 
-func GetSign(url string, deviceId string, time string) string {
+// GetSign compute signature.
+func GetSign(url string, deviceID string, time string) string {
 	var buffer bytes.Buffer
 	buffer.WriteString(url)
-	buffer.WriteString(deviceId)
+	buffer.WriteString(deviceID)
 	buffer.WriteString(time)
 
 	md5Str := md5Encrypt(buffer.Bytes())
@@ -50,8 +51,9 @@ func exchange(data []byte, x int, y int) {
 	data[y] = tmp
 }
 
+// SecuritySuffix add security suffix.
 func SecuritySuffix(url string) string {
-	deviceId := "1234567890123456789012345678901234567890"
+	deviceID := "1234567890123456789012345678901234567890"
 	timeStamp := time.Now().UTC().Format("20060102150405")
 	//timeStamp:=time.Now().UTC().Format("2006-01-02 15:04:05")
 	if strings.HasSuffix(url, "?") {
@@ -64,61 +66,65 @@ func SecuritySuffix(url string) string {
 		}
 
 	}
-	url += "&deviceId=" + deviceId
-	sign := GetSign(url, deviceId, timeStamp)
+	url += "&deviceId=" + deviceID
+	sign := GetSign(url, deviceID, timeStamp)
 	url += "&sign=" + sign
 	return url
 }
 
+// UserInfo user name cache
 type UserInfo struct {
 	User   string
 	Name   string
 	update int64
 }
 
+// PushInterval push offline message interval.
 type PushInterval struct {
 	ts int64
 }
 
 const (
-	USER_NAME_CACHE_VALID_PERIOD = 600
+	userNameCacheValidPeriod = 600
 )
 
 var (
-	UserInfoCache    = make(map[string]*UserInfo, 10000)
-	URL              = "http://test.engdd.com"
-	UserPushInterval = make(map[string]PushInterval, 10000)
+	userInfoCache    = make(map[string]*UserInfo, 10000)
+	url              = "http://test.engdd.com"
+	userPushInterval = make(map[string]PushInterval, 10000)
 )
 
-func InitUserInfoHost(host string)  {
-	URL = host
+// InitUserInfoHost init user info host
+func InitUserInfoHost(host string) {
+	url = host
 }
 
+// CheckLastPushTime check receiver last message time.
 func CheckLastPushTime(user string, interval int64) (int64, bool) {
 	now := time.Now().Unix()
-	ts, ok := UserPushInterval[user]
+	ts, ok := userPushInterval[user]
 	if ok && now-ts.ts < interval {
 		return ts.ts, false
-	} else {
-		UserPushInterval[user] = PushInterval{now} // 更新最后发送时间
-		return ts.ts, true
 	}
+	userPushInterval[user] = PushInterval{now} // 更新最后发送时间
+	return ts.ts, true
 }
 
+// FetchUserName fetch user name from interface.
 func FetchUserName(uid string) (string, error) {
 	uri := SecuritySuffix(fmt.Sprintf("/login/findOtherUser/1/%s?", uid))
-	urlStr := fmt.Sprintf("%s%s", URL, uri)
+	urlStr := fmt.Sprintf("%s%s", url, uri)
 
 	client := http.Client{}
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
-		l.Error("http.NewRequest failed. %v", err)
+		l.Info("http.NewRequest failed. %s", err.Error())
 		return "", err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		l.Error("client.Do failed. %v", err)
+		l.Warning("client.Do failed. %s", err.Error())
 		return "", err
 	}
 
@@ -128,7 +134,7 @@ func FetchUserName(uid string) (string, error) {
 	var ret map[string]interface{}
 	err = decoder.Decode(&ret)
 	if err != nil {
-		l.Error("json.Decode failed. %v", err)
+		l.Warning("json.Decode failed. %s", err.Error())
 		return "", err
 	}
 
@@ -152,11 +158,12 @@ func FetchUserName(uid string) (string, error) {
 	return "", errors.New("user not found")
 }
 
+// GetUserName get user name from cache or interface.
 func GetUserName(uid string) (string, error) {
-	ui, ok := UserInfoCache[uid]
+	ui, ok := userInfoCache[uid]
 	if ok {
 		// 检查缓存是否过期
-		if ui.update+USER_NAME_CACHE_VALID_PERIOD > time.Now().Unix() {
+		if ui.update+userNameCacheValidPeriod > time.Now().Unix() {
 			l.Debug("hit the cache", uid, ui.Name)
 			return ui.Name, nil
 		}
@@ -164,10 +171,10 @@ func GetUserName(uid string) (string, error) {
 
 	fullName, err := FetchUserName(uid)
 	if err != nil {
-		l.Error("FetchUserName failed. %s, %v", uid, err)
+		l.Warning("FetchUserName failed. %s, %s", uid, err.Error())
 		return "", err
 	}
 	// 设置缓存，后续可改为异步设置
-	UserInfoCache[uid] = &UserInfo{uid, fullName, time.Now().Unix()}
+	userInfoCache[uid] = &UserInfo{uid, fullName, time.Now().Unix()}
 	return fullName, nil
 }

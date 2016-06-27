@@ -4,7 +4,7 @@ import "testing"
 
 func TestPushOfflineMsg(t *testing.T) {
 	// 测试android
-	err := PushOfflineMsg("77482", "Android", "412936f4d21e80d84a77a7c756bd03e2da2f1c2e", "123456")
+	err := OfflineMsg("77482", "77481", "Android", "412936f4d21e80d84a77a7c756bd03e2da2f1c2e", 123456, 30, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -12,6 +12,7 @@ func TestPushOfflineMsg(t *testing.T) {
 	// 测试ios
 	//err := PushOfflineMsg("")
 }
+
 //client := xinge.NewClient(ACCESS_ID_ANDROID_TEST, SECRET_KEY_ANDROID_TEST)
 //client.PushSingleAndroidDevice("412936f4d21e80d84a77a7c756bd03e2da2f1c2e", "hello", "boooom", nil)
 //

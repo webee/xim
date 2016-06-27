@@ -11,6 +11,7 @@ import (
 	"time"
 	"xim/xchat/xpush/apilog"
 	"xim/xchat/xpush/db"
+	"xim/xchat/xpush/immsg"
 	"xim/xchat/xpush/mq"
 	"xim/xchat/xpush/push"
 	"xim/xchat/xpush/userinfo"
@@ -33,22 +34,33 @@ func main() {
 	}
 	setupKeys()
 
-	apilog.InitApiLogHost(args.apiLogHost)
+	l.Info(args.redisPassword)
+
+	apilog.InitAPILogHost(args.apiLogHost)
 	userinfo.InitUserInfoHost(args.userInfoHost)
 
 	defer db.InitRedisPool(args.redisAddr, args.redisPassword, args.poolSize)()
-	push.NewPushClient(args.xgtest)
-
-	ConsumeMsg()
-	ConsumeLog()
+	if args.testing {
+		push.NewPushClient(push.AndroidTest, push.IosTest)
+	} else {
+		push.NewPushClient(push.AndroidProd, push.IosProd)
+	}
+	consumeMsg()
+	consumeLog()
 
 	setupSignal()
 }
 
 // 消费消息
-func ConsumeMsg() {
+func consumeMsg() {
+	var env byte
+	if args.xgtest {
+		env = 2
+	} else {
+		env = 1
+	}
 	consumeMsgChan := make(chan []byte, 1024)
-	go mq.ConsumeGroup(args.zkAddr, mq.CONSUME_MSG_GROUP, mq.XCHAT_MSG_TOPIC, 0, 0, consumeMsgChan)
+	go mq.ConsumeGroup(args.zkAddr, mq.ConsumeMsgGroup, mq.XchatMsgTopic, 0, 0, consumeMsgChan)
 	go func() {
 		for {
 			select {
@@ -56,28 +68,25 @@ func ConsumeMsg() {
 				l.Info("###consumeMsg###%s", string(data))
 				msg, err := mq.UnmarshalMsgInfo(data)
 				if err != nil {
-					l.Error("mq.UnmarshalMsgInfo failed. %v", err)
+					l.Warning("mq.UnmarshalMsgInfo failed. %s", err.Error())
 					continue
 				}
 				udi, err := db.GetUserDeviceInfo(msg.User)
 				if err != nil {
-					l.Error("GetUserDeviceInfo failed. %v", err)
+					l.Warning("GetUserDeviceInfo failed. %s", err.Error())
 				} else {
-					var env byte
-					if args.xgtest {
-						env = 2
-					} else {
-						env = 1
-					}
 					timestamp, err := time.Parse(time.RFC3339Nano, msg.Ts)
 					if err != nil {
 						l.Warning("time.Parse failed. %s", err.Error())
 						continue
 					}
 					if timestamp.Unix()+int64(60) > time.Now().Unix() {
-						err = push.PushOfflineMsg(msg.From, msg.User, udi.Source, udi.DeviceToken, msg.ChatId, args.pushInterval, env)
+						content, err := immsg.ParseMsg([]byte(msg.Msg))
+						err = push.OfflineMsg(msg.From, msg.User, udi.Source,
+							udi.DeviceToken, content, msg.ChatID,
+							args.pushInterval, env)
 						if err != nil {
-							l.Error("push.PushOfflineMsg failed. %v", err)
+							l.Warning("push.PushOfflineMsg failed. %s", err.Error())
 						}
 					}
 				}
@@ -87,56 +96,54 @@ func ConsumeMsg() {
 }
 
 // 消费登录日志
-func ConsumeLog() {
+func consumeLog() {
 	consumeLogChan := make(chan []byte, 1024)
-	go mq.ConsumeGroup(args.zkAddr, mq.CONSUME_LOG_GROUP, mq.XCHAT_LOG_TOPIC, 0, 0, consumeLogChan)
+	go mq.ConsumeGroup(args.zkAddr, mq.ConsumeLogGroup, mq.XchatLogTopic, 0, 0, consumeLogChan)
 	go func() {
 		for {
-			select {
-			case data := <-consumeLogChan:
-				l.Info("###consumeLog### %s", string(data))
-				msg, err := mq.UnmarshalLogInfo(data)
-				if err != nil {
-					l.Error("mq.UnmarshalLogInfo failed. %v", err)
-					continue
-				}
-				var udi mq.UserDeviceInfo
-				err = json.Unmarshal([]byte(msg.Info), &udi)
-				if err != nil {
-					l.Error("Error: json.Unmarshal failed. %v", err)
-					continue
-				}
+			data := <-consumeLogChan
+			l.Info("###consumeLog### %s", string(data))
+			msg, err := mq.UnmarshalLogInfo(data)
+			if err != nil {
+				l.Warning("mq.UnmarshalLogInfo failed. %s", err.Error())
+				continue
+			}
+			var udi mq.UserDeviceInfo
+			err = json.Unmarshal([]byte(msg.Info), &udi)
+			if err != nil {
+				l.Warning("Error: json.Unmarshal failed. %s", err.Error())
+				continue
+			}
 
-				params := make(map[string]interface{}, 8)
-				params["device_token"] = udi.DeviceToken
-				params["device_id"] = udi.DeviceId
-				params["os_version"] = udi.OsVersion
-				params["device_model"] = udi.DeviceModel
+			params := make(map[string]interface{}, 8)
+			params["device_token"] = udi.DeviceToken
+			params["device_id"] = udi.DeviceID
+			params["os_version"] = udi.OsVersion
+			params["device_model"] = udi.DeviceModel
 
-				logType := strings.ToLower(msg.Type)
-				if "online" == logType {
-					// 设置token
-					udi.Update = time.Now().Unix()
-					err = db.SetUserDeviceInfo(msg.User, &udi)
-					if err != nil {
-						l.Error("Error: SetUserDeviceInfo failed. %v", err)
-					}
-					err = apilog.LogOnLine(msg.User, udi.Source, params)
-					if err != nil {
-						l.Error("LogOnLine failed. %v", err)
-					} else {
-						l.Info("LogOnLine success.")
-					}
-				} else if "offline" == logType {
-					err = apilog.LogOffLine(msg.User, udi.Source, params)
-					if err != nil {
-						l.Error("LogOffLine failed. %v", err)
-					} else {
-						l.Info("LogOffLine success.")
-					}
+			logType := strings.ToLower(msg.Type)
+			if "online" == logType {
+				// 设置token
+				udi.Update = time.Now().Unix()
+				err = db.SetUserDeviceInfo(msg.User, &udi)
+				if err != nil {
+					l.Warning("Error: SetUserDeviceInfo failed. %s", err.Error())
+				}
+				err = apilog.LogOnLine(msg.User, udi.Source, params)
+				if err != nil {
+					l.Warning("LogOnLine failed. %s", err.Error())
 				} else {
-					l.Error("Error: Unknown log type")
+					l.Info("LogOnLine success.")
 				}
+			} else if "offline" == logType {
+				err = apilog.LogOffLine(msg.User, udi.Source, params)
+				if err != nil {
+					l.Warning("LogOffLine failed. %s", err.Error())
+				} else {
+					l.Info("LogOffLine success.")
+				}
+			} else {
+				l.Error("Error: Unknown log type")
 			}
 		}
 	}()

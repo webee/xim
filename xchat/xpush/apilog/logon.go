@@ -8,45 +8,35 @@ import (
 )
 
 const (
-	API_LOG_ONLINE  = "/apilog/usr/online"
-	API_LOG_OFFLINE = "/apilog/usr/offline"
+	apiLogOnline  = "/apilog/usr/online"
+	apiLogOffline = "/apilog/usr/offline"
 )
 
 var (
-	ApiLogHost = "http://apilogdoc.engdd.com"
+	apiLogHost = "http://apilogdoc.engdd.com"
 )
 
-type Log struct {
-	Uid    int64  `json:"uid"`
-	Source string `json:"source"`
-	Params string `json:"params"`
+// InitAPILogHost init the api log host addr
+func InitAPILogHost(host string) {
+	apiLogHost = host
 }
 
-type OffLine struct {
-	User int
-	Info map[string]interface{}
-}
-
-func InitApiLogHost(host string) {
-	ApiLogHost = host
-}
-
-func ApiLog(uri, userId, source string, params map[string]interface{}) error {
+func apiLog(uri, userID, source string, params map[string]interface{}) error {
 	client := &http.Client{}
 	v := url.Values{}
-	v.Add("uid", userId)
+	v.Add("uid", userID)
 	v.Add("source", source)
 	ret, err := json.Marshal(params)
 	if err != nil {
-		l.Error("json.Marshal failed. %v", err)
+		l.Warning("get offline users error: %s", err.Error())
 		v.Add("params", "")
 	} else {
 		v.Add("params", string(ret))
 	}
-	signed := userinfo.SecuritySuffix(uri+"?"+v.Encode())
-	req, err := http.NewRequest("POST", ApiLogHost+signed, nil)
+	signed := userinfo.SecuritySuffix(uri + "?" + v.Encode())
+	req, err := http.NewRequest("POST", apiLogHost+signed, nil)
 	if err != nil {
-		l.Error("http.NewRequest failed. %v", err)
+		l.Warning("http.NewRequest failed. %s", err.Error())
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -55,7 +45,7 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		l.Error("client.Do failed. %v", err)
+		l.Warning("client.Do failed. %s", err.Error())
 		return err
 	}
 	defer resp.Body.Close()
@@ -73,11 +63,12 @@ func ApiLog(uri, userId, source string, params map[string]interface{}) error {
 	return nil
 }
 
+// LogOnLine log user logon info
 func LogOnLine(userID, source string, params map[string]interface{}) error {
-	return ApiLog(API_LOG_ONLINE, userID, source, params)
+	return apiLog(apiLogOnline, userID, source, params)
 }
 
+// LogOffLine log user logoff info
 func LogOffLine(userID, source string, params map[string]interface{}) error {
-	return ApiLog(API_LOG_OFFLINE, userID, source, params)
+	return apiLog(apiLogOffline, userID, source, params)
 }
-
