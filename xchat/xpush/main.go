@@ -38,7 +38,7 @@ func main() {
 	userinfo.InitUserInfoHost(args.userInfoHost)
 
 	defer db.InitRedisPool(args.redisAddr, args.redisPassword, args.poolSize)()
-	if args.testing {
+	if args.xgtest {
 		l.Info("testing push")
 		push.NewPushClient(push.AndroidTest, push.IosTest)
 	} else {
