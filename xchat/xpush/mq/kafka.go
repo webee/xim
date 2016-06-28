@@ -1,6 +1,8 @@
 package mq
 
 import (
+	"time"
+
 	"github.com/Shopify/sarama"
 	"github.com/wvanbergen/kafka/consumergroup"
 	"github.com/wvanbergen/kazoo-go"
@@ -19,7 +21,7 @@ const (
 func ConsumeGroup(zkaddr string, group, topic string, index, offset int, msgChan chan []byte) error {
 	config := consumergroup.NewConfig()
 	config.Offsets.Initial = sarama.OffsetOldest
-	//config.Offsets.CommitInterval = 30 * time.Second
+	config.Offsets.CommitInterval = 1 * time.Second
 
 	l.Info("zkAddr: %s", zkaddr)
 	var zkNodes []string

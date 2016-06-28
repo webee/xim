@@ -1,8 +1,11 @@
 package main
 
 import (
+	"time"
 	"xim/xchat/logic/logger"
 	"xim/xchat/xpush/mq"
+
+	"flag"
 
 	"github.com/Shopify/sarama"
 	"github.com/wvanbergen/kafka/consumergroup"
@@ -10,18 +13,22 @@ import (
 )
 
 var (
-	l = logger.Logger
+	l              = logger.Logger
+	commitInterval = flag.Duration("commitInterval", 10*time.Second, "kafka group commit iterval.")
+	topic          = flag.String("topic", mq.XchatMsgTopic, "the kafka topic")
+	group          = flag.String("group", mq.ConsumeMsgGroup, "the kafka consume group")
 )
 
 func main() {
+	flag.Parse()
 	zkaddr := "localhost:2181/kafka"
-	group := "testKafkaCommit"
-	topic := mq.XchatMsgTopic
+	group := *group
+	topic := *topic
 	index := 0
 	msgChan := make(chan []byte, 1024)
 	config := consumergroup.NewConfig()
 	config.Offsets.Initial = sarama.OffsetOldest
-	//config.Offsets.CommitInterval = 30 * time.Second
+	config.Offsets.CommitInterval = *commitInterval
 
 	l.Info("zkAddr: %s", zkaddr)
 	var zkNodes []string
