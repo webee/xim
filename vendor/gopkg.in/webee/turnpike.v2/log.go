@@ -7,7 +7,7 @@ import (
 
 var (
 	logFlags = glog.Ldate | glog.Ltime | glog.Lshortfile
-	log      Logger
+	tlog     Logger
 )
 
 // Logger is an interface compatible with log.Logger.
@@ -24,35 +24,35 @@ func (n noopLogger) Printf(format string, v ...interface{}) {}
 // setup logger for package, noop by default
 func init() {
 	if os.Getenv("DEBUG") != "" {
-		log = glog.New(os.Stderr, "", logFlags)
+		tlog = glog.New(os.Stderr, "", logFlags)
 	} else {
-		log = noopLogger{}
+		tlog = noopLogger{}
 	}
 }
 
 // Debug changes the log output to stderr
 func Debug() {
-	log = glog.New(os.Stderr, "", logFlags)
+	tlog = glog.New(os.Stderr, "", logFlags)
 }
 
 // DebugOff changes the log to a noop logger
 func DebugOff() {
-	log = noopLogger{}
+	tlog = noopLogger{}
 }
 
 // SetLogger allows users to inject their own logger instead of the default one.
 func SetLogger(l Logger) {
-	log = l
+	tlog = l
 }
 
 func logErr(err error) error {
 	if err == nil {
 		return nil
 	}
-	if l, ok := log.(*glog.Logger); ok {
+	if l, ok := tlog.(*glog.Logger); ok {
 		l.Output(2, err.Error())
 	} else {
-		log.Println(err)
+		tlog.Println(err)
 	}
 	return err
 }

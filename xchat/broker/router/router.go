@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 	"xim/utils/jwtutils"
 
 	"xim/xchat/broker/logger"
 
 	ol "github.com/go-ozzo/ozzo-log"
 
-	"gopkg.in/jcelliott/turnpike.v2"
+	"gopkg.in/webee/turnpike.v2"
 )
 
 var (
@@ -74,7 +75,7 @@ type XChatRouter struct {
 }
 
 // NewXChatRouter creates a xchat router.
-func NewXChatRouter(userKeys map[string][]byte, debug, testing bool) (*XChatRouter, error) {
+func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeout, idleTimeout time.Duration) (*XChatRouter, error) {
 	if debug {
 		turnpike.Debug()
 	}
@@ -96,6 +97,8 @@ func NewXChatRouter(userKeys map[string][]byte, debug, testing bool) (*XChatRout
 	if err != nil {
 		return nil, err
 	}
+	s.WriteTimeout = writeTimeout
+	s.IdleTimeout = idleTimeout
 
 	// allow all origins.
 	allowAllOrigin := func(r *http.Request) bool { return true }

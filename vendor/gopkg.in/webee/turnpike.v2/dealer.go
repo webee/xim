@@ -56,7 +56,7 @@ func (d *defaultDealer) Register(callee Sender, msg *Register) {
 	d.lock.Lock()
 	if id, ok := d.registrations[msg.Procedure]; ok {
 		d.lock.Unlock()
-		log.Println("error: procedure already exists:", msg.Procedure, id)
+		tlog.Println("error: procedure already exists:", msg.Procedure, id)
 		callee.Send(&Error{
 			Type:    msg.MessageType(),
 			Request: msg.Request,
@@ -70,7 +70,7 @@ func (d *defaultDealer) Register(callee Sender, msg *Register) {
 	d.addCalleeRegistration(callee, reg)
 	d.lock.Unlock()
 
-	log.Printf("registered procedure %v [%v]", reg, msg.Procedure)
+	tlog.Printf("registered procedure %v [%v]", reg, msg.Procedure)
 	callee.Send(&Registered{
 		Request:      msg.Request,
 		Registration: reg,
@@ -82,7 +82,7 @@ func (d *defaultDealer) Unregister(callee Sender, msg *Unregister) {
 	if procedure, ok := d.procedures[msg.Registration]; !ok {
 		d.lock.Unlock()
 		// the registration doesn't exist
-		log.Println("error: no such registration:", msg.Registration)
+		tlog.Println("error: no such registration:", msg.Registration)
 		callee.Send(&Error{
 			Type:    msg.MessageType(),
 			Request: msg.Request,
@@ -94,7 +94,7 @@ func (d *defaultDealer) Unregister(callee Sender, msg *Unregister) {
 		delete(d.procedures, msg.Registration)
 		d.removeCalleeRegistration(callee, msg.Registration)
 		d.lock.Unlock()
-		log.Printf("unregistered procedure %v [%v]", procedure.Procedure, msg.Registration)
+		tlog.Printf("unregistered procedure %v [%v]", procedure.Procedure, msg.Registration)
 		callee.Send(&Unregistered{
 			Request: msg.Request,
 		})
@@ -136,7 +136,7 @@ func (d *defaultDealer) Call(caller Sender, msg *Call) {
 				Arguments:    msg.Arguments,
 				ArgumentsKw:  msg.ArgumentsKw,
 			})
-			log.Printf("dispatched CALL %v [%v] to callee as INVOCATION %v",
+			tlog.Printf("dispatched CALL %v [%v] to callee as INVOCATION %v",
 				msg.Request, msg.Procedure, invocationID,
 			)
 		}
@@ -148,14 +148,14 @@ func (d *defaultDealer) Yield(callee Sender, msg *Yield) {
 	if callID, ok := d.invocations[msg.Request]; !ok {
 		d.lock.Unlock()
 		// WAMP spec doesn't allow sending an error in response to a YIELD message
-		log.Println("received YIELD message with invalid invocation request ID:", msg.Request)
+		tlog.Println("received YIELD message with invalid invocation request ID:", msg.Request)
 	} else {
 		delete(d.invocations, msg.Request)
 		if caller, ok := d.calls[callID]; !ok {
 			// found the invocation id, but doesn't match any call id
 			// WAMP spec doesn't allow sending an error in response to a YIELD message
 			d.lock.Unlock()
-			log.Printf("received YIELD message, but unable to match it (%v) to a CALL ID", msg.Request)
+			tlog.Printf("received YIELD message, but unable to match it (%v) to a CALL ID", msg.Request)
 		} else {
 			delete(d.calls, callID)
 			d.lock.Unlock()
@@ -166,7 +166,7 @@ func (d *defaultDealer) Yield(callee Sender, msg *Yield) {
 				Arguments:   msg.Arguments,
 				ArgumentsKw: msg.ArgumentsKw,
 			})
-			log.Printf("returned YIELD %v to caller as RESULT %v", msg.Request, callID)
+			tlog.Printf("returned YIELD %v to caller as RESULT %v", msg.Request, callID)
 		}
 	}
 }
@@ -175,12 +175,12 @@ func (d *defaultDealer) Error(peer Sender, msg *Error) {
 	d.lock.Lock()
 	if callID, ok := d.invocations[msg.Request]; !ok {
 		d.lock.Unlock()
-		log.Println("received ERROR (INVOCATION) message with invalid invocation request ID:", msg.Request)
+		tlog.Println("received ERROR (INVOCATION) message with invalid invocation request ID:", msg.Request)
 	} else {
 		delete(d.invocations, msg.Request)
 		if caller, ok := d.calls[callID]; !ok {
 			d.lock.Unlock()
-			log.Printf("received ERROR (INVOCATION) message, but unable to match it (%v) to a CALL ID", msg.Request)
+			tlog.Printf("received ERROR (INVOCATION) message, but unable to match it (%v) to a CALL ID", msg.Request)
 		} else {
 			delete(d.calls, callID)
 			d.lock.Unlock()
@@ -192,7 +192,7 @@ func (d *defaultDealer) Error(peer Sender, msg *Error) {
 				Arguments:   msg.Arguments,
 				ArgumentsKw: msg.ArgumentsKw,
 			})
-			log.Printf("returned ERROR %v to caller as ERROR %v", msg.Request, callID)
+			tlog.Printf("returned ERROR %v to caller as ERROR %v", msg.Request, callID)
 		}
 	}
 }

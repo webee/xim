@@ -12,7 +12,7 @@ import (
 	"xim/xchat/broker/mid"
 
 	"github.com/dgrijalva/jwt-go"
-	"gopkg.in/jcelliott/turnpike.v2"
+	"gopkg.in/webee/turnpike.v2"
 )
 
 const (

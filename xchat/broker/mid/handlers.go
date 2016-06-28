@@ -9,7 +9,7 @@ import (
 	"xim/xchat/logic/service"
 	"xim/xchat/logic/service/types"
 
-	"gopkg.in/jcelliott/turnpike.v2"
+	"gopkg.in/webee/turnpike.v2"
 )
 
 func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
@@ -80,10 +80,6 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 		}
 
 		return &turnpike.CallResult{Args: []interface{}{true, ids}}
-	}
-	if method == "sessions" {
-		v := copyCurrentSessions()
-		return &turnpike.CallResult{Args: []interface{}{true, v}}
 	}
 
 	payloadSize := 0

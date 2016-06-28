@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/jcelliott/turnpike.v2"
+	"gopkg.in/webee/turnpike.v2"
 )
 
 // uris.

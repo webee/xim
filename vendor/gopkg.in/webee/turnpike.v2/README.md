@@ -1,4 +1,4 @@
-Turnpike [![Build Status](https://drone.io/github.com/jcelliott/turnpike/status.png)](https://drone.io/github.com/jcelliott/turnpike/latest) [![Coverage Status](https://coveralls.io/repos/jcelliott/turnpike/badge.svg?branch=v2)](https://coveralls.io/r/jcelliott/turnpike?branch=v2) [![GoDoc](https://godoc.org/gopkg.in/jcelliott/turnpike?status.svg)](http://godoc.org/gopkg.in/jcelliott/turnpike.v2)
+Turnpike [![Build Status](https://drone.io/github.com/webee/turnpike/status.png)](https://drone.io/github.com/webee/turnpike/latest) [![Coverage Status](https://coveralls.io/repos/webee/turnpike/badge.svg?branch=v2)](https://coveralls.io/r/webee/turnpike?branch=v2) [![GoDoc](https://godoc.org/gopkg.in/webee/turnpike?status.svg)](http://godoc.org/gopkg.in/webee/turnpike.v2)
 ===
 
 Go implementation of [WAMP](http://wamp.ws/) - The Web Application Messaging Protocol
@@ -25,18 +25,18 @@ Status
 
 Turnpike v2 is still under development, but is getting close to a stable
 release. If you have any feedback or suggestions, please
-[open an issue](https://github.com/jcelliott/turnpike/issues/new).
+[open an issue](https://github.com/webee/turnpike/issues/new).
 
 Installation
 ---
 
 Library:
 
-    go get -u gopkg.in/jcelliott/turnpike.v2
+    go get -u gopkg.in/webee/turnpike.v2
 
 Stand-alone router:
 
-    go get -u gopkg.in/jcelliott/turnpike.v2/turnpike
+    go get -u gopkg.in/webee/turnpike.v2/turnpike
 
 Client library usage
 ---
@@ -56,7 +56,7 @@ import (
 	"log"
 	"net/http"
 
-	"gopkg.in/jcelliott/turnpike.v2"
+	"gopkg.in/webee/turnpike.v2"
 )
 
 func main() {

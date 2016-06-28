@@ -230,8 +230,8 @@
 			"Rev": "c8bc69bc2db9c57ccf979550bc69655df5039a8a"
 		},
 		{
-			"ImportPath": "gopkg.in/jcelliott/turnpike.v2",
-			"Rev": "65eb3bacd2852f9554a44d7d1b60a91fdb26fe67"
+			"ImportPath": "gopkg.in/webee/turnpike.v2",
+			"Rev": "1b3554eeda4eb06b6f3693a795917d14313078c6"
 		}
 	]
 }

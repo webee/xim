@@ -12,8 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"gopkg.in/jcelliott/turnpike.v2"
 	"math/rand"
+
+	"gopkg.in/webee/turnpike.v2"
 )
 
 const (
