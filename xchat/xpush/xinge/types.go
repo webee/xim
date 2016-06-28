@@ -155,7 +155,7 @@ func (m *Message) XGjson() []byte {
 
 	}
 
-	result["custom_cnotent"] = m.Custom
+	result["custom_content"] = m.Custom
 
 	ret, err := json.Marshal(result)
 	if err != nil {
