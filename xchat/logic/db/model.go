@@ -13,6 +13,7 @@ type Chat struct {
 	Title   string    `json:"title"`
 	Tag     string    `json:"tag"`
 	MsgID   uint64    `db:"msg_id" json:"msg_id"`
+	Ext     string    `db:"ext" json:"ext"`
 	Created time.Time `json:"created"`
 	Updated time.Time `json:"updated"`
 }
@@ -38,6 +39,7 @@ type UserChat struct {
 	Title   string    `json:"title"`
 	Tag     string    `json:"tag"`
 	MsgID   uint64    `db:"msg_id" json:"msg_id"`
+	Ext     string    `db:"ext" json:"ext"`
 	Created time.Time `json:"created"`
 	Updated time.Time `json:"updated"`
 	User    string    `json:"user"`

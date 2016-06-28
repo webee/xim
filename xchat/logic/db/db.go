@@ -122,35 +122,35 @@ func GetChatMessages(chatID uint64, chatType string, lID, rID uint64, limit int,
 // GetChat returns chat.
 func GetChat(chatID uint64) (chat *Chat, err error) {
 	chat = &Chat{}
-	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, created, updated FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
+	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, ext, created, updated FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
 }
 
 // GetChatWithType returns chat.
 func GetChatWithType(chatID uint64, chatType string) (chat *Chat, err error) {
 	chat = &Chat{}
-	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, created, updated FROM xchat_chat where id=$1 and type=$2 and is_deleted=false`, chatID, chatType)
+	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, ext, created, updated FROM xchat_chat where id=$1 and type=$2 and is_deleted=false`, chatID, chatType)
 }
 
 // GetUserChat returns user's chat.
 func GetUserChat(user string, chatID uint64) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, c.updated, m.user, m.cur_id, m.joined FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
+	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
 	return
 }
 
 // GetUserChatWithType returns user's chat.
 func GetUserChatWithType(user string, chatID uint64, chatType string) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, c.updated, m.user, m.cur_id, m.joined FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`, user, chatID, chatType)
+	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`, user, chatID, chatType)
 	return
 }
 
 // GetUserChatList returns user's chat list.
 func GetUserChatList(user string, onlyUnsync bool) (userChats []UserChat, err error) {
 	if onlyUnsync {
-		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
+		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
 	} else {
-		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
+		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
 	}
 	return
 }

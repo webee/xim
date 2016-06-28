@@ -249,8 +249,12 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		users = append(users, u.(string))
 	}
 	title := args[2].(string)
+	ext := ""
+	if x, ok := kwargs["ext"]; ok {
+		ext = x.(string)
+	}
 
-	xchatID, err := xchatHTTPClient.NewChat(chatType, users, title, "user")
+	xchatID, err := xchatHTTPClient.NewChat(chatType, users, title, "user", ext)
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
@@ -571,7 +575,7 @@ func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
 
-	xchatID, err := xchatHTTPClient.NewChat("cs", []string{s.User}, "我的客服", "_cs")
+	xchatID, err := xchatHTTPClient.NewChat("cs", []string{s.User}, "我的客服", "_cs", "")
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
