@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"runtime"
 	"xim/utils/pprofutils"
 	"xim/xchat/logic/logger"
@@ -23,6 +24,7 @@ var (
 
 func main() {
 	flag.Parse()
+	fmt.Println("args", args)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	if !args.debug {
 		l.MaxLevel = 6
