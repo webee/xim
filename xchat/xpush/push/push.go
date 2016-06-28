@@ -80,7 +80,6 @@ func OfflineMsg(from, to, source, token, content string, chatID, interval int64,
 
 		reqPush := &xg.ReqPush{
 			PushType:     xg.PushType_single_device,
-			TagsOp:       xg.TagsOp_AND,
 			DeviceToken:  token,
 			MessageType:  xg.MessageType_notify,
 			Message:      message,
