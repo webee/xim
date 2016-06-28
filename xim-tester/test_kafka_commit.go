@@ -1,27 +1,34 @@
-package mq
+package main
 
 import (
 	"time"
+	"xim/xchat/logic/logger"
+	"xim/xchat/xpush/mq"
+
+	"flag"
 
 	"github.com/Shopify/sarama"
 	"github.com/wvanbergen/kafka/consumergroup"
 	"github.com/wvanbergen/kazoo-go"
 )
 
-// kafka topic & group config
-const (
-	XchatLogTopic = "xchat_logs"
-	XchatMsgTopic = "xchat_user_msgs"
-
-	ConsumeMsgGroup = "consume_msg_group"
-	ConsumeLogGroup = "consume_log_group"
+var (
+	l              = logger.Logger
+	commitInterval = flag.Duration("commitInterval", 10*time.Second, "kafka group commit iterval.")
+	topic          = flag.String("topic", mq.XchatMsgTopic, "the kafka topic")
+	group          = flag.String("group", mq.ConsumeMsgGroup, "the kafka consume group")
 )
 
-// ConsumeGroup consume kafka message in group
-func ConsumeGroup(zkaddr string, group, topic string, index, offset int, msgChan chan []byte) error {
+func main() {
+	flag.Parse()
+	zkaddr := "localhost:2181/kafka"
+	group := *group
+	topic := *topic
+	index := 0
+	msgChan := make(chan []byte, 1024)
 	config := consumergroup.NewConfig()
 	config.Offsets.Initial = sarama.OffsetOldest
-	config.Offsets.CommitInterval = 1 * time.Second
+	config.Offsets.CommitInterval = *commitInterval
 
 	l.Info("zkAddr: %s", zkaddr)
 	var zkNodes []string
@@ -30,7 +37,7 @@ func ConsumeGroup(zkaddr string, group, topic string, index, offset int, msgChan
 	cg, err := consumergroup.JoinConsumerGroup(group, []string{topic}, zkNodes, config)
 	if err != nil {
 		l.Warning("JoinConsumerGroup failed. %s", err.Error())
-		return err
+		return
 	}
 
 	defer func() {
