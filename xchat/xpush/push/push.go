@@ -69,8 +69,9 @@ func OfflineMsg(from, to, source, token, content string, chatID, interval int64,
 
 	szChatID := fmt.Sprintf("%d", chatID)
 	if strings.ToLower(source) != "appstore" {
-		pack := &xg.Package{PackageName: androidActivity, Confirm: 0}
-		action := &xg.AndroidAction{ActionType: 4, PackageName: pack}
+		// pack := &xg.Package{PackageName: androidActivity, Confirm: 0}
+		// action := &xg.AndroidAction{ActionType: 4, PackageName: pack}
+		action := &xg.AndroidAction{ActionType: 1, Activity: androidActivity}
 		message := &xg.AndroidMessage{
 			Content:       content,
 			Title:         userName,
@@ -98,7 +99,6 @@ func OfflineMsg(from, to, source, token, content string, chatID, interval int64,
 	message := &xg.IosMessage{Aps: aps, CustomContent: map[string]interface{}{"chat_id": szChatID}}
 	reqPush := &xg.ReqPush{
 		PushType:     xg.PushType_single_device,
-		TagsOp:       xg.TagsOp_AND,
 		DeviceToken:  token,
 		MessageType:  xg.MessageType_ios,
 		Message:      message,
