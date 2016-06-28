@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"xim/xchat/logic/db"
@@ -189,6 +190,7 @@ func PubUserStatus(instanceID, sessionID uint64, user string, status string, inf
 		msg["user"] = user
 		msg["type"] = status
 		msg["info"] = info
+		msg["ts"] = strconv.FormatInt(time.Now().Unix(), 10)
 
 		b, err := json.Marshal(&msg)
 		if err != nil {
