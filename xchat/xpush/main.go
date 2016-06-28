@@ -82,6 +82,10 @@ func consumeMsg() {
 
 				if timestamp.Unix()+int64(60) > time.Now().Unix() {
 					content, err := immsg.ParseMsg([]byte(msg.Msg))
+					if err != nil {
+						l.Warning("immsg parse failed. %s", err.Error())
+						continue
+					}
 					err = push.OfflineMsg(msg.From, msg.User, udi.Source,
 						udi.DeviceToken, content, msg.ChatID,
 						args.pushInterval, env)

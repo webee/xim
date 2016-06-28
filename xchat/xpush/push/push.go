@@ -90,7 +90,7 @@ func OfflineMsg(from, to, source, token, content string, chatID, interval int64,
 		}
 		return nil
 	}
-	aps := &xg.ApsAttr{Alert: userName + content, Badge: 1, Sound: "bingbong.aiff"}
+	aps := &xg.ApsAttr{Alert: userName + ":" + content, Badge: 1, Sound: "bingbong.aiff"}
 	message := &xg.IosMessage{Aps: aps, CustomContent: map[string]interface{}{"chat_id": szChatID}}
 	reqPush := &xg.ReqPush{
 		PushType:     xg.PushType_single_device,
