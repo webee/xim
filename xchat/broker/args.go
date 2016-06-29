@@ -16,6 +16,7 @@ type Args struct {
 	debug           bool
 	brokerDebug     bool
 	writeTimeout    time.Duration
+	pingTimeout     time.Duration
 	idleTimeout     time.Duration
 	pprofAddr       string
 	userKeyPath     string
@@ -37,6 +38,7 @@ func init() {
 	flag.BoolVar(&args.debug, "debug", false, "whether to enable debug tools.")
 	flag.BoolVar(&args.brokerDebug, "broker-debug", false, "whether to enable broker debug.")
 	flag.DurationVar(&args.writeTimeout, "write-timeout", 20*time.Second, "router write timeout.")
+	flag.DurationVar(&args.pingTimeout, "ping-timeout", 3*time.Minute, "router ping timeout.")
 	flag.DurationVar(&args.idleTimeout, "idle-timeout", 10*time.Minute, "client idle timeout.")
 	flag.StringVar(&args.pprofAddr, "pprof-addr", "localhost:6060", "debug pprof http address.")
 	flag.StringVar(&args.userKeyPath, "user-key-path", path.Join("conf", env, "xchat/user_key.txt"), "user key file path.")

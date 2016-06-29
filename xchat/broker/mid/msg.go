@@ -12,13 +12,12 @@ func handleMsg(ms <-chan interface{}) {
 		if !ok {
 			continue
 		}
-
 		src := xmsg.Source
 
 		switch msg := xmsg.Msg.(type) {
 		case pubtypes.ChatMessage:
 			if src != nil && src.InstanceID == instanceID {
-				return
+				continue
 			}
 			go push(src, &msg)
 		case pubtypes.ChatNotifyMessage:

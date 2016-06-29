@@ -75,7 +75,7 @@ type XChatRouter struct {
 }
 
 // NewXChatRouter creates a xchat router.
-func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeout, idleTimeout time.Duration) (*XChatRouter, error) {
+func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeout, pingTimeout, idleTimeout time.Duration) (*XChatRouter, error) {
 	if debug {
 		turnpike.Debug()
 	}
@@ -97,7 +97,9 @@ func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeou
 	if err != nil {
 		return nil, err
 	}
+	s.MaxMsgSize = 64 * 1024
 	s.WriteTimeout = writeTimeout
+	s.PingTimeout = pingTimeout
 	s.IdleTimeout = idleTimeout
 
 	// allow all origins.
