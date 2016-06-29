@@ -128,7 +128,7 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				continue
 			}
 			accNotifyMsgs = append(accNotifyMsgs, msgs...)
-			if len(accNotifyMsgs) > 20 {
+			if len(accNotifyMsgs) > 32 {
 				doPush(s.msgTopic, types.MsgKindChatNotify, accNotifyMsgs)
 				accNotifyMsgs = []*NotifyMessage{}
 			}
@@ -138,11 +138,11 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				continue
 			}
 			accMsgs = append(accMsgs, msgs...)
-			if len(accMsgs) > 20 {
+			if len(accMsgs) > 32 {
 				doPush(s.msgTopic, types.MsgKindChat, accMsgs)
 				accMsgs = []*Message{}
 			}
-		case <-time.After(15 * time.Millisecond):
+		case <-time.After(18 * time.Millisecond):
 			if len(accNotifyMsgs) > 0 {
 				doPush(s.msgTopic, types.MsgKindChatNotify, accNotifyMsgs)
 				accNotifyMsgs = []*NotifyMessage{}

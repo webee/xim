@@ -2,15 +2,17 @@ package mid
 
 import (
 	"sort"
+	"strconv"
 	"sync"
+	"time"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
+
+	"github.com/patrickmn/go-cache"
 )
 
 var (
-	// TODO use cache.
-	pushStatesLock = sync.RWMutex{}
-	pushStates     = make(map[uint64]*PushState, 128)
+	pushStatesCache = cache.New(10*time.Minute, 10*time.Minute)
 )
 
 // ByMsgID implements sort.Interface for []*pubtypes.ChatMessage by msg id desc.
@@ -137,21 +139,22 @@ func newPushState(chatID uint64, chatType string) *PushState {
 
 // GetChatPushState returns chat's push state.
 func GetChatPushState(chatID uint64, chatType string) *PushState {
-	pushStatesLock.Lock()
-	defer pushStatesLock.Unlock()
-
-	p, ok := pushStates[chatID]
+	var p *PushState
+	key := strconv.FormatUint(chatID, 36)
+	value, ok := pushStatesCache.Get(key)
 	if !ok {
 		p = newPushState(chatID, chatType)
-		pushStates[chatID] = p
+		if err := pushStatesCache.Add(key, p, cache.DefaultExpiration); err != nil {
+			return GetChatPushState(chatID, chatType)
+		}
+	} else {
+		p = value.(*PushState)
 	}
 	return p
 }
 
 // RemoveChatPustState remove chat's push state.
 func RemoveChatPustState(chatID uint64) {
-	pushStatesLock.Lock()
-	defer pushStatesLock.Unlock()
-
-	delete(pushStates, chatID)
+	key := strconv.FormatUint(chatID, 36)
+	pushStatesCache.Delete(key)
 }
