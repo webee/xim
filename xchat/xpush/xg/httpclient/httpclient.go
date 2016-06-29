@@ -1,13 +1,13 @@
-/*
-Provides an HTTP Transport that implements the `RoundTripper` interface and
-can be used as a built in replacement for the standard library's, providing:
+// Package httpclient
+// Provides an HTTP Transport that implements the `RoundTripper` interface and
+// can be used as a built in replacement for the standard library's, providing:
+//
+// 	* connection timeouts
+// 	* request timeouts
+//
+// This is a thin wrapper around `http.Transport` that sets dial timeouts and uses
+// Go's internal timer scheduler to call the Go 1.1+ `CancelRequest()` API.
 
-	* connection timeouts
-	* request timeouts
-
-This is a thin wrapper around `http.Transport` that sets dial timeouts and uses
-Go's internal timer scheduler to call the Go 1.1+ `CancelRequest()` API.
-*/
 package httpclient
 
 import (
@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-// returns the current version of the package
+// Version returns the current version of the package
 func Version() string {
 	return "0.4.1"
 }
@@ -138,24 +138,28 @@ func (t *Transport) lazyStart() {
 	}
 }
 
+// CancelRequest call the request.
 func (t *Transport) CancelRequest(req *http.Request) {
 	t.starter.Do(t.lazyStart)
 
 	t.transport.CancelRequest(req)
 }
 
+// CloseIdleConnections close id connection.
 func (t *Transport) CloseIdleConnections() {
 	t.starter.Do(t.lazyStart)
 
 	t.transport.CloseIdleConnections()
 }
 
+// RegisterProtocol register protocol.
 func (t *Transport) RegisterProtocol(scheme string, rt http.RoundTripper) {
 	t.starter.Do(t.lazyStart)
 
 	t.transport.RegisterProtocol(scheme, rt)
 }
 
+// RoundTrip round trip.
 func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	t.starter.Do(t.lazyStart)
 

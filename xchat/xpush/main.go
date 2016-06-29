@@ -72,29 +72,30 @@ func consumeMsg() {
 				l.Warning("mq.UnmarshalMsgInfo failed. %s", err.Error())
 				continue
 			}
+			timestamp, err := time.Parse(time.RFC3339Nano, msg.Ts)
+			if err != nil {
+				l.Warning("time.Parse failed. %s", err.Error())
+				continue
+			}
+			if timestamp.Unix()+int64(60) < time.Now().Unix() {
+				l.Warning("message out of data. %s", msg.Ts)
+				continue
+			}
+			content, err := immsg.ParseMsg([]byte(msg.Msg))
+			if err != nil {
+				l.Warning("immsg parse failed. %s", err.Error())
+				continue
+			}
 			udi, err := db.GetUserDeviceInfo(msg.User)
 			if err != nil {
 				l.Warning("GetUserDeviceInfo failed. %s", err.Error())
-			} else {
-				timestamp, err := time.Parse(time.RFC3339Nano, msg.Ts)
-				if err != nil {
-					l.Warning("time.Parse failed. %s", err.Error())
-					continue
-				}
-
-				if timestamp.Unix()+int64(60) > time.Now().Unix() {
-					content, err := immsg.ParseMsg([]byte(msg.Msg))
-					if err != nil {
-						l.Warning("immsg parse failed. %s", err.Error())
-						continue
-					}
-					err = push.OfflineMsg(msg.From, msg.User, udi.Source,
-						udi.DeviceToken, content, msg.ChatID,
-						args.pushInterval, env)
-					if err != nil {
-						l.Warning("push.PushOfflineMsg failed. %s", err.Error())
-					}
-				}
+				continue
+			}
+			err = push.OfflineMsg(msg.From, msg.User, udi.Source,
+				udi.DeviceToken, content, msg.ChatID, args.pushInterval, env)
+			if err != nil {
+				l.Warning("push.PushOfflineMsg failed. %s", err.Error())
+				continue
 			}
 		}
 	}()

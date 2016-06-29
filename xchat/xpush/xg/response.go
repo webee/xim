@@ -1,3 +1,4 @@
+// Package xinge
 // Copyright 2015 mint.zhao.chiu@gmail.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -11,18 +12,22 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
+
 package xinge
 
+// Response xinge http response.
 type Response struct {
 	RetCode int         `json:"ret_code"`
 	ErrMsg  string      `json:"err_msg,omitempty"`
 	Result  interface{} `json:"result,omitempty"`
 }
 
+// OK check return code.
 func (rsp *Response) OK() bool {
 	return rsp.RetCode == 0
 }
 
+// Error get xinge return error message.
 func (rsp *Response) Error() string {
 	return rsp.ErrMsg
 }

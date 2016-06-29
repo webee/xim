@@ -1,3 +1,4 @@
+// Package xinge
 // Copyright 2015 mint.zhao.chiu@gmail.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -11,6 +12,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
+
 package xinge
 
 import "fmt"
@@ -21,61 +23,72 @@ var (
 )
 
 var (
-	singleDeviceUrl  = fmt.Sprintf("http://%s/%s/push/single_device", apiDomain, apiVersion)
-	singleAccountUrl = fmt.Sprintf("http://%s/%s/push/single_account", apiDomain, apiVersion)
-	multiAccountUrl  = fmt.Sprintf("http://%s/%s/push/account_list", apiDomain, apiVersion)
-	allDeviceUrl     = fmt.Sprintf("http://%s/%s/push/all_device", apiDomain, apiVersion)
-	tagsDeviceUrl    = fmt.Sprintf("http://%s/%s/push/tags_device", apiDomain, apiVersion)
-	deviceNumUrl     = fmt.Sprintf("http://%s/%s/application/get_app_device_num", apiDomain, apiVersion)
-	appTagsUrl       = fmt.Sprintf("http://%s/%s/tags/query_app_tags", apiDomain, apiVersion)
-	batchSetTagsUrl  = fmt.Sprintf("http://%s/%s/tags/batch_set", apiDomain, apiVersion)
-	batchDelTagsUrl  = fmt.Sprintf("http://%s/%s/tags/batch_del", apiDomain, apiVersion)
-	tokenTagsUrl     = fmt.Sprintf("http://%s/%s/tags/query_token_tags", apiDomain, apiVersion)
-	tagTokensUrl     = fmt.Sprintf("http://%s/%s/tags/query_tag_token_num", apiDomain, apiVersion)
+	singleDeviceURL  = fmt.Sprintf("http://%s/%s/push/single_device", apiDomain, apiVersion)
+	singleAccountURL = fmt.Sprintf("http://%s/%s/push/single_account", apiDomain, apiVersion)
+	multiAccountURL  = fmt.Sprintf("http://%s/%s/push/account_list", apiDomain, apiVersion)
+	allDeviceURL     = fmt.Sprintf("http://%s/%s/push/all_device", apiDomain, apiVersion)
+	tagsDeviceURL    = fmt.Sprintf("http://%s/%s/push/tags_device", apiDomain, apiVersion)
+	deviceNumURL     = fmt.Sprintf("http://%s/%s/application/get_app_device_num", apiDomain, apiVersion)
+	appTagsURL       = fmt.Sprintf("http://%s/%s/tags/query_app_tags", apiDomain, apiVersion)
+	batchSetTagsURL  = fmt.Sprintf("http://%s/%s/tags/batch_set", apiDomain, apiVersion)
+	batchDelTagsURL  = fmt.Sprintf("http://%s/%s/tags/batch_del", apiDomain, apiVersion)
+	tokenTagsURL     = fmt.Sprintf("http://%s/%s/tags/query_token_tags", apiDomain, apiVersion)
+	tagTokensURL     = fmt.Sprintf("http://%s/%s/tags/query_tag_token_num", apiDomain, apiVersion)
 )
 
+// PlatformType the byte type.
 type PlatformType byte
 
+// PlatformType ios 0 android 1
 const (
-	Platform_ios PlatformType = iota
-	Platform_android
+	PlatformIos PlatformType = iota
+	PlatformAndroid
 )
 
+// MessageType the byte type.
 type MessageType byte
 
+// MessageType ios 0 android notify 1 android pushthrough 2
 const (
-	MessageType_ios MessageType = iota
-	MessageType_notify
-	MessageType_passthrough
+	MessageTypeIos MessageType = iota
+	MessageTypeNotify
+	MessageTypePassthrough
 )
 
+// PushEnv the byte type.
 type PushEnv byte
 
+// push evn android 0 prod 1 dev 2
 const (
-	PushEnv_android PushEnv = iota
-	PushEnv_prod
-	PushEnv_dev
+	PushEnvAndroid PushEnv = iota
+	PushEnvProd
+	PushEnvDev
 )
 
+// MultiPkgType the byte type.
 type MultiPkgType byte
 
+// MultiPkgType android 1 ios 2.
 const (
-	MultiPkg_pkg MultiPkgType = iota
-	MultiPkg_aid
-	MultiPkg_ios
+	MultiPkgPkg MultiPkgType = iota
+	MultiPkgAid
+	MultiPkgIos
 )
 
+// PushType the byte type.
 type PushType byte
 
+// PushType single_device 0 single_account 1 multi_account 2 all_device 3 tags_device 4
 const (
-	PushType_single_device PushType = iota
-	PushType_single_account
-	PushType_multi_account
-	PushType_all_device
-	PushType_tags_device
+	PushTypeSingleDevice PushType = iota
+	PushTypeSingleAccount
+	PushTypeMultiAccount
+	PushTypeAllDevice
+	PushTypeTagsDevice
 )
 
+// and or
 const (
-	TagsOp_AND = "AND"
-	TagsOp_OR  = "OR"
+	TagsOpAND = "AND"
+	TagsOpOR  = "OR"
 )

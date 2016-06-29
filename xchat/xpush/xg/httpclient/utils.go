@@ -1,5 +1,5 @@
+// Package httpclient
 // Copyright 2015 mint.zhao.chiu@gmail.com
-//
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
 // a copy of the License at
@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
+
 package httpclient
 
 import (
@@ -30,8 +31,8 @@ var (
 	client = &http.Client{Transport: transport}
 )
 
-// 转发http请求
-func ForwardHttp(method, url string, body io.Reader) (*http.Response, error) {
+// ForwardHTTP 转发http请求
+func ForwardHTTP(method, url string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -40,16 +41,16 @@ func ForwardHttp(method, url string, body io.Reader) (*http.Response, error) {
 	return client.Do(req)
 }
 
-// 获取http response body
-func GetForwardHttpBody(body io.ReadCloser) []byte {
+// GetForwardHTTPBody 获取http response body
+func GetForwardHTTPBody(body io.ReadCloser) []byte {
 	bodyBytes, _ := ioutil.ReadAll(body)
 	defer body.Close()
 
 	return bodyBytes
 }
 
-// 绑定url & params
-func BindUrlParams(url string, params url.Values) string {
+// BindURLParams 绑定url & params
+func BindURLParams(url string, params url.Values) string {
 	if params == nil || len(params) == 0 {
 		return url
 	}

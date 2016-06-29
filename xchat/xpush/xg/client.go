@@ -1,3 +1,4 @@
+// Package xinge
 // Copyright 2015 mint.zhao.chiu@gmail.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -11,37 +12,42 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
+
 package xinge
 
 import "errors"
 
+// Client xinge client struct
 type Client struct {
-	AccessId  string
+	AccessID  string
 	AccessKey string
 	ValidTime uint
 	SecretKey string
 }
 
-func NewClient(accessId string, validTime uint, accessKey, secretKey string) *Client {
+// NewClient new xinge client.
+func NewClient(accessID string, validTime uint, accessKey, secretKey string) *Client {
 	return &Client{
-		AccessId:  accessId,
+		AccessID:  accessID,
 		AccessKey: accessKey,
 		ValidTime: validTime,
 		SecretKey: secretKey,
 	}
 }
 
+// NewRequest new xinge request.
 func (cli *Client) NewRequest(method, url string) *Request {
 	return &Request{
-		HttpMethod: method,
-		HttpUrl:    url,
+		HTTPMethod: method,
+		HTTPURL:    url,
 		Params:     make(map[string]interface{}),
 		Client:     cli,
 	}
 }
 
+// AppDeviceNum get app device num.
 func (cli *Client) AppDeviceNum() (int64, error) {
-	request := cli.NewRequest("GET", deviceNumUrl)
+	request := cli.NewRequest("GET", deviceNumURL)
 
 	response, err := request.Execute()
 	if err != nil {
