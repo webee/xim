@@ -179,13 +179,13 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "msg excced size limit"}}
 	}
 
-	p := s.GetChatPustState(chatID)
-	p.setSending()
-	defer p.doneSending()
-
-	// TODO: add instanceID to mark this broker send msgs.
+	src := &pubtypes.MsgSource{
+		InstanceID: instanceID,
+		SessionID:  uint64(s.ID),
+	}
 	var message pubtypes.ChatMessage
 	if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
+		Source:   src,
 		ChatID:   chatID,
 		ChatType: chatType,
 		User:     s.User,
@@ -195,10 +195,11 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		l.Warning("%s error: %s", types.RPCXChatSendMsg, err)
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
-	// update sending id.
-	pushSessMsg(p, &message)
 
-	return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}}
+	go push(src, &message)
+
+	toPushMsg := NewMessageFromPubMsg(&message)
+	return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}, Kwargs: map[string]interface{}{"msg": toPushMsg}}
 }
 
 // 用户发布消息, 通知消息
@@ -221,8 +222,12 @@ func onPubMsg(args []interface{}, kwargs map[string]interface{}) {
 		return
 	}
 
-	// TODO: add instanceID to mark this broker send msgs.
+	src := &pubtypes.MsgSource{
+		InstanceID: instanceID,
+		SessionID:  uint64(s.ID),
+	}
 	xchatLogic.AsyncCall(types.RPCXChatSendMsg, &types.SendMsgArgs{
+		Source:   src,
 		ChatID:   chatID,
 		ChatType: chatType,
 		User:     s.User,
@@ -440,7 +445,7 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 
 	toPushMsgs := []*Message{}
 	for _, msg := range msgs {
-		toPushMsgs = append(toPushMsgs, NewMessageFromDBMsg(&msg))
+		toPushMsgs = append(toPushMsgs, NewMessageFromPubMsg(&msg))
 	}
 	return &turnpike.CallResult{Args: []interface{}{true, toPushMsgs}}
 }

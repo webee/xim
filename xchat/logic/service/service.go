@@ -83,13 +83,33 @@ func FetchChatMessages(chatID uint64, chatType string, lID, rID uint64, limit in
 	return ms, nil
 }
 
+// FetchChatMessagesByIDs fetch chat's messages by ids.
+func FetchChatMessagesByIDs(chatID uint64, chatType string, msgIDs []uint64) ([]pubtypes.ChatMessage, error) {
+	msgs, err := db.GetChatMessagesByIDs(chatID, chatType, msgIDs)
+	if err != nil {
+		return nil, err
+	}
+	ms := []pubtypes.ChatMessage{}
+	for _, msg := range msgs {
+		ms = append(ms, pubtypes.ChatMessage{
+			ChatID:   msg.ChatID,
+			ChatType: msg.ChatType,
+			ID:       msg.ID,
+			User:     msg.User,
+			Ts:       msg.Ts.Unix(),
+			Msg:      msg.Msg,
+		})
+	}
+	return ms, nil
+}
+
 // default users.
 const (
 	CSUser = "cs:cs"
 )
 
 // SendChatMsg sends chat message.
-func SendChatMsg(chatID uint64, chatType string, user string, msg string) (*pubtypes.ChatMessage, error) {
+func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, user string, msg string) (*pubtypes.ChatMessage, error) {
 	var updated int64
 	userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 	if err != nil {
@@ -137,7 +157,8 @@ func SendChatMsg(chatID uint64, chatType string, user string, msg string) (*pubt
 
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
-		Msg: m,
+		Source: src,
+		Msg:    m,
 	})
 	go notifyOfflineUsers(message.User, message.ChatID, types.MsgKindChat, message.ChatType, message.Msg, message.Ts)
 
@@ -145,7 +166,7 @@ func SendChatMsg(chatID uint64, chatType string, user string, msg string) (*pubt
 }
 
 // SendChatNotifyMsg sends chat notify message.
-func SendChatNotifyMsg(chatID uint64, chatType string, user string, msg string) error {
+func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, user string, msg string) error {
 	var updated int64
 	userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 	if err != nil {
@@ -171,7 +192,8 @@ func SendChatNotifyMsg(chatID uint64, chatType string, user string, msg string) 
 	}
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
-		Msg: m,
+		Source: src,
+		Msg:    m,
 	})
 	go notifyOfflineUsers(m.User, m.ChatID, types.MsgKindChatNotify, m.ChatType, m.Msg, ts)
 

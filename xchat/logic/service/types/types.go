@@ -1,5 +1,9 @@
 package types
 
+import (
+	pubtypes "xim/xchat/logic/pub/types"
+)
+
 // chat type
 const (
 	ChatTypeRoom  = "room"
@@ -31,6 +35,7 @@ type PingArgs struct {
 
 // SendMsgArgs is the arguments of SendMsg.
 type SendMsgArgs struct {
+	Source   *pubtypes.MsgSource
 	ChatID   uint64
 	ChatType string
 	User     string
@@ -78,6 +83,13 @@ type FetchChatMessagesArgs struct {
 	Desc     bool
 }
 
+// FetchChatMessagesByIDsArgs is the arguments of FetchChatMessagesByIDs
+type FetchChatMessagesByIDsArgs struct {
+	ChatID   uint64
+	ChatType string
+	MsgIDs   []uint64
+}
+
 // user status
 const (
 	UserStatusOnline  = "online"
@@ -123,18 +135,19 @@ type FetchNewRoomChatIDs struct {
 
 // XChatService methods.
 const (
-	RPCXChatPing                  = "RPCXChat.Ping"
-	RPCXChatPubUserStatus         = "RPCXChat.PubUserStatus"
-	RPCXChatSyncOnlineUsers       = "RPCXChat.SyncOnlineUsers"
-	RPCXChatSendMsg               = "RPCXChat.SendMsg"
-	RPCXChatFetchChatMessages     = "RPCXChat.FetchChatMessages"
-	RPCXChatFetchUserChatMessages = "RPCXChat.FetchUserChatMessages"
-	RPCXChatFetchChat             = "RPCXChat.FetchChat"
-	RPCXChatFetchUserChat         = "RPCXChat.FetchUserChat"
-	RPCXChatFetchUserChatList     = "RPCXChat.FetchUserChatList"
-	RPCXChatSyncUserChatRecv      = "RPCXChat.SyncUserChatRecv"
-	RPCXChatFetchChatMembers      = "RPCXChat.FetchChatMembers"
-	RPCXChatFetchNewRoomChatIDs   = "RPCXChat.FetchNewRoomChatIDs"
-	RPCXChatJoinChat              = "RPCXChat.JoinChat"
-	RPCXChatExitChat              = "RPCXChat.ExitChat"
+	RPCXChatPing                   = "RPCXChat.Ping"
+	RPCXChatPubUserStatus          = "RPCXChat.PubUserStatus"
+	RPCXChatSyncOnlineUsers        = "RPCXChat.SyncOnlineUsers"
+	RPCXChatSendMsg                = "RPCXChat.SendMsg"
+	RPCXChatFetchChatMessages      = "RPCXChat.FetchChatMessages"
+	RPCXChatFetchChatMessagesByIDs = "RPCXChat.FetchChatMessagesByIDs"
+	RPCXChatFetchUserChatMessages  = "RPCXChat.FetchUserChatMessages"
+	RPCXChatFetchChat              = "RPCXChat.FetchChat"
+	RPCXChatFetchUserChat          = "RPCXChat.FetchUserChat"
+	RPCXChatFetchUserChatList      = "RPCXChat.FetchUserChatList"
+	RPCXChatSyncUserChatRecv       = "RPCXChat.SyncUserChatRecv"
+	RPCXChatFetchChatMembers       = "RPCXChat.FetchChatMembers"
+	RPCXChatFetchNewRoomChatIDs    = "RPCXChat.FetchNewRoomChatIDs"
+	RPCXChatJoinChat               = "RPCXChat.JoinChat"
+	RPCXChatExitChat               = "RPCXChat.ExitChat"
 )

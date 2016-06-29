@@ -1,18 +1,26 @@
 package mid
 
 import (
-	"math"
 	"time"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
 )
 
 func handleMsg(ms <-chan interface{}) {
-	// TODO: use instanceID to distinguish this broker send msgs.
-	for m := range ms {
-		switch msg := m.(type) {
+	for xm := range ms {
+		xmsg, ok := xm.(*pubtypes.XMessage)
+		if !ok {
+			continue
+		}
+
+		src := xmsg.Source
+
+		switch msg := xmsg.Msg.(type) {
 		case pubtypes.ChatMessage:
-			go push(&msg)
+			if src != nil && src.InstanceID == instanceID {
+				return
+			}
+			go push(src, &msg)
 		case pubtypes.ChatNotifyMessage:
 			go pushNotify(&msg)
 		case pubtypes.SetAreaLimitCmd:
@@ -23,28 +31,6 @@ func handleMsg(ms <-chan interface{}) {
 
 func setAreaLimit(cmd *pubtypes.SetAreaLimitCmd) {
 	rooms.SetAreaLimit(cmd.Limit)
-}
-
-func pushNotify(msg *pubtypes.ChatNotifyMessage) {
-	sessions := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
-
-	for _, x := range sessions {
-		if x.User == msg.User {
-			// 不需要发送给消息发送者
-			continue
-		}
-
-		p, task := x.GetNotifyPushState(msg.ChatID)
-		toPush := NewNotifyMessageFromDBMsg(msg)
-		task <- []*NotifyMessage{toPush}
-		tryPushing(p)
-	}
-}
-
-type xsess struct {
-	p      *PushState
-	lastID uint64
-	task   chan []*Message
 }
 
 func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []*Session) {
@@ -70,108 +56,67 @@ func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []
 	return
 }
 
-func push(msg *pubtypes.ChatMessage) {
+func pushNotify(msg *pubtypes.ChatNotifyMessage) {
+	sesses := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
+	toPushMsgs := []*NotifyMessage{NewNotifyMessageFromPubMsg(msg)}
+
+	for _, s := range sesses {
+		s.taskChan.NewNotifyTask() <- toPushMsgs
+		tryPushing(s, s.taskChan)
+	}
+}
+
+func push(src *pubtypes.MsgSource, msg *pubtypes.ChatMessage) {
 	sessions := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
-
-	minLastID := uint64(math.MaxUint64)
-	xsesses := []*xsess{}
-
-	// TODO: one chat per PushState, not one session. 使用全局发送状态，各session维护自己的任务队列
-	for _, x := range sessions {
-		p, task, lastID, ok := x.GetPushState(msg)
-		if !ok {
-			// already send.
-			continue
-		}
-		if lastID < minLastID {
-			minLastID = lastID
-		}
-		xsesses = append(xsesses, &xsess{p, lastID, task})
-	}
-	if len(xsesses) < 1 {
+	if len(sessions) == 0 {
 		return
 	}
 
-	pushSessesMsgs(xsesses, minLastID, msg, true)
-}
-
-func pushSessMsg(p *PushState, msg *pubtypes.ChatMessage) {
-	task, lastID, ok := p.getTask(msg.ID, false)
-	if !ok {
+	pushState := GetChatPushState(msg.ChatID, msg.ChatType)
+	if !pushState.Pending(msg) {
 		return
 	}
-	if lastID+1 == msg.ID {
-		// already send.
-		close(task)
-		tryPushing(p)
-		return
-	}
+	defer pushState.Done(msg.ID)
 
-	xsesses := []*xsess{&xsess{p, lastID, task}}
-	pushSessesMsgs(xsesses, lastID, msg, false)
-}
-
-func pushSessesMsgs(xsesses []*xsess, minLastID uint64, msg *pubtypes.ChatMessage, include bool) {
-	var msgs []pubtypes.ChatMessage
-	if minLastID+1 < msg.ID {
-		// fetch late messages.
-		args := &types.FetchChatMessagesArgs{
-			ChatID:   msg.ChatID,
-			ChatType: msg.ChatType,
-			LID:      minLastID,
-			RID:      msg.ID,
-		}
-		if err := xchatLogic.Call(types.RPCXChatFetchChatMessages, args, &msgs); err != nil {
-			l.Warning("fetch chat[%d] messages error: %s", msg.ChatID, err)
-		}
-	}
-	if include {
-		msgs = append(msgs, *msg)
-	}
-
+	msgs := pushState.FetchMsgs(msg.ID)
 	toPushMsgs := []*Message{}
 	for _, msg := range msgs {
-		toPushMsgs = append(toPushMsgs, NewMessageFromDBMsg(&msg))
+		toPushMsgs = append(toPushMsgs, NewMessageFromPubMsg(msg))
 	}
 
-	for _, xs := range xsesses {
-		var toPush []*Message
-		if xs.lastID+1 == msg.ID || xs.lastID == 0 {
-			toPush = toPushMsgs[len(toPushMsgs)-1:]
-		} else {
-			for _, m := range toPushMsgs {
-				if m.ID > xs.lastID && m.ID <= msg.ID {
-					toPush = append(toPush, m)
-				}
+	for _, s := range sessions {
+		// NOTE: 在低速情况下保证不push自己发送的消息
+		if src != nil && src.InstanceID == uint64(instanceID) && src.SessionID == uint64(s.ID) {
+			if len(toPushMsgs) > 1 {
+				s.taskChan.NewTask() <- toPushMsgs[:len(toPushMsgs)-1]
 			}
+		} else {
+			s.taskChan.NewTask() <- toPushMsgs
 		}
-
-		xs.task <- toPush
-		tryPushing(xs.p)
+		tryPushing(s, s.taskChan)
 	}
 }
 
-func tryPushing(p *PushState) {
+func tryPushing(s *Session, t *TaskChan) {
 	select {
-	case <-p.pushing:
+	case <-t.pushing:
 		// start a goroutine.
-		go pushChatUserMsgs(p)
+		go pushChatUserMsgs(s, t)
 	default:
 	}
 }
 
-func pushChatUserMsgs(p *PushState) {
+func pushChatUserMsgs(s *Session, t *TaskChan) {
 	// mutex
-	<-p.pushingMutex
+	<-t.pushingMutex
 
-	xpushChatUserMsgs(p, false)
+	xpushChatUserMsgs(s, t, false)
 }
 
-func xpushChatUserMsgs(p *PushState, clear bool) {
-	pushing := p.pushing
-	s := p.s
-	tasks := p.taskChan
-	notifyTasks := p.notifyTaskChan
+func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
+	pushing := t.pushing
+	tasks := t.tasks
+	notifyTasks := t.notifyTasks
 
 	var accMsgs []*Message
 	var accNotifyMsgs []*NotifyMessage
@@ -223,13 +168,14 @@ func xpushChatUserMsgs(p *PushState, clear bool) {
 				if ok {
 					accMsgs = append(accMsgs, msgs...)
 				}
-			// TODO 连接消息发送状况确定等待时间
+			// TODO 根据消息发送状况确定等待时间
 			case <-time.After(3 * time.Second):
-				pushing <- struct{}{}
+				// 让下一位进入
+				pushing <- NT
 
 				// 清除剩余任务
-				xpushChatUserMsgs(p, true)
-				p.pushingMutex <- struct{}{}
+				xpushChatUserMsgs(s, t, true)
+				t.pushingMutex <- NT
 				return
 			}
 		}

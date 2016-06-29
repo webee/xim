@@ -59,6 +59,6 @@ func (s *Subscriber) subscribing() {
 			log.Println("decode message error:", err)
 			continue
 		}
-		s.msgs <- xmsg.Msg
+		s.msgs <- xmsg
 	}
 }

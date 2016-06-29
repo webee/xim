@@ -110,18 +110,28 @@ func (r *RPCXChat) FetchChatMessages(args *types.FetchChatMessagesArgs, reply *[
 	return nil
 }
 
+// FetchChatMessagesByIDs fetch chat's messages between by ids.
+func (r *RPCXChat) FetchChatMessagesByIDs(args *types.FetchChatMessagesByIDsArgs, reply *[]pubtypes.ChatMessage) (err error) {
+	msgs, err := FetchChatMessagesByIDs(args.ChatID, args.ChatType, args.MsgIDs)
+	if err != nil {
+		return err
+	}
+	*reply = msgs
+	return nil
+}
+
 // SendMsg sends message.
 func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage) (err error) {
 	switch args.Kind {
 	case types.MsgKindChat:
-		msg, err := SendChatMsg(args.ChatID, args.ChatType, args.User, args.Msg)
+		msg, err := SendChatMsg(args.Source, args.ChatID, args.ChatType, args.User, args.Msg)
 		if err != nil {
 			return err
 		}
 		*reply = *msg
 		return nil
 	case types.MsgKindChatNotify:
-		return SendChatNotifyMsg(args.ChatID, args.ChatType, args.User, args.Msg)
+		return SendChatNotifyMsg(args.Source, args.ChatID, args.ChatType, args.User, args.Msg)
 	}
 	return nil
 }

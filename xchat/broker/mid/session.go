@@ -3,76 +3,47 @@ package mid
 import (
 	"fmt"
 	"sync"
-	pubtypes "xim/xchat/logic/pub/types"
+)
+
+// const variables.
+var (
+	NT = struct{}{}
 )
 
 // SessionID is uniqe session id.
 type SessionID uint64
 
-// PushState is chat's push state.
-type PushState struct {
-	sync.Mutex
-	sending chan struct{}
-	// only push msg which id > PushMsgID.
-	pushMsgID      uint64
-	pushing        chan struct{}
-	pushingMutex   chan struct{}
-	s              *Session
-	taskChan       chan chan []*Message
-	notifyTaskChan chan chan []*NotifyMessage
+// TaskChan is chat's msg push task channels.
+type TaskChan struct {
+	tasks        chan chan []*Message
+	notifyTasks  chan chan []*NotifyMessage
+	pushing      chan struct{}
+	pushingMutex chan struct{}
 }
 
-func newPushState(s *Session) *PushState {
-	p := &PushState{
-		sending:        make(chan struct{}, 1),
-		pushing:        make(chan struct{}, 1),
-		pushingMutex:   make(chan struct{}, 1),
-		s:              s,
-		pushMsgID:      0,
-		taskChan:       make(chan chan []*Message, 64),
-		notifyTaskChan: make(chan chan []*NotifyMessage, 32),
+func newTaskChan() *TaskChan {
+	t := &TaskChan{
+		tasks:        make(chan chan []*Message, 64),
+		notifyTasks:  make(chan chan []*NotifyMessage, 32),
+		pushing:      make(chan struct{}, 1),
+		pushingMutex: make(chan struct{}, 1),
 	}
-	p.sending <- struct{}{}
-	p.pushing <- struct{}{}
-	p.pushingMutex <- struct{}{}
-	return p
+	t.pushing <- NT
+	t.pushingMutex <- NT
+	return t
 }
 
-func (p *PushState) setSending() {
-	<-p.sending
-}
-
-func (p *PushState) doneSending() {
-	p.sending <- struct{}{}
-}
-
-func (p *PushState) getTask(id uint64, isSender bool) (task chan []*Message, lastID uint64, valid bool) {
-	p.Lock()
-	defer p.Unlock()
-
-	if isSender {
-		select {
-		case <-p.sending:
-			p.sending <- struct{}{}
-		default:
-			// in sending.
-			return
-		}
-	}
-
-	if id <= p.pushMsgID {
-		return
-	}
-	if p.pushMsgID == 0 {
-		p.pushMsgID = id - 1
-	}
-	valid = true
-
+// NewTask append a new message push task.
+func (t *TaskChan) NewTask() (task chan []*Message) {
 	task = make(chan []*Message, 1)
-	p.taskChan <- task
+	t.tasks <- task
+	return
+}
 
-	lastID = p.pushMsgID
-	p.pushMsgID = id
+// NewNotifyTask append a new notify message push task.
+func (t *TaskChan) NewNotifyTask() (task chan []*NotifyMessage) {
+	task = make(chan []*NotifyMessage, 1)
+	t.notifyTasks <- task
 	return
 }
 
@@ -82,7 +53,7 @@ type Session struct {
 	ID         SessionID
 	Ns         string
 	User       string
-	pushStates map[uint64]*PushState
+	taskChan   *TaskChan
 	msgTopic   string
 	clientInfo string
 	// roomID->chatID
@@ -103,12 +74,12 @@ func encodeNSUser(ns, u string) (user string) {
 
 func newSession(id SessionID, ns, user string) *Session {
 	return &Session{
-		ID:         id,
-		Ns:         ns,
-		User:       encodeNSUser(ns, user),
-		pushStates: make(map[uint64]*PushState),
-		msgTopic:   fmt.Sprintf(URIXChatUserMsg, id),
-		rooms:      make(map[uint64]uint64),
+		ID:       id,
+		Ns:       ns,
+		User:     encodeNSUser(ns, user),
+		taskChan: newTaskChan(),
+		msgTopic: fmt.Sprintf(URIXChatUserMsg, id),
+		rooms:    make(map[uint64]uint64),
 	}
 }
 
@@ -154,7 +125,6 @@ func (s *Session) ExitRoom(roomID, chatID uint64) {
 	if ok && cid == chatID {
 		rooms.Exit(roomID, chatID, s.ID)
 		delete(s.rooms, roomID)
-		s.RemoveChatPustState(chatID)
 	}
 	return
 }
@@ -167,56 +137,11 @@ func (s *Session) ExitAllRooms() {
 	for roomID, chatID := range s.rooms {
 		rooms.Exit(roomID, chatID, s.ID)
 		delete(s.rooms, roomID)
-		s.RemoveChatPustState(chatID)
 	}
-	return
-}
-
-// GetChatPustState returns chat's push state.
-func (s *Session) GetChatPustState(chatID uint64) *PushState {
-	s.Lock()
-	defer s.Unlock()
-	p, ok := s.pushStates[chatID]
-	if !ok {
-		p = newPushState(s)
-		s.pushStates[chatID] = p
-	}
-	return p
-}
-
-// RemoveChatPustState returns chat's push state.
-func (s *Session) RemoveChatPustState(chatID uint64) {
-	s.Lock()
-	defer s.Unlock()
-
-	delete(s.pushStates, chatID)
-}
-
-// GetPushState get last push id if not pushed, and set current id and get a push task.
-func (s *Session) GetPushState(msg *pubtypes.ChatMessage) (p *PushState, task chan []*Message, lastID uint64, valid bool) {
-	chatID := msg.ChatID
-	id := msg.ID
-	p = s.GetChatPustState(chatID)
-
-	task, lastID, valid = p.getTask(id, msg.User == s.User)
-	return
-}
-
-// GetNotifyPushState get notify task.
-func (s *Session) GetNotifyPushState(chatID uint64) (p *PushState, task chan []*NotifyMessage) {
-	p = s.GetChatPustState(chatID)
-
-	p.Lock()
-	defer p.Unlock()
-
-	task = make(chan []*NotifyMessage, 1)
-	p.notifyTaskChan <- task
-
 	return
 }
 
 var (
-	t            = struct{}{}
 	sessLock     = sync.RWMutex{}
 	sessions     = make(map[SessionID]*Session)
 	userSessions = make(map[string]map[SessionID]struct{})
@@ -233,7 +158,7 @@ func AddSession(s *Session) {
 		us = make(map[SessionID]struct{})
 		userSessions[s.User] = us
 	}
-	us[s.ID] = t
+	us[s.ID] = NT
 }
 
 // RemoveSession unregister the session.

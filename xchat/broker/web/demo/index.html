@@ -83,6 +83,7 @@
         onchallenge: onchallenge
     });
 
+    var maxMsgCount = 500;
     var session = null;
     var reply_sub = null;
     var msg_sub = null;
@@ -186,6 +187,9 @@
           p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user+ " 「" + msg.msg + "」";
         }
         msg_div.insertBefore(p, msg_div.firstChild);
+        if (msg_div.childElementCount > maxMsgCount) {
+          msg_div.removeChild(msg_div.lastElementChild);
+        }
       }
     }
 

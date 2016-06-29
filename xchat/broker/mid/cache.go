@@ -19,7 +19,7 @@ var (
 )
 
 func getChatMembers(chatID uint64, updated int64) []db.Member {
-	key := strconv.FormatUint(chatID, 10)
+	key := strconv.FormatUint(chatID, 36)
 	value, ok := chatMembersCache.Get(key)
 	if ok {
 		cm := value.(*chatMembers)

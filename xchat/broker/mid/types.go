@@ -14,8 +14,8 @@ type Message struct {
 	Msg    string `json:"msg"`
 }
 
-// NewMessageFromDBMsg converts db.Message to Message.
-func NewMessageFromDBMsg(msg *pubtypes.ChatMessage) *Message {
+// NewMessageFromPubMsg converts db.Message to Message.
+func NewMessageFromPubMsg(msg *pubtypes.ChatMessage) *Message {
 	return &Message{
 		ChatID: fmt.Sprintf("%s.%d", msg.ChatType, msg.ChatID),
 		User:   msg.User,
@@ -33,8 +33,8 @@ type NotifyMessage struct {
 	Msg    string `json:"msg"`
 }
 
-// NewNotifyMessageFromDBMsg converts db.Message to Message.
-func NewNotifyMessageFromDBMsg(msg *pubtypes.ChatNotifyMessage) *NotifyMessage {
+// NewNotifyMessageFromPubMsg converts db.Message to Message.
+func NewNotifyMessageFromPubMsg(msg *pubtypes.ChatNotifyMessage) *NotifyMessage {
 	return &NotifyMessage{
 		ChatID: fmt.Sprintf("%s.%d", msg.ChatType, msg.ChatID),
 		User:   msg.User,

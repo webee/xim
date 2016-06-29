@@ -1,3 +1,8 @@
+struct MsgSource {
+	InstanceID uint64
+	SessionID uint64
+}
+
 struct ChatMessage {
 	ChatID uint64
 	ChatType string
@@ -22,6 +27,7 @@ struct SetAreaLimitCmd {
 }
 
 struct XMessage {
+	Source *MsgSource
 	Msg union {
 		ChatMessage
 		ChatNotifyMessage

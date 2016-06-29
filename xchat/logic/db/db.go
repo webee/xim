@@ -119,6 +119,23 @@ func GetChatMessages(chatID uint64, chatType string, lID, rID uint64, limit int,
 	return
 }
 
+// GetChatMessagesByIDs get chat messages by ids.
+func GetChatMessagesByIDs(chatID uint64, chatType string, msgIDs []uint64) (msgs []Message, err error) {
+	if len(msgIDs) == 0 {
+		return
+	}
+
+	query, args, err := sqlx.In(`SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=? and chat_type=? and id IN (?)`, chatID, chatType, msgIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	query = db.Rebind(query)
+
+	err = db.Select(&msgs, query, args...)
+	return
+}
+
 // GetChat returns chat.
 func GetChat(chatID uint64) (chat *Chat, err error) {
 	chat = &Chat{}
