@@ -139,27 +139,47 @@ func FetchUserName(uid string) (string, error) {
 	}
 
 	obj, ok := ret["obj"]
-	if ok {
-		objMap, ok := obj.(map[string]interface{})
-		person, ok := objMap["person"]
-		personMap, ok := person.(map[string]interface{})
-		if ok {
-			fullName, ok := personMap["fullName"]
-			if ok {
-				name, ok := fullName.(string)
-				if ok {
-					l.Info("#fetch_user_name# %s %s", uid, name)
-					return name, nil
-				}
-			}
-		}
+	if !ok {
+		l.Warning("%v", ret)
+		return "", errors.New("Wrong return message obj")
+	}
+	objMap, ok := obj.(map[string]interface{})
+	if !ok {
+		l.Warning("%v", ret)
+		return "", errors.New("Wrong return message objMap")
+	}
+	person, ok := objMap["person"]
+	if !ok {
+		l.Warning("%v", ret)
+		return "", errors.New("Wrong return message person")
 	}
 
-	return "", errors.New("user not found")
+	personMap, ok := person.(map[string]interface{})
+	if !ok {
+		l.Warning("%v", ret)
+		return "", errors.New("Wrong return message personMap")
+	}
+	fullName, ok := personMap["fullName"]
+	if !ok {
+		l.Warning("%v", ret)
+		return "", errors.New("Wrong return message fullName")
+	}
+	name, ok := fullName.(string)
+	if !ok {
+		l.Warning("%v", ret)
+		return "", errors.New("Wrong return message fullName string")
+	}
+
+	l.Info("#fetch_user_name# %s %s", uid, name)
+	return name, nil
 }
 
 // GetUserName get user name from cache or interface.
 func GetUserName(uid string) (string, error) {
+	// 客服
+	if strings.HasPrefix(uid, "cs:") {
+		return "客服", nil
+	}
 	ui, ok := userInfoCache[uid]
 	if ok {
 		// 检查缓存是否过期
