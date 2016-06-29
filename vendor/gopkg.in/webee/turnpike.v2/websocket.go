@@ -3,7 +3,6 @@ package turnpike
 import (
 	"crypto/tls"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -12,11 +11,13 @@ import (
 type websocketPeer struct {
 	conn         *websocket.Conn
 	serializer   Serializer
+	sendMsgs     chan Message
 	messages     chan Message
 	payloadType  int
 	closed       bool
-	sendMutex    sync.Mutex
+	maxMsgSize   int64
 	writeTimeout time.Duration
+	pingTimeout  time.Duration
 	idleTimeout  time.Duration
 }
 
@@ -47,6 +48,7 @@ func newWebsocketPeer(url, protocol, origin string, serializer Serializer, paylo
 	}
 	ep := &websocketPeer{
 		conn:        conn,
+		sendMsgs:    make(chan Message, 16),
 		messages:    make(chan Message, 10),
 		serializer:  serializer,
 		payloadType: payloadType,
@@ -56,27 +58,20 @@ func newWebsocketPeer(url, protocol, origin string, serializer Serializer, paylo
 	return ep, nil
 }
 
-// TODO: make this just add the message to a channel so we don't block
 func (ep *websocketPeer) Send(msg Message) error {
-	b, err := ep.serializer.Serialize(msg)
-	if err != nil {
-		return err
-	}
-	ep.sendMutex.Lock()
-	defer ep.sendMutex.Unlock()
-	if ep.writeTimeout > 0 {
-		ep.conn.SetWriteDeadline(time.Now().Add(ep.writeTimeout))
-	}
-	err = ep.conn.WriteMessage(ep.payloadType, b)
-	if ep.idleTimeout > 0 {
-		ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
-	}
-	return err
+	ep.sendMsgs <- msg
+	return nil
 }
+
 func (ep *websocketPeer) Receive() <-chan Message {
 	return ep.messages
 }
+
 func (ep *websocketPeer) Close() error {
+	if ep.closed {
+		return nil
+	}
+
 	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "goodbye")
 	err := ep.conn.WriteControl(websocket.CloseMessage, closeMsg, time.Now().Add(5*time.Second))
 	if err != nil {
@@ -87,6 +82,18 @@ func (ep *websocketPeer) Close() error {
 }
 
 func (ep *websocketPeer) run() {
+	go ep.sending()
+
+	if ep.maxMsgSize > 0 {
+		ep.conn.SetReadLimit(ep.maxMsgSize)
+	}
+	ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
+	ep.conn.SetPongHandler(func(v string) error {
+		tlog.Println("pong:", v)
+		ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
+		return nil
+	})
+
 	for {
 		// TODO: use conn.NextMessage() and stream
 		// TODO: do something different based on binary/text frames
@@ -114,6 +121,39 @@ func (ep *websocketPeer) run() {
 			} else {
 				ep.messages <- msg
 			}
+		}
+	}
+}
+
+func (ep *websocketPeer) sending() {
+	ticker := time.NewTicker(ep.pingTimeout)
+	defer func() {
+		ticker.Stop()
+		ep.Close()
+	}()
+
+	for {
+		select {
+		case msg := <-ep.sendMsgs:
+			b, err := ep.serializer.Serialize(msg)
+			if err != nil {
+				tlog.Println("error serializing peer message:", err)
+				continue
+			}
+			if ep.writeTimeout > 0 {
+				ep.conn.SetWriteDeadline(time.Now().Add(ep.writeTimeout))
+			}
+			err = ep.conn.WriteMessage(ep.payloadType, b)
+			if err != nil {
+				return
+			}
+		case <-ticker.C:
+			if err := ep.conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(ep.writeTimeout)); err != nil {
+				return
+			}
+		}
+		if ep.idleTimeout > 0 {
+			ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
 		}
 	}
 }
