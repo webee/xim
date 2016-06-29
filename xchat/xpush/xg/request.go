@@ -1,3 +1,4 @@
+// Package xinge
 // Copyright 2015 mint.zhao.chiu@gmail.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -11,6 +12,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
+
 package xinge
 
 import (
@@ -25,23 +27,27 @@ import (
 	"xim/xchat/xpush/xg/httpclient"
 )
 
+// Request http request struct.
 type Request struct {
-	HttpMethod string
-	HttpUrl    string
+	HTTPMethod string
+	HTTPURL    string
 	Params     map[string]interface{}
 	Client     *Client
 }
 
+// SetParam set http param.
 func (req *Request) SetParam(name string, value interface{}) {
 	req.Params[name] = value
 }
 
+// SetParams set http params.
 func (req *Request) SetParams(params map[string]interface{}) {
 	for k, v := range params {
 		req.SetParam(k, v)
 	}
 }
 
+// Execute execute http request.
 func (req *Request) Execute() (*Response, error) {
 	body, err := req.doRequestAndGetBody()
 	if err != nil {
@@ -58,14 +64,14 @@ func (req *Request) Execute() (*Response, error) {
 }
 
 func (req *Request) doRequestAndGetBody() ([]byte, error) {
-	urls := req.HttpUrl + "?" + req.queryString()
+	URLs := req.HTTPURL + "?" + req.queryString()
 
-	rsp, err := httpclient.ForwardHttp(req.HttpMethod, urls, nil)
+	rsp, err := httpclient.ForwardHTTP(req.HTTPMethod, URLs, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	body := httpclient.GetForwardHttpBody(rsp.Body)
+	body := httpclient.GetForwardHTTPBody(rsp.Body)
 	return body, nil
 }
 
@@ -104,12 +110,12 @@ func (req *Request) md5Signature(params map[string]interface{}) string {
 		return ""
 	}
 
-	urls, err := url.ParseRequestURI(req.HttpUrl)
+	URLs, err := url.ParseRequestURI(req.HTTPURL)
 	if err != nil {
 		return ""
 	}
 
-	origin = req.HttpMethod + urls.Host + urls.Path + origin + req.Client.SecretKey
+	origin = req.HTTPMethod + URLs.Host + URLs.Path + origin + req.Client.SecretKey
 
 	c := md5.New()
 	c.Write([]byte(origin))
@@ -121,9 +127,9 @@ func (req *Request) joinRequestParams(params map[string]interface{}) string {
 		return ""
 	}
 
-	keys := make([]string, 0)
+	var keys []string
 	origin := ""
-	for k, _ := range params {
+	for k := range params {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -138,7 +144,7 @@ func (req *Request) joinRequestParams(params map[string]interface{}) string {
 func (req *Request) makeRequestParams() map[string]interface{} {
 	ps := make(map[string]interface{})
 
-	ps["access_id"] = req.Client.AccessId
+	ps["access_id"] = req.Client.AccessID
 	ps["timestamp"] = time.Now().Unix()
 	ps["valid_time"] = req.Client.ValidTime
 

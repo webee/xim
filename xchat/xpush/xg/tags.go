@@ -1,3 +1,4 @@
+// Package xinge
 // Copyright 2015 mint.zhao.chiu@gmail.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -11,14 +12,16 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
+
 package xinge
 
 import "errors"
 
+// AppTags app tags.
 func (cli *Client) AppTags(start, limit int) (int64, []string, error) {
-	tags := make([]string, 0)
+	var tags []string
 
-	request := cli.NewRequest("GET", appTagsUrl)
+	request := cli.NewRequest("GET", appTagsURL)
 
 	request.SetParam("start", start)
 	request.SetParam("limit", limit)
@@ -46,8 +49,9 @@ func (cli *Client) AppTags(start, limit int) (int64, []string, error) {
 	return total, tags, nil
 }
 
+// SetTags set tags.
 func (cli *Client) SetTags(tagTokenList ...[2]string) error {
-	request := cli.NewRequest("GET", batchSetTagsUrl)
+	request := cli.NewRequest("GET", batchSetTagsURL)
 
 	tagTokens := "["
 	for _, tagToken := range tagTokenList {
@@ -70,8 +74,9 @@ func (cli *Client) SetTags(tagTokenList ...[2]string) error {
 	return nil
 }
 
+// DelTags delete tags.
 func (cli *Client) DelTags(tagTokenList ...[2]string) error {
-	request := cli.NewRequest("GET", batchDelTagsUrl)
+	request := cli.NewRequest("GET", batchDelTagsURL)
 
 	tagTokens := "["
 	for _, tagToken := range tagTokenList {
@@ -94,9 +99,10 @@ func (cli *Client) DelTags(tagTokenList ...[2]string) error {
 	return nil
 }
 
+// TokenTags get token tags.
 func (cli *Client) TokenTags(token string) ([]string, error) {
-	tags := make([]string, 0)
-	request := cli.NewRequest("GET", tokenTagsUrl)
+	var tags []string
+	request := cli.NewRequest("GET", tokenTagsURL)
 
 	request.SetParam("device_token", token)
 	response, err := request.Execute()
@@ -117,8 +123,9 @@ func (cli *Client) TokenTags(token string) ([]string, error) {
 	return tags, nil
 }
 
+// TagTokensNum get tag token num.
 func (cli *Client) TagTokensNum(tag string) (int64, error) {
-	request := cli.NewRequest("GET", tagTokensUrl)
+	request := cli.NewRequest("GET", tagTokensURL)
 
 	request.SetParam("tag", tag)
 	response, err := request.Execute()
