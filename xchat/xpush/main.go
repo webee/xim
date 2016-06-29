@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"runtime"
 	"xim/utils/pprofutils"
 	"xim/xchat/logic/logger"
@@ -23,6 +24,7 @@ var (
 
 func main() {
 	flag.Parse()
+	fmt.Println("args", args)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	if !args.debug {
 		l.MaxLevel = 6
@@ -38,7 +40,7 @@ func main() {
 	userinfo.InitUserInfoHost(args.userInfoHost)
 
 	defer db.InitRedisPool(args.redisAddr, args.redisPassword, args.poolSize)()
-	if args.testing {
+	if args.xgtest {
 		l.Info("testing push")
 		push.NewPushClient(push.AndroidTest, push.IosTest)
 	} else {
@@ -82,6 +84,10 @@ func consumeMsg() {
 
 				if timestamp.Unix()+int64(60) > time.Now().Unix() {
 					content, err := immsg.ParseMsg([]byte(msg.Msg))
+					if err != nil {
+						l.Warning("immsg parse failed. %s", err.Error())
+						continue
+					}
 					err = push.OfflineMsg(msg.From, msg.User, udi.Source,
 						udi.DeviceToken, content, msg.ChatID,
 						args.pushInterval, env)

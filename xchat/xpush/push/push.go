@@ -1,14 +1,11 @@
 package push
 
 import (
-	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 	"xim/xchat/xpush/userinfo"
 	xg "xim/xchat/xpush/xg"
-	"xim/xchat/xpush/xinge"
 )
 
 // xingeConfig xinge access id and secret key
@@ -43,17 +40,13 @@ var (
 	}
 
 	androidActivity = "com.engdd.familytree" // android activity 用于唤醒Android
-	androidClient   *xinge.Client
+	androidClient   *xg.Client
 	iosClient       *xg.Client
 )
 
 // NewPushClient new the xinge client.
 func NewPushClient(android, ios *xingeConfig) {
-	accessID, err := strconv.Atoi(android.accessID)
-	if err != nil {
-		l.Alert("android Wrong accessID. %s", err.Error())
-	}
-	androidClient = xinge.NewClient(accessID, android.secretKey)
+	androidClient = xg.NewClient(android.accessID, 300, "", android.secretKey)
 	iosClient = xg.NewClient(ios.accessID, 300, "", ios.secretKey)
 }
 
@@ -74,27 +67,38 @@ func OfflineMsg(from, to, source, token, content string, chatID, interval int64,
 	}
 	l.Info("#user_name# %s %s", from, userName)
 
-	var resp xinge.Response
 	szChatID := fmt.Sprintf("%d", chatID)
 	if strings.ToLower(source) != "appstore" {
-		msg := xinge.DefaultMessage(userName, content)
-		msg.Style.Clearable = 1
-		msg.Style.NId = int(time.Now().Unix())
-		msg.Action.ActionType = 1
-		msg.Action.Activity = androidActivity
-		msg.Custom = map[string]string{"chat_id": szChatID}
-
-		resp = androidClient.PushSingleDevice(xinge.Android, token, msg)
-		if resp.Code != 0 {
-			return errors.New(resp.Msg)
+		// pack := &xg.Package{PackageName: androidActivity, Confirm: 0}
+		// action := &xg.AndroidAction{ActionType: 4, PackageName: pack}
+		action := &xg.AndroidAction{ActionType: 1, Activity: androidActivity}
+		message := &xg.AndroidMessage{
+			Content:       content,
+			Title:         userName,
+			Action:        action,
+			CustomContent: map[string]interface{}{"chat_id": szChatID},
 		}
-		return nil
+
+		reqPush := &xg.ReqPush{
+			PushType:     xg.PushType_single_device,
+			DeviceToken:  token,
+			MessageType:  xg.MessageType_notify,
+			Message:      message,
+			ExpireTime:   300,
+			SendTime:     time.Now(),
+			MultiPkgType: xg.MultiPkg_aid,
+			PushEnv:      xg.PushEnv_android,
+			PlatformType: xg.Platform_android,
+			LoopTimes:    2,
+			LoopInterval: 7,
+			Cli:          androidClient,
+		}
+		return reqPush.Push()
 	}
-	aps := &xg.ApsAttr{Alert: userName + "发来一条消息", Badge: 1, Sound: "bingbong.aiff"}
+	aps := &xg.ApsAttr{Alert: userName + ":" + content, Badge: 1, Sound: "bingbong.aiff"}
 	message := &xg.IosMessage{Aps: aps, CustomContent: map[string]interface{}{"chat_id": szChatID}}
 	reqPush := &xg.ReqPush{
 		PushType:     xg.PushType_single_device,
-		TagsOp:       xg.TagsOp_AND,
 		DeviceToken:  token,
 		MessageType:  xg.MessageType_ios,
 		Message:      message,

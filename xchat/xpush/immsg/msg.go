@@ -68,6 +68,10 @@ func ParseMsg(data []byte) (msg string, err error) {
 	case MHIMMeesageRedPacketNotice:
 		msg = "[红包]"
 	}
-
+	// just push the front 32 char
+	runeMsg := []rune(msg)
+	if len(runeMsg) > 32 {
+		msg = string(string(runeMsg[:32]))
+	}
 	return msg, err
 }
