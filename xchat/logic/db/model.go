@@ -67,10 +67,10 @@ func (d *UserChat) MarshalJSON() ([]byte, error) {
 
 // Member is a chat member.
 type Member struct {
-	ChatID uint64 `db:"chat_id"`
-	User   string
-	Joined time.Time
-	CurID  uint64 `db:"cur_id"`
+	ChatID uint64    `db:"chat_id" json:"chat_id"`
+	User   string    `db:"user" json:"user"`
+	Joined time.Time `db:"joined" json:"joined"`
+	CurID  uint64    `db:"cur_id" json:"cur_id"`
 }
 
 // MarshalJSON encoding this to json.

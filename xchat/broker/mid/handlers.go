@@ -325,15 +325,21 @@ func fetchChatMembers(args []interface{}, kwargs map[string]interface{}) (result
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
 	}
-	// chatIdentity, err := service.ParseChatIdentity(args[0].(string))
-	// if err != nil {
-	// 	return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
-	// }
-	// chatID := chatIdentity.ID
-	// chatType := chatIdentity.Type
+	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
+	if err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
+	chatID := chatIdentity.ID
+	//chatType := chatIdentity.Type
 
-	members := []string{}
-	// TODO
+	// fetch members
+	members := []db.Member{}
+	if err := xchatLogic.Call(types.RPCXChatFetchUserChatMembers, &types.FetchUserChatMembersArgs{
+		User:   s.User,
+		ChatID: chatID,
+	}, &members); err != nil {
+		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+	}
 	return &turnpike.CallResult{Args: []interface{}{true, members}}
 }
 

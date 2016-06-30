@@ -76,6 +76,25 @@ func (r *RPCXChat) FetchChatMembers(chatID uint64, reply *[]db.Member) (err erro
 	return nil
 }
 
+// FetchUserChatMembers fetch user's chat members.
+func (r *RPCXChat) FetchUserChatMembers(args *types.FetchUserChatMembersArgs, reply *[]db.Member) (err error) {
+	ok, err := IsChatMember(args.ChatID, args.User)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("no permission")
+	}
+
+	members, err := FetchChatMembers(args.ChatID)
+	if err != nil {
+		return err
+	}
+
+	*reply = members
+	return nil
+}
+
 // FetchUserChatMessages fetch chat's messages between sID and eID.
 func (r *RPCXChat) FetchUserChatMessages(args *types.FetchUserChatMessagesArgs, reply *[]pubtypes.ChatMessage) (err error) {
 	var ok bool

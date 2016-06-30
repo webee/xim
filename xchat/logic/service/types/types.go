@@ -90,6 +90,12 @@ type FetchChatMessagesByIDsArgs struct {
 	MsgIDs   []uint64
 }
 
+// FetchUserChatMembersArgs is the arguments of FetchUserChatMembers
+type FetchUserChatMembersArgs struct {
+	User   string
+	ChatID uint64
+}
+
 // user status
 const (
 	UserStatusOnline  = "online"
@@ -147,6 +153,7 @@ const (
 	RPCXChatFetchUserChatList      = "RPCXChat.FetchUserChatList"
 	RPCXChatSyncUserChatRecv       = "RPCXChat.SyncUserChatRecv"
 	RPCXChatFetchChatMembers       = "RPCXChat.FetchChatMembers"
+	RPCXChatFetchUserChatMembers   = "RPCXChat.FetchUserChatMembers"
 	RPCXChatFetchNewRoomChatIDs    = "RPCXChat.FetchNewRoomChatIDs"
 	RPCXChatJoinChat               = "RPCXChat.JoinChat"
 	RPCXChatExitChat               = "RPCXChat.ExitChat"
