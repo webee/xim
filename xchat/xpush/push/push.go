@@ -46,6 +46,7 @@ var (
 
 // NewPushClient new the xinge client.
 func NewPushClient(android, ios *xingeConfig) {
+	l.Info("Andoird %s %s Ios %s %s", android.accessID, android.secretKey, ios.accessID, ios.secretKey)
 	androidClient = xg.NewClient(android.accessID, 300, "", android.secretKey)
 	iosClient = xg.NewClient(ios.accessID, 300, "", ios.secretKey)
 }
