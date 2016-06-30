@@ -1,10 +1,6 @@
 package mid
 
-import (
-	"time"
-
-	"github.com/imdario/mergo"
-)
+import "time"
 
 // Config is the configs for http api server.
 type Config struct {
@@ -15,20 +11,4 @@ type Config struct {
 	LogicPubAddr   string
 	XChatHostURL   string
 	RPCCallTimeout time.Duration
-}
-
-var (
-	defaultConfig = &Config{
-		Debug:          false,
-		Testing:        false,
-		XChatHostURL:   "http://localhost:9980",
-		RPCCallTimeout: 5 * time.Second,
-	}
-)
-
-// NewConfig merge config to default config.
-func NewConfig(config *Config) *Config {
-	var finalConfig = defaultConfig
-	mergo.MergeWithOverwrite(finalConfig, config)
-	return finalConfig
 }

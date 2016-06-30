@@ -7,6 +7,7 @@ import (
 	"xim/xchat/broker/logger"
 
 	"xim/utils/pprofutils"
+	"xim/xchat/broker/mid"
 	"xim/xchat/broker/router"
 )
 
@@ -41,7 +42,16 @@ func main() {
 		log.Fatalln("create xchat router failed:", err)
 	}
 
-	setupMid(xchatRouter)
+	mid.Setup(&mid.Config{
+		Debug:          args.debug,
+		Testing:        args.testing,
+		Key:            userKey,
+		LogicRPCAddr:   args.logicRPCAddr,
+		LogicPubAddr:   args.logicPubAddr,
+		XChatHostURL:   args.xchatHostURL,
+		RPCCallTimeout: args.rpcCallTimeout,
+	}, xchatRouter)
+
 	startRouter(xchatRouter)
 
 	setupSignal()

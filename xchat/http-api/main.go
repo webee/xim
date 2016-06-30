@@ -28,7 +28,7 @@ func main() {
 
 	setupKeys()
 
-	config := server.NewConfig(&server.Config{
+	server.Start(&server.Config{
 		Debug:          args.debug,
 		Testing:        args.testing,
 		Key:            userKey,
@@ -36,6 +36,4 @@ func main() {
 		LogicRPCAddr:   args.logicRPCAddr,
 		RPCCallTimeout: args.rpcCallTimeout,
 	})
-
-	server.Start(config)
 }
