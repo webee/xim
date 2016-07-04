@@ -198,8 +198,16 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 
 	go push(src, &message)
 
-	toPushMsg := NewMessageFromPubMsg(&message)
-	return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}, Kwargs: map[string]interface{}{"msg": toPushMsg}}
+	withMsg := false
+	if x, ok := kwargs["with_msg"]; ok {
+		withMsg = x.(bool)
+	}
+	if withMsg {
+		toPushMsg := NewMessageFromPubMsg(&message)
+		return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}, Kwargs: map[string]interface{}{"msg": toPushMsg}}
+	}
+
+	return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}}
 }
 
 // 用户发布消息, 通知消息
