@@ -108,11 +108,6 @@
 			"Rev": "a68708917c6a4f06314ab4e52493cc61359c9d42"
 		},
 		{
-			"ImportPath": "github.com/imdario/mergo",
-			"Comment": "0.2.2-2-gea01514",
-			"Rev": "ea0151498788f6fab6365eae24f29f41c0ac0acc"
-		},
-		{
 			"ImportPath": "github.com/jmoiron/sqlx",
 			"Comment": "sqlx-v1.1-61-g398dd58",
 			"Rev": "398dd5876282499cdfd4cb8ea0f31a672abe9495"
@@ -240,7 +235,7 @@
 		},
 		{
 			"ImportPath": "gopkg.in/webee/turnpike.v2",
-			"Rev": "cd6e2eb97924bf08da58d043f8f85fd086e5f535"
+			"Rev": "faddf88610e5964a33b375f424f20ecdffb36e4f"
 		}
 	]
 }

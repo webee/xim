@@ -82,7 +82,9 @@ func (ep *websocketPeer) Close() error {
 }
 
 func (ep *websocketPeer) run() {
-	go ep.sending()
+	closing := make(chan struct{})
+	go ep.sending(closing)
+	defer close(closing)
 
 	if ep.maxMsgSize > 0 {
 		ep.conn.SetReadLimit(ep.maxMsgSize)
@@ -125,7 +127,7 @@ func (ep *websocketPeer) run() {
 	}
 }
 
-func (ep *websocketPeer) sending() {
+func (ep *websocketPeer) sending(closing chan struct{}) {
 	ticker := time.NewTicker(ep.pingTimeout)
 	defer func() {
 		ticker.Stop()
@@ -151,6 +153,8 @@ func (ep *websocketPeer) sending() {
 			if err := ep.conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(ep.writeTimeout)); err != nil {
 				return
 			}
+		case <-closing:
+			return
 		}
 		if ep.idleTimeout > 0 {
 			ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
