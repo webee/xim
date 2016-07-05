@@ -80,12 +80,14 @@ func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeou
 		turnpike.Debug()
 	}
 
+	auth := &jwtAuth{userKeys}
 	realms := map[string]turnpike.Realm{
 		"xchat": {
 			Authorizer:  new(XChatAuthorizer),
 			Interceptor: NewDetailsInterceptor(roleIsUser, nil, "details"),
 			CRAuthenticators: map[string]turnpike.CRAuthenticator{
-				"jwt": &jwtAuth{userKeys},
+				"jwt":    auth,
+				"ticket": auth,
 			},
 		},
 	}
