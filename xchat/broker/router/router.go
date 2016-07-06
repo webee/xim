@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	l *ol.Logger
+	l        *ol.Logger
+	emptyMap = map[string]interface{}{}
 )
 
 // Init setup router.
@@ -38,7 +39,7 @@ type jwtAuth struct {
 
 func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interface{}, error) {
 	l.Debug("challenge: %+v", details)
-	return details, nil
+	return emptyMap, nil
 }
 
 func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[string]interface{}, error) {
