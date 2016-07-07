@@ -1,11 +1,8 @@
 package router
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 	"time"
-	"xim/utils/jwtutils"
 
 	"xim/xchat/broker/logger"
 
@@ -22,40 +19,6 @@ var (
 // Init setup router.
 func Init() {
 	l = logger.Logger.GetLogger("router")
-}
-
-func decodeNSJwt(t string) (ns string, token string) {
-	parts := strings.SplitN(t, ":", 2)
-	if len(parts) > 1 {
-		return parts[0], parts[1]
-	}
-	return "", t
-}
-
-// jwt authentication.
-type jwtAuth struct {
-	keys map[string][]byte
-}
-
-func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interface{}, error) {
-	l.Debug("challenge: %+v", details)
-	return emptyMap, nil
-}
-
-func (e *jwtAuth) Authenticate(c map[string]interface{}, signature string) (map[string]interface{}, error) {
-	l.Debug("Authenticate: %+v", c)
-
-	ns, t := decodeNSJwt(signature)
-	key, ok := e.keys[ns]
-	if !ok {
-		return nil, fmt.Errorf("unknown user namespace: %s", ns)
-	}
-
-	claims, err := jwtutils.ParseToken(t, key)
-	if err != nil {
-		return nil, fmt.Errorf("parse token error: %s", err)
-	}
-	return map[string]interface{}{"ns": ns, "user": claims["user"].(string), "role": "user"}, nil
 }
 
 func roleIsUser(details map[string]interface{}) bool {
@@ -82,6 +45,7 @@ func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeou
 	}
 
 	auth := &jwtAuth{userKeys}
+	xauth := &xjwtAuth{userKeys}
 	realms := map[string]turnpike.Realm{
 		"xchat": {
 			Authorizer:  new(XChatAuthorizer),
@@ -89,6 +53,9 @@ func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeou
 			CRAuthenticators: map[string]turnpike.CRAuthenticator{
 				"jwt":    auth,
 				"ticket": auth,
+			},
+			Authenticators: map[string]turnpike.Authenticator{
+				"xjwt": xauth,
 			},
 		},
 	}

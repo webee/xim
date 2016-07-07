@@ -79,8 +79,9 @@
     var connection = new autobahn.Connection({
         url: wsuri,
         realm: "xchat",
-        authmethods: ["jwt"],
-        onchallenge: onchallenge
+        authmethods: ["xjwt"],
+        authid: onchallenge(null, "jwt", null),
+        //onchallenge: onchallenge,
     });
 
     var maxMsgCount = 100;
