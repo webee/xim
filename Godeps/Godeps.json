@@ -12,14 +12,6 @@
 			"Rev": "19422bf56497c7698aff8619a60fb020113080a5"
 		},
 		{
-			"ImportPath": "github.com/aiwuTech/httpclient",
-			"Rev": "9a943d5909cce126432536d4a85fdc3c94ca04d1"
-		},
-		{
-			"ImportPath": "github.com/aiwuTech/xinge",
-			"Rev": "3af8103448f08eda32bf618e22c5eb8e2e453b60"
-		},
-		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
@@ -104,8 +96,8 @@
 		},
 		{
 			"ImportPath": "github.com/gorilla/websocket",
-			"Comment": "v1.0.0-12-ga687089",
-			"Rev": "a68708917c6a4f06314ab4e52493cc61359c9d42"
+			"Comment": "v1.0.0-15-g54f9dec",
+			"Rev": "54f9decdbfb3fe254c5df3d5aa234480989f4af0"
 		},
 		{
 			"ImportPath": "github.com/jmoiron/sqlx",
@@ -196,10 +188,6 @@
 		{
 			"ImportPath": "github.com/valyala/fasttemplate",
 			"Rev": "3b874956e03f1636d171bda64b130f9135f42cff"
-		},
-		{
-			"ImportPath": "github.com/wvanbergen/kafka/consumergroup",
-			"Rev": "46f9a1cf3f670edec492029fadded9c2d9e18866"
 		},
 		{
 			"ImportPath": "github.com/wvanbergen/kazoo-go",

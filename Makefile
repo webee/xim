@@ -1,6 +1,6 @@
-.PHONY: broker logic http-api proxy xpush clean
+.PHONY: broker logic http-api proxy clean
 
-all: broker logic http-api proxy xpush
+all: broker logic http-api proxy
 
 broker:
 	godep go build -ldflags "$(ldflags)" -o xchat-$@ xim/xchat/$@
@@ -12,9 +12,6 @@ http-api:
 	godep go build -ldflags "$(ldflags)" -o xchat-$@ xim/xchat/$@
 
 proxy:
-	godep go build -ldflags "$(ldflags)" -o xchat-$@ xim/xchat/$@
-
-xpush:
 	godep go build -ldflags "$(ldflags)" -o xchat-$@ xim/xchat/$@
 
 clean:
