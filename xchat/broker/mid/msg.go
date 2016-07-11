@@ -22,6 +22,8 @@ func handleMsg(ms <-chan interface{}) {
 			go push(src, &msg)
 		case pubtypes.ChatNotifyMessage:
 			go pushNotify(&msg)
+		case pubtypes.UserNotifyMessage:
+			go pushUserNotify(&msg)
 		case pubtypes.SetAreaLimitCmd:
 			go setAreaLimit(&msg)
 		}
@@ -53,6 +55,16 @@ func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []
 	}
 
 	return
+}
+
+func pushUserNotify(msg *pubtypes.UserNotifyMessage) {
+	sesses := GetUserSessions(msg.User)
+	toPushMsgs := []*UserNotifyMessage{NewUserNotifyMessageFromPubMsg(msg)}
+
+	for _, s := range sesses {
+		s.taskChan.NewUserNotifyTask() <- toPushMsgs
+		tryPushing(s, s.taskChan)
+	}
 }
 
 func pushNotify(msg *pubtypes.ChatNotifyMessage) {
@@ -116,9 +128,11 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 	pushing := t.pushing
 	tasks := t.tasks
 	notifyTasks := t.notifyTasks
+	userNotifyTasks := t.userNotifyTasks
 
 	var accMsgs []*Message
 	var accNotifyMsgs []*NotifyMessage
+	var accUserNotifyMsgs []*UserNotifyMessage
 	for {
 		select {
 		case task := <-notifyTasks:
@@ -141,6 +155,16 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				doPush(s.msgTopic, types.MsgKindChat, accMsgs)
 				accMsgs = []*Message{}
 			}
+		case task := <-userNotifyTasks:
+			msgs, ok := <-task
+			if !ok || len(msgs) == 0 {
+				continue
+			}
+			accUserNotifyMsgs = append(accUserNotifyMsgs, msgs...)
+			if len(accUserNotifyMsgs) > 0 {
+				doPush(s.msgTopic, types.MsgKindUserNotify, accUserNotifyMsgs)
+				accUserNotifyMsgs = []*UserNotifyMessage{}
+			}
 		case <-time.After(18 * time.Millisecond):
 			if len(accNotifyMsgs) > 0 {
 				doPush(s.msgTopic, types.MsgKindChatNotify, accNotifyMsgs)
@@ -149,6 +173,10 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 			if len(accMsgs) > 0 {
 				doPush(s.msgTopic, types.MsgKindChat, accMsgs)
 				accMsgs = []*Message{}
+			}
+			if len(accUserNotifyMsgs) > 0 {
+				doPush(s.msgTopic, types.MsgKindUserNotify, accUserNotifyMsgs)
+				accUserNotifyMsgs = []*UserNotifyMessage{}
 			}
 
 			if clear {
@@ -166,6 +194,11 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				msgs, ok := <-task
 				if ok {
 					accMsgs = append(accMsgs, msgs...)
+				}
+			case task := <-userNotifyTasks:
+				msgs, ok := <-task
+				if ok {
+					accUserNotifyMsgs = append(accUserNotifyMsgs, msgs...)
 				}
 			// TODO 根据消息发送状况确定等待时间
 			case <-time.After(3 * time.Second):

@@ -265,3 +265,12 @@ func GetOfflineUsers(users ...string) ([]string, error) {
 
 	return offlineUsers, nil
 }
+
+// IsUserOnline checks if user online.
+func IsUserOnline(user string) (bool, error) {
+	uis, err := GetOnlineUsers(user)
+	if err != nil {
+		return false, err
+	}
+	return len(uis) > 0, nil
+}

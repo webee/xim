@@ -175,3 +175,15 @@ func (r *RPCXChat) JoinChat(args *types.JoinChatArgs, reply *types.NoReply) erro
 func (r *RPCXChat) ExitChat(args *types.ExitChatArgs, reply *types.NoReply) error {
 	return ExitChat(args.ChatID, args.ChatType, args.Ns, args.User)
 }
+
+// SendUserNotify send notify to user.
+func (r *RPCXChat) SendUserNotify(args *types.SendUserNotifyArgs, reply *types.SendUserNotifyReply) error {
+	ok, err := SendUserNotify(args.User, args.Msg)
+	if err != nil {
+		return err
+	}
+	*reply = types.SendUserNotifyReply{
+		Ok: ok,
+	}
+	return nil
+}

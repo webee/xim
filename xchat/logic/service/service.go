@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"xim/xchat/logic/cache"
 	"xim/xchat/logic/db"
 	"xim/xchat/logic/mq"
 	"xim/xchat/logic/pub"
@@ -107,6 +108,25 @@ func FetchChatMessagesByIDs(chatID uint64, chatType string, msgIDs []uint64) ([]
 const (
 	CSUser = "cs:cs"
 )
+
+// SendUserNotify sends user notify.
+func SendUserNotify(user string, msg string) (bool, error) {
+	m := pubtypes.UserNotifyMessage{
+		User: user,
+		Msg:  msg,
+	}
+
+	if ok, err := cache.IsUserOnline(user); !ok {
+		return ok, err
+	}
+
+	// FIXME: goroutine pool?
+	go pub.PublishMessage(&pubtypes.XMessage{
+		Msg: m,
+	})
+
+	return true, nil
+}
 
 // SendChatMsg sends chat message.
 func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, user string, msg string) (*pubtypes.ChatMessage, error) {

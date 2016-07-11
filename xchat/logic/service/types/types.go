@@ -17,6 +17,7 @@ const (
 const (
 	MsgKindChat       = "chat"
 	MsgKindChatNotify = "chat_notify"
+	MsgKindUserNotify = "user_notify"
 )
 
 // NoArgs used by rpc with no args.
@@ -139,6 +140,17 @@ type FetchNewRoomChatIDs struct {
 	ChatIDs []uint64
 }
 
+// SendUserNotifyArgs is the arguments of SendUserNotify.
+type SendUserNotifyArgs struct {
+	User string
+	Msg  string
+}
+
+// SendUserNotifyReply is the reply of SendUserNotify.
+type SendUserNotifyReply struct {
+	Ok bool
+}
+
 // XChatService methods.
 const (
 	RPCXChatPing                   = "RPCXChat.Ping"
@@ -157,4 +169,7 @@ const (
 	RPCXChatFetchNewRoomChatIDs    = "RPCXChat.FetchNewRoomChatIDs"
 	RPCXChatJoinChat               = "RPCXChat.JoinChat"
 	RPCXChatExitChat               = "RPCXChat.ExitChat"
+
+	// notify
+	RPCXChatSendUserNotify = "RPCXChat.SendUserNotify"
 )

@@ -90,6 +90,143 @@ func (d *MsgSource) Unmarshal(buf []byte) (uint64, error) {
 	return i + 16, nil
 }
 
+type UserNotifyMessage struct {
+	User string
+	Msg  string
+}
+
+func (d *UserNotifyMessage) Size() (s uint64) {
+
+	{
+		l := uint64(len(d.User))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t <<= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.Msg))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t <<= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	return
+}
+func (d *UserNotifyMessage) Marshal(buf []byte) ([]byte, error) {
+	size := d.Size()
+	{
+		if uint64(cap(buf)) >= size {
+			buf = buf[:size]
+		} else {
+			buf = make([]byte, size)
+		}
+	}
+	i := uint64(0)
+
+	{
+		l := uint64(len(d.User))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+0] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+0] = byte(t)
+			i++
+
+		}
+		copy(buf[i+0:], d.User)
+		i += l
+	}
+	{
+		l := uint64(len(d.Msg))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+0] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+0] = byte(t)
+			i++
+
+		}
+		copy(buf[i+0:], d.Msg)
+		i += l
+	}
+	return buf[:i+0], nil
+}
+
+func (d *UserNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
+	i := uint64(0)
+
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+0] & 0x7F)
+			for buf[i+0]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+0]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		d.User = string(buf[i+0 : i+0+l])
+		i += l
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+0] & 0x7F)
+			for buf[i+0]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+0]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		d.Msg = string(buf[i+0 : i+0+l])
+		i += l
+	}
+	return i + 0, nil
+}
+
 type ChatMessage struct {
 	ChatID   uint64
 	ChatType string
@@ -716,14 +853,17 @@ func (d *XMessage) Size() (s uint64) {
 		var v uint64
 		switch d.Msg.(type) {
 
-		case ChatMessage:
+		case UserNotifyMessage:
 			v = 0 + 1
 
-		case ChatNotifyMessage:
+		case ChatMessage:
 			v = 1 + 1
 
-		case SetAreaLimitCmd:
+		case ChatNotifyMessage:
 			v = 2 + 1
+
+		case SetAreaLimitCmd:
+			v = 3 + 1
 
 		}
 
@@ -738,6 +878,12 @@ func (d *XMessage) Size() (s uint64) {
 
 		}
 		switch tt := d.Msg.(type) {
+
+		case UserNotifyMessage:
+
+			{
+				s += tt.Size()
+			}
 
 		case ChatMessage:
 
@@ -793,14 +939,17 @@ func (d *XMessage) Marshal(buf []byte) ([]byte, error) {
 		var v uint64
 		switch d.Msg.(type) {
 
-		case ChatMessage:
+		case UserNotifyMessage:
 			v = 0 + 1
 
-		case ChatNotifyMessage:
+		case ChatMessage:
 			v = 1 + 1
 
-		case SetAreaLimitCmd:
+		case ChatNotifyMessage:
 			v = 2 + 1
+
+		case SetAreaLimitCmd:
+			v = 3 + 1
 
 		}
 
@@ -818,6 +967,16 @@ func (d *XMessage) Marshal(buf []byte) ([]byte, error) {
 
 		}
 		switch tt := d.Msg.(type) {
+
+		case UserNotifyMessage:
+
+			{
+				nbuf, err := tt.Marshal(buf[i+1:])
+				if err != nil {
+					return nil, err
+				}
+				i += uint64(len(nbuf))
+			}
 
 		case ChatMessage:
 
@@ -895,7 +1054,7 @@ func (d *XMessage) Unmarshal(buf []byte) (uint64, error) {
 		switch v {
 
 		case 0 + 1:
-			var tt ChatMessage
+			var tt UserNotifyMessage
 
 			{
 				ni, err := tt.Unmarshal(buf[i+1:])
@@ -908,7 +1067,7 @@ func (d *XMessage) Unmarshal(buf []byte) (uint64, error) {
 			d.Msg = tt
 
 		case 1 + 1:
-			var tt ChatNotifyMessage
+			var tt ChatMessage
 
 			{
 				ni, err := tt.Unmarshal(buf[i+1:])
@@ -921,6 +1080,19 @@ func (d *XMessage) Unmarshal(buf []byte) (uint64, error) {
 			d.Msg = tt
 
 		case 2 + 1:
+			var tt ChatNotifyMessage
+
+			{
+				ni, err := tt.Unmarshal(buf[i+1:])
+				if err != nil {
+					return 0, err
+				}
+				i += ni
+			}
+
+			d.Msg = tt
+
+		case 3 + 1:
 			var tt SetAreaLimitCmd
 
 			{
