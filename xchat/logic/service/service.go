@@ -225,6 +225,8 @@ func PubUserStatus(instanceID, sessionID uint64, user string, status string, inf
 	l.Debug("instance:%d, session:%d, user:%s, status:%s, info:%s", instanceID, sessionID, user, status, info)
 	// 记录用户在线状态
 	UpdateUserStatus(instanceID, sessionID, user, status)
+	t := time.Now()
+	publishUserStatus(user, status, t)
 
 	// 发送上下线日志
 	if info != "" {
@@ -232,7 +234,7 @@ func PubUserStatus(instanceID, sessionID uint64, user string, status string, inf
 		msg["user"] = user
 		msg["type"] = status
 		msg["info"] = info
-		msg["ts"] = strconv.FormatInt(time.Now().Unix(), 10)
+		msg["ts"] = strconv.FormatInt(t.Unix(), 10)
 
 		b, err := json.Marshal(&msg)
 		if err != nil {
