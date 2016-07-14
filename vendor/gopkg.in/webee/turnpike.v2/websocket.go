@@ -14,7 +14,8 @@ type websocketPeer struct {
 	sendMsgs     chan Message
 	messages     chan Message
 	payloadType  int
-	closed       bool
+	inSending    chan struct{}
+	closing      chan struct{}
 	maxMsgSize   int64
 	writeTimeout time.Duration
 	pingTimeout  time.Duration
@@ -67,9 +68,38 @@ func (ep *websocketPeer) Receive() <-chan Message {
 	return ep.messages
 }
 
+func (ep *websocketPeer) doClosing() {
+	if ep.closing == nil {
+		return
+	}
+	select {
+	case <-ep.closing:
+	default:
+		close(ep.closing)
+	}
+}
+
+func (ep *websocketPeer) isClosed() bool {
+	if ep.closing == nil {
+		return true
+	}
+
+	select {
+	case <-ep.closing:
+		return true
+	default:
+		return false
+	}
+}
+
 func (ep *websocketPeer) Close() error {
-	if ep.closed {
+	if ep.isClosed() {
 		return nil
+	}
+	ep.doClosing()
+
+	if ep.inSending != nil {
+		<-ep.inSending
 	}
 
 	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "goodbye")
@@ -77,14 +107,13 @@ func (ep *websocketPeer) Close() error {
 	if err != nil {
 		tlog.Println("error sending close message:", err)
 	}
-	ep.closed = true
+
 	return ep.conn.Close()
 }
 
 func (ep *websocketPeer) run() {
-	closing := make(chan struct{})
-	go ep.sending(closing)
-	defer close(closing)
+	ep.closing = make(chan struct{})
+	go ep.sending()
 
 	if ep.maxMsgSize > 0 {
 		ep.conn.SetReadLimit(ep.maxMsgSize)
@@ -103,16 +132,14 @@ func (ep *websocketPeer) run() {
 			ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
 		}
 		if msgType, b, err := ep.conn.ReadMessage(); err != nil {
-			if ep.closed {
+			if ep.isClosed() {
 				tlog.Println("peer connection closed")
 			} else {
 				tlog.Println("error reading from peer:", err)
-				ep.conn.Close()
 			}
 			close(ep.messages)
 			break
 		} else if msgType == websocket.CloseMessage {
-			ep.conn.Close()
 			close(ep.messages)
 			break
 		} else {
@@ -127,37 +154,56 @@ func (ep *websocketPeer) run() {
 	}
 }
 
-func (ep *websocketPeer) sending(closing chan struct{}) {
+func (ep *websocketPeer) sending() {
+	ep.inSending = make(chan struct{})
 	ticker := time.NewTicker(ep.pingTimeout)
 	defer func() {
+		ep.conn.SetReadDeadline(time.Now())
 		ticker.Stop()
-		ep.Close()
+		close(ep.inSending)
 	}()
 
 	for {
 		select {
 		case msg := <-ep.sendMsgs:
-			b, err := ep.serializer.Serialize(msg)
-			if err != nil {
-				tlog.Println("error serializing peer message:", err)
-				continue
-			}
-			if ep.writeTimeout > 0 {
-				ep.conn.SetWriteDeadline(time.Now().Add(ep.writeTimeout))
-			}
-			err = ep.conn.WriteMessage(ep.payloadType, b)
-			if err != nil {
+			if closed, _ := ep.doSend(msg); closed {
 				return
 			}
 		case <-ticker.C:
 			if err := ep.conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(ep.writeTimeout)); err != nil {
 				return
 			}
-		case <-closing:
+		case <-ep.closing:
+			// sending remaining messages.
+			for {
+				select {
+				case msg := <-ep.sendMsgs:
+					if closed, _ := ep.doSend(msg); !closed {
+						continue
+					}
+				default:
+				}
+				break
+			}
 			return
 		}
 		if ep.idleTimeout > 0 {
 			ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
 		}
 	}
+}
+
+func (ep *websocketPeer) doSend(msg Message) (closed bool, err error) {
+	b, err := ep.serializer.Serialize(msg)
+	if err != nil {
+		tlog.Println("error serializing peer message:", err)
+		return
+	}
+	if ep.writeTimeout > 0 {
+		ep.conn.SetWriteDeadline(time.Now().Add(ep.writeTimeout))
+	}
+	if err = ep.conn.WriteMessage(ep.payloadType, b); err != nil {
+		return true, err
+	}
+	return
 }
