@@ -37,7 +37,7 @@ type Client struct {
 	listeners    map[ID]chan Message
 	events       map[ID]*eventDesc
 	procedures   map[ID]*procedureDesc
-	acts         chan func()
+	actor        Actor
 	requestCount uint
 }
 
@@ -69,21 +69,11 @@ func NewClient(p Peer) *Client {
 		listeners:      make(map[ID]chan Message),
 		events:         make(map[ID]*eventDesc),
 		procedures:     make(map[ID]*procedureDesc),
-		acts:           make(chan func()),
+		actor:          NewChannelActor(),
 		requestCount:   0,
 	}
-	go c.run()
+	c.actor.Start()
 	return c
-}
-
-func (c *Client) run() {
-	for {
-		if act, ok := <-c.acts; ok {
-			act()
-		} else {
-			return
-		}
-	}
 }
 
 // JoinRealm joins a WAMP realm, but does not handle challenge/response authentication.
@@ -97,17 +87,17 @@ func (c *Client) JoinRealm(realm string, details map[string]interface{}) (map[st
 	}
 	if err := c.Send(&Hello{Realm: URI(realm), Details: details}); err != nil {
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, err
 	}
 	if msg, err := GetMessageTimeout(c.Peer, c.ReceiveTimeout); err != nil {
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, err
 	} else if welcome, ok := msg.(*Welcome); !ok {
 		c.Send(abortUnexpectedMsg)
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, fmt.Errorf(formatUnexpectedMessage(msg, WELCOME))
 	} else {
 		go c.Receive()
@@ -128,41 +118,41 @@ func (c *Client) joinRealmCRA(realm string, details map[string]interface{}) (map
 	details["authmethods"] = authmethods
 	if err := c.Send(&Hello{Realm: URI(realm), Details: details}); err != nil {
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, err
 	}
 	if msg, err := GetMessageTimeout(c.Peer, c.ReceiveTimeout); err != nil {
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, err
 	} else if challenge, ok := msg.(*Challenge); !ok {
 		c.Send(abortUnexpectedMsg)
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, fmt.Errorf(formatUnexpectedMessage(msg, CHALLENGE))
 	} else if authFunc, ok := c.Auth[challenge.AuthMethod]; !ok {
 		c.Send(abortNoAuthHandler)
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, fmt.Errorf("no auth handler for method: %s", challenge.AuthMethod)
 	} else if signature, authDetails, err := authFunc(details, challenge.Extra); err != nil {
 		c.Send(abortAuthFailure)
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, err
 	} else if err := c.Send(&Authenticate{Signature: signature, Extra: authDetails}); err != nil {
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, err
 	}
 	if msg, err := GetMessageTimeout(c.Peer, c.ReceiveTimeout); err != nil {
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, err
 	} else if welcome, ok := msg.(*Welcome); !ok {
 		c.Send(abortUnexpectedMsg)
 		c.Peer.Close()
-		close(c.acts)
+		c.actor.Close()
 		return nil, fmt.Errorf(formatUnexpectedMessage(msg, WELCOME))
 	} else {
 		go c.Receive()
@@ -263,7 +253,7 @@ func (c *Client) Receive() {
 		}
 	}
 
-	close(c.acts)
+	c.actor.Close()
 	tlog.Println("client closed")
 
 	if c.ReceiveDone != nil {
@@ -272,30 +262,24 @@ func (c *Client) Receive() {
 }
 
 func (c *Client) handleEvent(msg *Event) {
-	sync := make(chan struct{})
-	c.acts <- func() {
+	c.actor.SyncAct(func() {
 		if event, ok := c.events[msg.Subscription]; ok {
 			go event.handler(msg.Arguments, msg.ArgumentsKw)
 		} else {
 			tlog.Println("no handler registered for subscription:", msg.Subscription)
 		}
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 }
 
 func (c *Client) notifyListener(msg Message, requestID ID) {
 	// pass in the request ID so we don't have to do any type assertion
 	var (
-		sync = make(chan struct{})
-		l    chan Message
-		ok   bool
+		l  chan Message
+		ok bool
 	)
-	c.acts <- func() {
+	c.actor.SyncAct(func() {
 		l, ok = c.listeners[requestID]
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 	if ok {
 		l <- msg
 	} else {
@@ -304,8 +288,7 @@ func (c *Client) notifyListener(msg Message, requestID ID) {
 }
 
 func (c *Client) handleInvocation(msg *Invocation) {
-	sync := make(chan struct{})
-	c.acts <- func() {
+	c.actor.SyncAct(func() {
 		if proc, ok := c.procedures[msg.Registration]; ok {
 			go func() {
 				result := proc.handler(msg.Arguments, msg.ArgumentsKw, msg.Details)
@@ -344,34 +327,26 @@ func (c *Client) handleInvocation(msg *Invocation) {
 				tlog.Println("error sending message:", err)
 			}
 		}
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 }
 
 func (c *Client) registerListener(id ID) {
 	tlog.Println("register listener:", id)
 	wait := make(chan Message, 1)
-	sync := make(chan struct{})
-	c.acts <- func() {
+	c.actor.SyncAct(func() {
 		c.listeners[id] = wait
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 }
 
 func (c *Client) waitOnListener(id ID) (msg Message, err error) {
 	tlog.Println("wait on listener:", id)
 	var (
-		sync = make(chan struct{})
 		wait chan Message
 		ok   bool
 	)
-	c.acts <- func() {
+	c.actor.SyncAct(func() {
 		wait, ok = c.listeners[id]
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 	if !ok {
 		return nil, fmt.Errorf("unknown listener ID: %v", id)
 	}
@@ -380,7 +355,7 @@ func (c *Client) waitOnListener(id ID) (msg Message, err error) {
 	case <-time.After(c.ReceiveTimeout):
 		err = fmt.Errorf("timeout while waiting for message")
 	}
-	c.acts <- func() {
+	c.actor.Acts() <- func() {
 		delete(c.listeners, id)
 	}
 	return
@@ -412,12 +387,9 @@ func (c *Client) Subscribe(topic string, fn EventHandler) error {
 		return fmt.Errorf(formatUnexpectedMessage(msg, SUBSCRIBED))
 	} else {
 		// register the event handler with this subscription
-		sync := make(chan struct{})
-		c.acts <- func() {
+		c.actor.SyncAct(func() {
 			c.events[subscribed.Subscription] = &eventDesc{topic, fn}
-			sync <- struct{}{}
-		}
-		<-sync
+		})
 	}
 	return nil
 }
@@ -425,13 +397,12 @@ func (c *Client) Subscribe(topic string, fn EventHandler) error {
 // Unsubscribe removes the registered EventHandler from the topic.
 func (c *Client) Unsubscribe(topic string) error {
 	var (
-		sync           = make(chan struct{})
 		subscriptionID ID
 		found          bool
 		msg            Message
 		err            error
 	)
-	c.acts <- func() {
+	c.actor.SyncAct(func() {
 		for id, desc := range c.events {
 			if desc.topic == topic {
 				subscriptionID = id
@@ -439,9 +410,7 @@ func (c *Client) Unsubscribe(topic string) error {
 				break
 			}
 		}
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 	if !found {
 		return fmt.Errorf("Event %s is not registered with this client.", topic)
 	}
@@ -464,11 +433,9 @@ func (c *Client) Unsubscribe(topic string) error {
 	} else if _, ok := msg.(*Unsubscribed); !ok {
 		return fmt.Errorf(formatUnexpectedMessage(msg, UNSUBSCRIBED))
 	}
-	c.acts <- func() {
+	c.actor.SyncAct(func() {
 		delete(c.events, subscriptionID)
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 	return nil
 }
 
@@ -501,12 +468,9 @@ func (c *Client) Register(procedure string, fn MethodHandler, options map[string
 		return fmt.Errorf(formatUnexpectedMessage(msg, REGISTERED))
 	} else {
 		// register the event handler with this registration
-		sync := make(chan struct{})
-		c.acts <- func() {
+		c.actor.SyncAct(func() {
 			c.procedures[registered.Registration] = &procedureDesc{procedure, fn}
-			sync <- struct{}{}
-		}
-		<-sync
+		})
 	}
 	return nil
 }
@@ -526,13 +490,12 @@ func (c *Client) BasicRegister(procedure string, fn BasicMethodHandler) error {
 // Unregister removes a procedure with the router
 func (c *Client) Unregister(procedure string) error {
 	var (
-		sync        = make(chan struct{})
 		procedureID ID
 		found       bool
 		msg         Message
 		err         error
 	)
-	c.acts <- func() {
+	c.actor.SyncAct(func() {
 		for id, p := range c.procedures {
 			if p.name == procedure {
 				procedureID = id
@@ -540,9 +503,7 @@ func (c *Client) Unregister(procedure string) error {
 				break
 			}
 		}
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 	if !found {
 		return fmt.Errorf("Procedure %s is not registered with this client.", procedure)
 	}
@@ -565,11 +526,9 @@ func (c *Client) Unregister(procedure string) error {
 		return fmt.Errorf(formatUnexpectedMessage(msg, UNREGISTERED))
 	}
 	// register the event handler with this unregistration
-	c.acts <- func() {
+	c.actor.SyncAct(func() {
 		delete(c.procedures, procedureID)
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 	return nil
 }
 

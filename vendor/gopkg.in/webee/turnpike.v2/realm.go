@@ -26,7 +26,7 @@ type Realm struct {
 	AuthTimeout time.Duration
 	clients     map[ID]*Session
 	localClient
-	acts chan func()
+	actor Actor
 }
 
 type localClient struct {
@@ -45,34 +45,31 @@ func (r *Realm) getPeer(rt Router, details map[string]interface{}) (Peer, error)
 }
 
 // Close disconnects all clients after sending a goodbye message
-func (r Realm) Close() {
-	r.acts <- func() {
+func (r *Realm) Close() {
+	r.actor.Acts() <- func() {
 		for _, client := range r.clients {
 			client.kill <- ErrSystemShutdown
 		}
 	}
 
 	var (
-		sync     = make(chan struct{})
 		nclients int
 	)
 	for {
-		r.acts <- func() {
+		r.actor.SyncAct(func() {
 			nclients = len(r.clients)
-			sync <- struct{}{}
-		}
-		<-sync
+		})
 		if nclients == 0 {
 			break
 		}
 	}
 
-	close(r.acts)
+	r.actor.Close()
 }
 
 func (r *Realm) init(rt Router) {
 	r.clients = make(map[ID]*Session)
-	r.acts = make(chan func())
+	r.actor = NewChannelActor()
 	p, _ := r.getPeer(rt, nil)
 	r.localClient.Client = NewClient(p)
 	if r.Broker == nil {
@@ -90,21 +87,9 @@ func (r *Realm) init(rt Router) {
 	if r.AuthTimeout == 0 {
 		r.AuthTimeout = defaultAuthTimeout
 	}
-	go r.run()
-}
 
-func (r *Realm) run() {
-	for {
-		if act, ok := <-r.acts; ok {
-			act()
-		} else {
-			return
-		}
-	}
+	r.actor.Start()
 }
-
-// func (r *Realm) metaHandler(c *Client) {
-// }
 
 func (l *localClient) onJoin(details map[string]interface{}) {
 	l.Publish("wamp.session.on_join", []interface{}{details}, nil)
@@ -115,15 +100,12 @@ func (l *localClient) onLeave(session ID) {
 }
 
 func (r *Realm) handleSession(sess *Session) {
-	sync := make(chan struct{})
-	r.acts <- func() {
+	r.actor.SyncAct(func() {
 		r.clients[sess.Id] = sess
 		r.onJoin(sess.Details)
-		sync <- struct{}{}
-	}
-	<-sync
+	})
 	defer func() {
-		r.acts <- func() {
+		r.actor.Acts() <- func() {
 			delete(r.clients, sess.Id)
 			r.Dealer.RemovePeer(sess.Peer)
 			r.onLeave(sess.Id)
