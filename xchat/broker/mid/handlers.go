@@ -82,8 +82,10 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 		return &turnpike.CallResult{Args: []interface{}{true, ids}}
 	} else if method == "debug_on" {
 		turnpike.Debug()
+		return &turnpike.CallResult{Args: []interface{}{true}}
 	} else if method == "debug_off" {
 		turnpike.DebugOff()
+		return &turnpike.CallResult{Args: []interface{}{true}}
 	}
 
 	payloadSize := 0
