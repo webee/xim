@@ -43,7 +43,7 @@ func NewDetailsInterceptor(detailsChecker DetailsChecker, detailsTransformer Det
 }
 
 // Intercept do inject work.
-func (di *DetailsInterceptor) Intercept(session turnpike.Session, msg *turnpike.Message) {
+func (di *DetailsInterceptor) Intercept(session *turnpike.Session, msg *turnpike.Message) {
 	switch (*msg).MessageType() {
 	case turnpike.CALL:
 		if di.detailsChecker(session.Details) {

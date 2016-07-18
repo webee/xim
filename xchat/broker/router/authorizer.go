@@ -17,7 +17,7 @@ type XChatAuthorizer struct {
 }
 
 // Authorize authorize the reqeust.
-func (a *XChatAuthorizer) Authorize(session turnpike.Session, msg turnpike.Message) (bool, error) {
+func (a *XChatAuthorizer) Authorize(session *turnpike.Session, msg turnpike.Message) (bool, error) {
 	role := session.Details["role"]
 	if role == "user" {
 		switch msg.MessageType() {

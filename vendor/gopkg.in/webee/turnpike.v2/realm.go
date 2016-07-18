@@ -24,7 +24,7 @@ type Realm struct {
 	Authenticators   map[string]Authenticator
 	// DefaultAuth      func(details map[string]interface{}) (map[string]interface{}, error)
 	AuthTimeout time.Duration
-	clients     map[ID]Session
+	clients     map[ID]*Session
 	localClient
 	acts chan func()
 }
@@ -33,13 +33,13 @@ type localClient struct {
 	*Client
 }
 
-func (r *Realm) getPeer(details map[string]interface{}) (Peer, error) {
+func (r *Realm) getPeer(rt Router, details map[string]interface{}) (Peer, error) {
 	peerA, peerB := localPipe()
-	sess := Session{Peer: peerA, Id: NewID(), Details: details, kill: make(chan URI, 1)}
 	if details == nil {
 		details = make(map[string]interface{})
 	}
-	go r.handleSession(sess)
+	sess := &Session{Peer: peerA, Id: NewID(), Details: details, kill: make(chan URI, 1)}
+	rt.OpenSession(r, sess)
 	tlog.Println("Established internal session:", sess)
 	return peerB, nil
 }
@@ -70,10 +70,10 @@ func (r Realm) Close() {
 	close(r.acts)
 }
 
-func (r *Realm) init() {
-	r.clients = make(map[ID]Session)
+func (r *Realm) init(rt Router) {
+	r.clients = make(map[ID]*Session)
 	r.acts = make(chan func())
-	p, _ := r.getPeer(nil)
+	p, _ := r.getPeer(rt, nil)
 	r.localClient.Client = NewClient(p)
 	if r.Broker == nil {
 		r.Broker = NewDefaultBroker()
@@ -114,7 +114,7 @@ func (l *localClient) onLeave(session ID) {
 	l.Publish("wamp.session.on_leave", []interface{}{session}, nil)
 }
 
-func (r *Realm) handleSession(sess Session) {
+func (r *Realm) handleSession(sess *Session) {
 	sync := make(chan struct{})
 	r.acts <- func() {
 		r.clients[sess.Id] = sess

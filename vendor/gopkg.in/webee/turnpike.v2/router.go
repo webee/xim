@@ -40,11 +40,12 @@ type Router interface {
 	GetLocalPeer(URI, map[string]interface{}) (Peer, error)
 	AddSessionOpenCallback(func(uint, string))
 	AddSessionCloseCallback(func(uint, string))
+	OpenSession(*Realm, *Session)
 }
 
 // DefaultRouter is the default WAMP router implementation.
 type defaultRouter struct {
-	realms                map[URI]Realm
+	realms                map[URI]*Realm
 	closing               bool
 	closeLock             sync.Mutex
 	sessionOpenCallbacks  []func(uint, string)
@@ -54,7 +55,7 @@ type defaultRouter struct {
 // NewDefaultRouter creates a very basic WAMP router.
 func NewDefaultRouter() Router {
 	return &defaultRouter{
-		realms:                make(map[URI]Realm),
+		realms:                make(map[URI]*Realm),
 		sessionOpenCallbacks:  []func(uint, string){},
 		sessionCloseCallbacks: []func(uint, string){},
 	}
@@ -86,8 +87,9 @@ func (r *defaultRouter) RegisterRealm(uri URI, realm Realm) error {
 	if _, ok := r.realms[uri]; ok {
 		return RealmExistsError(uri)
 	}
-	realm.init()
-	r.realms[uri] = realm
+	realm.URI = uri
+	realm.init(r)
+	r.realms[uri] = &realm
 	tlog.Println("registered realm:", uri)
 	return nil
 }
@@ -149,23 +151,28 @@ func (r *defaultRouter) Accept(client Peer) error {
 	// session details
 	welcome.Details["session"] = welcome.Id
 	welcome.Details["realm"] = hello.Realm
-	sess := Session{
+	sess := &Session{
 		Peer:    client,
 		Id:      welcome.Id,
 		Details: welcome.Details,
 		kill:    make(chan URI, 1),
 	}
+
+	r.OpenSession(realm, sess)
+	return nil
+}
+
+func (r *defaultRouter) OpenSession(realm *Realm, sess *Session) {
 	for _, callback := range r.sessionOpenCallbacks {
-		go callback(uint(sess.Id), string(hello.Realm))
+		go callback(uint(sess.Id), string(realm.URI))
 	}
 	go func() {
 		realm.handleSession(sess)
 		sess.Close()
 		for _, callback := range r.sessionCloseCallbacks {
-			go callback(uint(sess.Id), string(hello.Realm))
+			go callback(uint(sess.Id), string(realm.URI))
 		}
 	}()
-	return nil
 }
 
 // GetLocalPeer returns an internal peer connected to the specified realm.
@@ -174,8 +181,7 @@ func (r *defaultRouter) GetLocalPeer(realmURI URI, details map[string]interface{
 	if !ok {
 		return nil, NoSuchRealmError(realmURI)
 	}
-	// TODO: session open/close callbacks?
-	return realm.getPeer(details)
+	return realm.getPeer(r, details)
 }
 
 func (r *defaultRouter) getTestPeer() Peer {
