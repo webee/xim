@@ -111,6 +111,16 @@ func (ep *websocketPeer) Close() error {
 	return ep.conn.Close()
 }
 
+func (ep *websocketPeer) updateReadDeadline() {
+	if ep.idleTimeout > 0 {
+		ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
+	}
+}
+
+func (ep *websocketPeer) setReadDead() {
+	ep.conn.SetReadDeadline(time.Now())
+}
+
 func (ep *websocketPeer) run() {
 	ep.closing = make(chan struct{})
 	go ep.sending()
@@ -118,19 +128,21 @@ func (ep *websocketPeer) run() {
 	if ep.maxMsgSize > 0 {
 		ep.conn.SetReadLimit(ep.maxMsgSize)
 	}
-	ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
 	ep.conn.SetPongHandler(func(v string) error {
 		tlog.Println("pong:", v)
-		ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
+		ep.updateReadDeadline()
+		return nil
+	})
+	ep.conn.SetPingHandler(func(v string) error {
+		tlog.Println("ping:", v)
+		ep.updateReadDeadline()
 		return nil
 	})
 
 	for {
 		// TODO: use conn.NextMessage() and stream
 		// TODO: do something different based on binary/text frames
-		if ep.idleTimeout > 0 {
-			ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
-		}
+		ep.updateReadDeadline()
 		if msgType, b, err := ep.conn.ReadMessage(); err != nil {
 			if ep.isClosed() {
 				tlog.Println("peer connection closed")
@@ -156,9 +168,15 @@ func (ep *websocketPeer) run() {
 
 func (ep *websocketPeer) sending() {
 	ep.inSending = make(chan struct{})
-	ticker := time.NewTicker(ep.pingTimeout)
+	var ticker *time.Ticker
+	if ep.pingTimeout == 0 {
+		ticker = time.NewTicker(7 * 24 * time.Hour)
+	} else {
+		ticker = time.NewTicker(ep.pingTimeout)
+	}
+
 	defer func() {
-		ep.conn.SetReadDeadline(time.Now())
+		ep.setReadDead()
 		ticker.Stop()
 		close(ep.inSending)
 	}()
@@ -187,9 +205,7 @@ func (ep *websocketPeer) sending() {
 			}
 			return
 		}
-		if ep.idleTimeout > 0 {
-			ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
-		}
+		ep.updateReadDeadline()
 	}
 }
 
