@@ -63,7 +63,7 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 
 // ping
 func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatPing, args, kwargs)
+	l.Info("[rpc]%s: %v, %+v\n", URIXChatPing, args, kwargs)
 	s := getSessionFromDetails(kwargs["details"], false)
 	if s == nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
