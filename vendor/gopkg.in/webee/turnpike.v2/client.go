@@ -28,6 +28,7 @@ var (
 // A Client routes messages to/from a WAMP router.
 type Client struct {
 	Peer
+	Id ID
 	// ReceiveTimeout is the amount of time that the client will block waiting for a response from the router.
 	ReceiveTimeout time.Duration
 	// Auth is a map of WAMP authmethods to functions that will handle each auth type
@@ -100,6 +101,7 @@ func (c *Client) JoinRealm(realm string, details map[string]interface{}) (map[st
 		c.actor.Close()
 		return nil, fmt.Errorf(formatUnexpectedMessage(msg, WELCOME))
 	} else {
+		c.Id = welcome.Id
 		go c.Receive()
 		return welcome.Details, nil
 	}
@@ -155,6 +157,7 @@ func (c *Client) joinRealmCRA(realm string, details map[string]interface{}) (map
 		c.actor.Close()
 		return nil, fmt.Errorf(formatUnexpectedMessage(msg, WELCOME))
 	} else {
+		c.Id = welcome.Id
 		go c.Receive()
 		return welcome.Details, nil
 	}
@@ -222,6 +225,7 @@ func (c *Client) Close() error {
 // This function blocks and is most commonly run in a goroutine.
 func (c *Client) Receive() {
 	for msg := range c.Peer.Receive() {
+		tlog.Printf("client[%d] %s: %+v", c.Id, msg.MessageType(), msg)
 
 		switch msg := msg.(type) {
 
@@ -262,13 +266,20 @@ func (c *Client) Receive() {
 }
 
 func (c *Client) handleEvent(msg *Event) {
+	var (
+		event *eventDesc
+		ok    bool
+	)
+
 	c.actor.SyncAct(func() {
-		if event, ok := c.events[msg.Subscription]; ok {
-			go event.handler(msg.Arguments, msg.ArgumentsKw)
-		} else {
-			tlog.Println("no handler registered for subscription:", msg.Subscription)
-		}
+		event, ok = c.events[msg.Subscription]
 	})
+
+	if ok {
+		go event.handler(msg.Arguments, msg.ArgumentsKw)
+	} else {
+		tlog.Println("no handler registered for subscription:", msg.Subscription)
+	}
 }
 
 func (c *Client) notifyListener(msg Message, requestID ID) {
@@ -288,68 +299,66 @@ func (c *Client) notifyListener(msg Message, requestID ID) {
 }
 
 func (c *Client) handleInvocation(msg *Invocation) {
-	c.actor.SyncAct(func() {
-		if proc, ok := c.procedures[msg.Registration]; ok {
-			go func() {
-				result := proc.handler(msg.Arguments, msg.ArgumentsKw, msg.Details)
+	var (
+		proc *procedureDesc
+		ok   bool
+	)
 
-				var tosend Message
-				tosend = &Yield{
+	c.actor.SyncAct(func() {
+		proc, ok = c.procedures[msg.Registration]
+	})
+	if ok {
+		go func() {
+			result := proc.handler(msg.Arguments, msg.ArgumentsKw, msg.Details)
+			tlog.Printf("[%s] %s: %+v", msg.MessageType(), proc.name, result)
+
+			var tosend Message
+			tosend = &Yield{
+				Request:     msg.Request,
+				Options:     make(map[string]interface{}),
+				Arguments:   result.Args,
+				ArgumentsKw: result.Kwargs,
+			}
+
+			if result.Err != "" {
+				tosend = &Error{
+					Type:        INVOCATION,
 					Request:     msg.Request,
-					Options:     make(map[string]interface{}),
+					Details:     make(map[string]interface{}),
 					Arguments:   result.Args,
 					ArgumentsKw: result.Kwargs,
+					Error:       result.Err,
 				}
+			}
 
-				if result.Err != "" {
-					tosend = &Error{
-						Type:        INVOCATION,
-						Request:     msg.Request,
-						Details:     make(map[string]interface{}),
-						Arguments:   result.Args,
-						ArgumentsKw: result.Kwargs,
-						Error:       result.Err,
-					}
-				}
-
-				if err := c.Send(tosend); err != nil {
-					tlog.Println("error sending message:", err)
-				}
-			}()
-		} else {
-			tlog.Println("no handler registered for registration:", msg.Registration)
-			if err := c.Send(&Error{
-				Type:    INVOCATION,
-				Request: msg.Request,
-				Details: make(map[string]interface{}),
-				Error:   URI(fmt.Sprintf("no handler for registration: %v", msg.Registration)),
-			}); err != nil {
+			if err := c.Send(tosend); err != nil {
 				tlog.Println("error sending message:", err)
 			}
+		}()
+	} else {
+		tlog.Println("no handler registered for registration:", msg.Registration)
+		if err := c.Send(&Error{
+			Type:    INVOCATION,
+			Request: msg.Request,
+			Details: make(map[string]interface{}),
+			Error:   URI(fmt.Sprintf("no handler for registration: %v", msg.Registration)),
+		}); err != nil {
+			tlog.Println("error sending message:", err)
 		}
-	})
+	}
 }
 
-func (c *Client) registerListener(id ID) {
+func (c *Client) registerListener(id ID) chan Message {
 	tlog.Println("register listener:", id)
 	wait := make(chan Message, 1)
 	c.actor.SyncAct(func() {
 		c.listeners[id] = wait
 	})
+	return wait
 }
 
-func (c *Client) waitOnListener(id ID) (msg Message, err error) {
+func (c *Client) waitOnListener(id ID, wait chan Message) (msg Message, err error) {
 	tlog.Println("wait on listener:", id)
-	var (
-		wait chan Message
-		ok   bool
-	)
-	c.actor.SyncAct(func() {
-		wait, ok = c.listeners[id]
-	})
-	if !ok {
-		return nil, fmt.Errorf("unknown listener ID: %v", id)
-	}
 	select {
 	case msg = <-wait:
 	case <-time.After(c.ReceiveTimeout):
@@ -367,7 +376,7 @@ type EventHandler func(args []interface{}, kwargs map[string]interface{})
 // Subscribe registers the EventHandler to be called for every message in the provided topic.
 func (c *Client) Subscribe(topic string, fn EventHandler) error {
 	id := NewID()
-	c.registerListener(id)
+	wait := c.registerListener(id)
 	sub := &Subscribe{
 		Request: id,
 		Options: make(map[string]interface{}),
@@ -379,7 +388,7 @@ func (c *Client) Subscribe(topic string, fn EventHandler) error {
 	}
 	// wait to receive SUBSCRIBED message
 	var msg Message
-	if msg, err = c.waitOnListener(id); err != nil {
+	if msg, err = c.waitOnListener(id, wait); err != nil {
 		return err
 	} else if e, ok := msg.(*Error); ok {
 		return fmt.Errorf("error subscribing to topic '%v': %v", topic, e.Error)
@@ -416,7 +425,7 @@ func (c *Client) Unsubscribe(topic string) error {
 	}
 
 	id := NewID()
-	c.registerListener(id)
+	wait := c.registerListener(id)
 	sub := &Unsubscribe{
 		Request:      id,
 		Subscription: subscriptionID,
@@ -426,7 +435,7 @@ func (c *Client) Unsubscribe(topic string) error {
 		return err
 	}
 	// wait to receive UNSUBSCRIBED message
-	if msg, err = c.waitOnListener(id); err != nil {
+	if msg, err = c.waitOnListener(id, wait); err != nil {
 		return err
 	} else if e, ok := msg.(*Error); ok {
 		return fmt.Errorf("error unsubscribing to topic '%v': %v", topic, e.Error)
@@ -447,7 +456,7 @@ type MethodHandler func(
 // Register registers a MethodHandler procedure with the router.
 func (c *Client) Register(procedure string, fn MethodHandler, options map[string]interface{}) error {
 	id := NewID()
-	c.registerListener(id)
+	wait := c.registerListener(id)
 	register := &Register{
 		Request:   id,
 		Options:   options,
@@ -460,7 +469,7 @@ func (c *Client) Register(procedure string, fn MethodHandler, options map[string
 
 	// wait to receive REGISTERED message
 	var msg Message
-	if msg, err = c.waitOnListener(id); err != nil {
+	if msg, err = c.waitOnListener(id, wait); err != nil {
 		return err
 	} else if e, ok := msg.(*Error); ok {
 		return fmt.Errorf("error registering procedure '%v': %v", procedure, e.Error)
@@ -508,7 +517,7 @@ func (c *Client) Unregister(procedure string) error {
 		return fmt.Errorf("Procedure %s is not registered with this client.", procedure)
 	}
 	id := NewID()
-	c.registerListener(id)
+	wait := c.registerListener(id)
 	unregister := &Unregister{
 		Request:      id,
 		Registration: procedureID,
@@ -518,7 +527,7 @@ func (c *Client) Unregister(procedure string) error {
 	}
 
 	// wait to receive UNREGISTERED message
-	if msg, err = c.waitOnListener(id); err != nil {
+	if msg, err = c.waitOnListener(id, wait); err != nil {
 		return err
 	} else if e, ok := msg.(*Error); ok {
 		return fmt.Errorf("error unregister to procedure '%v': %v", procedure, e.Error)
@@ -546,7 +555,7 @@ func (c *Client) Publish(topic string, args []interface{}, kwargs map[string]int
 // Call calls a procedure given a URI.
 func (c *Client) Call(procedure string, args []interface{}, kwargs map[string]interface{}) (*Result, error) {
 	id := NewID()
-	c.registerListener(id)
+	wait := c.registerListener(id)
 
 	call := &Call{
 		Request:     id,
@@ -562,7 +571,7 @@ func (c *Client) Call(procedure string, args []interface{}, kwargs map[string]in
 
 	// wait to receive RESULT message
 	var msg Message
-	if msg, err = c.waitOnListener(id); err != nil {
+	if msg, err = c.waitOnListener(id, wait); err != nil {
 		return nil, err
 	} else if e, ok := msg.(*Error); ok {
 		return nil, fmt.Errorf("error calling procedure '%v': %v", procedure, e.Error)
