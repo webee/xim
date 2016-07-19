@@ -93,15 +93,19 @@ func (s *WebsocketServer) RegisterProtocol(proto string, payloadType int, serial
 	return nil
 }
 
-// GetLocalClient returns a client connected to the specified realm
-func (s *WebsocketServer) GetLocalClient(realm string, details map[string]interface{}) (*Client, error) {
-	peer, err := s.Router.GetLocalPeer(URI(realm), details)
+func (s *WebsocketServer) GetLocalClientWithSize(sz int, realm string, details map[string]interface{}) (*Client, error) {
+	peer, err := s.Router.GetLocalPeerWithSize(sz, URI(realm), details)
 	if err != nil {
 		return nil, err
 	}
 	c := NewClient(peer)
 	go c.Receive()
 	return c, nil
+}
+
+// GetLocalClient returns a client connected to the specified realm
+func (s *WebsocketServer) GetLocalClient(realm string, details map[string]interface{}) (*Client, error) {
+	return s.GetLocalClientWithSize(100, realm, details)
 }
 
 // ServeHTTP handles a new HTTP connection.

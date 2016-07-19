@@ -20,9 +20,9 @@ func (s Session) String() string {
 // localPipe creates two linked sessions. Messages sent to one will
 // appear in the Receive of the other. This is useful for implementing
 // client sessions
-func localPipe() (*localPeer, *localPeer) {
-	aToB := make(chan Message, 10)
-	bToA := make(chan Message, 10)
+func localPipeWithSize(s int) (*localPeer, *localPeer) {
+	aToB := make(chan Message, s)
+	bToA := make(chan Message, 4*s)
 
 	a := &localPeer{
 		incoming: bToA,
@@ -34,6 +34,10 @@ func localPipe() (*localPeer, *localPeer) {
 	}
 
 	return a, b
+}
+
+func localPipe() (*localPeer, *localPeer) {
+	return localPipeWithSize(10)
 }
 
 type localPeer struct {

@@ -37,6 +37,7 @@ type Router interface {
 	Accept(Peer) error
 	Close() error
 	RegisterRealm(URI, Realm) error
+	GetLocalPeerWithSize(int, URI, map[string]interface{}) (Peer, error)
 	GetLocalPeer(URI, map[string]interface{}) (Peer, error)
 	AddSessionOpenCallback(func(uint, string))
 	AddSessionCloseCallback(func(uint, string))
@@ -175,13 +176,17 @@ func (r *defaultRouter) OpenSession(realm *Realm, sess *Session) {
 	}()
 }
 
-// GetLocalPeer returns an internal peer connected to the specified realm.
-func (r *defaultRouter) GetLocalPeer(realmURI URI, details map[string]interface{}) (Peer, error) {
+func (r *defaultRouter) GetLocalPeerWithSize(s int, realmURI URI, details map[string]interface{}) (Peer, error) {
 	realm, ok := r.realms[realmURI]
 	if !ok {
 		return nil, NoSuchRealmError(realmURI)
 	}
-	return realm.getPeer(r, details)
+	return realm.getPeerWithSize(s, r, details)
+}
+
+// GetLocalPeer returns an internal peer connected to the specified realm.
+func (r *defaultRouter) GetLocalPeer(realmURI URI, details map[string]interface{}) (Peer, error) {
+	return r.GetLocalPeerWithSize(100, realmURI, details)
 }
 
 func (r *defaultRouter) getTestPeer() Peer {

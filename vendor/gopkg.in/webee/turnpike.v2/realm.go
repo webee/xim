@@ -33,8 +33,8 @@ type localClient struct {
 	*Client
 }
 
-func (r *Realm) getPeer(rt Router, details map[string]interface{}) (Peer, error) {
-	peerA, peerB := localPipe()
+func (r *Realm) getPeerWithSize(s int, rt Router, details map[string]interface{}) (Peer, error) {
+	peerA, peerB := localPipeWithSize(s)
 	if details == nil {
 		details = make(map[string]interface{})
 	}
@@ -42,6 +42,10 @@ func (r *Realm) getPeer(rt Router, details map[string]interface{}) (Peer, error)
 	rt.OpenSession(r, sess)
 	tlog.Println("Established internal session:", sess)
 	return peerB, nil
+}
+
+func (r *Realm) getPeer(rt Router, details map[string]interface{}) (Peer, error) {
+	return r.getPeerWithSize(100, rt, details)
 }
 
 // Close disconnects all clients after sending a goodbye message

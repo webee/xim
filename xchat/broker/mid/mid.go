@@ -41,7 +41,7 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	var err error
 	xchatLogic = nanorpc.NewClient(config.LogicRPCAddr, config.RPCCallTimeout)
 
-	xchat, err = xchatRouter.GetLocalClient("xchat", nil)
+	xchat, err = xchatRouter.GetLocalClientWithSize(100, "xchat", nil)
 	if err != nil {
 		log.Fatalf("create xchat error: %s", err)
 	}
