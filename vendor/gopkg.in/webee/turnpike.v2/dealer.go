@@ -198,6 +198,7 @@ func (d *defaultDealer) Error(peer Sender, msg *Error) {
 }
 
 func (d *defaultDealer) RemovePeer(callee Sender) {
+	tlog.Printf("broker unregistering: %p", &callee)
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	for reg := range d.callees[callee] {

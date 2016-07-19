@@ -106,14 +106,16 @@ func (l *localClient) onLeave(session ID) {
 func (r *Realm) handleSession(sess *Session) {
 	r.actor.SyncAct(func() {
 		r.clients[sess.Id] = sess
-		r.onJoin(sess.Details)
 	})
+	r.onJoin(sess.Details)
+
 	defer func() {
 		r.actor.Acts() <- func() {
 			delete(r.clients, sess.Id)
-			r.Dealer.RemovePeer(sess.Peer)
-			r.onLeave(sess.Id)
 		}
+		r.Broker.RemovePeer(sess.Peer)
+		r.Dealer.RemovePeer(sess.Peer)
+		r.onLeave(sess.Id)
 	}()
 	c := sess.Receive()
 	// TODO: what happens if the realm is closed?

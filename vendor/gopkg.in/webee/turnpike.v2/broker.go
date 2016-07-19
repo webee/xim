@@ -11,12 +11,15 @@ type Broker interface {
 	Subscribe(Sender, *Subscribe)
 	// Unsubscribes from messages on a URI.
 	Unsubscribe(Sender, *Unsubscribe)
+	// Remove a subscriber's subscriptions.
+	RemovePeer(sub Sender)
 }
 
 // A super simple broker that matches URIs to Subscribers.
 type defaultBroker struct {
 	routes        map[URI]map[ID]Sender
 	subscriptions map[ID]URI
+	subscribers   map[Sender][]ID
 	lock          sync.RWMutex
 }
 
@@ -26,6 +29,7 @@ func NewDefaultBroker() Broker {
 	return &defaultBroker{
 		routes:        make(map[URI]map[ID]Sender),
 		subscriptions: make(map[ID]URI),
+		subscribers:   make(map[Sender][]ID),
 	}
 }
 
@@ -70,15 +74,33 @@ func (br *defaultBroker) Subscribe(sub Sender, msg *Subscribe) {
 	}
 	br.routes[msg.Topic][id] = sub
 	br.subscriptions[id] = msg.Topic
+
+	// subscribers
+	ids, ok := br.subscribers[sub]
+	if !ok {
+		ids = []ID{}
+	}
+	ids = append(ids, id)
+	br.subscribers[sub] = ids
+
 	br.lock.Unlock()
 
 	sub.Send(&Subscribed{Request: msg.Request, Subscription: id})
 }
 
+func (br *defaultBroker) RemovePeer(sub Sender) {
+	tlog.Printf("broker remove peer %p", &sub)
+	br.lock.Lock()
+	defer br.lock.Unlock()
+
+	for _, id := range br.subscribers[sub] {
+		br.unsubscribe(sub, id)
+	}
+}
+
 func (br *defaultBroker) Unsubscribe(sub Sender, msg *Unsubscribe) {
 	br.lock.Lock()
-	topic, ok := br.subscriptions[msg.Subscription]
-	if !ok {
+	if !br.unsubscribe(sub, msg.Subscription) {
 		br.lock.Unlock()
 		err := &Error{
 			Type:    msg.MessageType(),
@@ -89,19 +111,42 @@ func (br *defaultBroker) Unsubscribe(sub Sender, msg *Unsubscribe) {
 		tlog.Printf("Error unsubscribing: no such subscription %v", msg.Subscription)
 		return
 	}
-	delete(br.subscriptions, msg.Subscription)
+	br.lock.Unlock()
+
+	sub.Send(&Unsubscribed{Request: msg.Request})
+}
+
+func (br *defaultBroker) unsubscribe(sub Sender, id ID) bool {
+	tlog.Printf("broker unsubscribing: %p, %d", &sub, id)
+	topic, ok := br.subscriptions[id]
+	if !ok {
+		return false
+	}
+	delete(br.subscriptions, id)
 
 	if r, ok := br.routes[topic]; !ok {
 		tlog.Printf("Error unsubscribing: unable to find routes for %s topic", topic)
-	} else if _, ok := r[msg.Subscription]; !ok {
-		tlog.Printf("Error unsubscribing: %s route does not exist for %v subscription", topic, msg.Subscription)
+	} else if _, ok := r[id]; !ok {
+		tlog.Printf("Error unsubscribing: %s route does not exist for %v subscription", topic, id)
 	} else {
-		delete(r, msg.Subscription)
+		delete(r, id)
 		if len(r) == 0 {
 			delete(br.routes, topic)
 		}
 	}
-	br.lock.Unlock()
 
-	sub.Send(&Unsubscribed{Request: msg.Request})
+	// subscribers
+	ids := br.subscribers[sub][:0]
+	for _, id := range br.subscribers[sub] {
+		if id != id {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		delete(br.subscribers, sub)
+	} else {
+		br.subscribers[sub] = ids
+	}
+
+	return true
 }
