@@ -3,9 +3,19 @@ package jwtutils
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 )
+
+// DecodeNSJwt decode ns/token from token string.
+func DecodeNSJwt(t string) (ns string, token string) {
+	parts := strings.SplitN(t, ":", 2)
+	if len(parts) > 1 {
+		return parts[0], parts[1]
+	}
+	return "", t
+}
 
 // ParseToken parse auth token with key to Token object.
 func ParseToken(authToken string, key []byte) (jwt.MapClaims, error) {
@@ -25,4 +35,16 @@ func ParseToken(authToken string, key []byte) (jwt.MapClaims, error) {
 		return nil, errors.New("invalid token")
 	}
 	return claims, nil
+}
+
+// ParseNsToken parse ns auth token with keys to ns and Token object.
+func ParseNsToken(nsToken string, keys map[string][]byte) (string, jwt.MapClaims, error) {
+	ns, t := DecodeNSJwt(nsToken)
+	key, ok := keys[ns]
+	if !ok {
+		return "", nil, errors.New("ns not exist")
+	}
+
+	claims, err := ParseToken(t, key)
+	return ns, claims, err
 }
