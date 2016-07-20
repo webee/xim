@@ -92,6 +92,7 @@ func (d *MsgSource) Unmarshal(buf []byte) (uint64, error) {
 
 type UserNotifyMessage struct {
 	User string
+	Ts   int64
 	Msg  string
 }
 
@@ -127,6 +128,7 @@ func (d *UserNotifyMessage) Size() (s uint64) {
 		}
 		s += l
 	}
+	s += 8
 	return
 }
 func (d *UserNotifyMessage) Marshal(buf []byte) ([]byte, error) {
@@ -160,6 +162,25 @@ func (d *UserNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 		i += l
 	}
 	{
+
+		buf[i+0+0] = byte(d.Ts >> 0)
+
+		buf[i+1+0] = byte(d.Ts >> 8)
+
+		buf[i+2+0] = byte(d.Ts >> 16)
+
+		buf[i+3+0] = byte(d.Ts >> 24)
+
+		buf[i+4+0] = byte(d.Ts >> 32)
+
+		buf[i+5+0] = byte(d.Ts >> 40)
+
+		buf[i+6+0] = byte(d.Ts >> 48)
+
+		buf[i+7+0] = byte(d.Ts >> 56)
+
+	}
+	{
 		l := uint64(len(d.Msg))
 
 		{
@@ -167,18 +188,18 @@ func (d *UserNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 			t := uint64(l)
 
 			for t >= 0x80 {
-				buf[i+0] = byte(t) | 0x80
+				buf[i+8] = byte(t) | 0x80
 				t >>= 7
 				i++
 			}
-			buf[i+0] = byte(t)
+			buf[i+8] = byte(t)
 			i++
 
 		}
-		copy(buf[i+0:], d.Msg)
+		copy(buf[i+8:], d.Msg)
 		i += l
 	}
-	return buf[:i+0], nil
+	return buf[:i+8], nil
 }
 
 func (d *UserNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
@@ -205,15 +226,20 @@ func (d *UserNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 		i += l
 	}
 	{
+
+		d.Ts = 0 | (int64(buf[i+0+0]) << 0) | (int64(buf[i+1+0]) << 8) | (int64(buf[i+2+0]) << 16) | (int64(buf[i+3+0]) << 24) | (int64(buf[i+4+0]) << 32) | (int64(buf[i+5+0]) << 40) | (int64(buf[i+6+0]) << 48) | (int64(buf[i+7+0]) << 56)
+
+	}
+	{
 		l := uint64(0)
 
 		{
 
 			bs := uint8(7)
-			t := uint64(buf[i+0] & 0x7F)
-			for buf[i+0]&0x80 == 0x80 {
+			t := uint64(buf[i+8] & 0x7F)
+			for buf[i+8]&0x80 == 0x80 {
 				i++
-				t |= uint64(buf[i+0]&0x7F) << bs
+				t |= uint64(buf[i+8]&0x7F) << bs
 				bs += 7
 			}
 			i++
@@ -221,10 +247,10 @@ func (d *UserNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		d.Msg = string(buf[i+0 : i+0+l])
+		d.Msg = string(buf[i+8 : i+8+l])
 		i += l
 	}
-	return i + 0, nil
+	return i + 8, nil
 }
 
 type ChatMessage struct {

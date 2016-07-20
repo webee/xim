@@ -45,12 +45,14 @@ func NewNotifyMessageFromPubMsg(msg *pubtypes.ChatNotifyMessage) *NotifyMessage 
 
 // UserNotifyMessage is a user notify message.
 type UserNotifyMessage struct {
+	Ts  int64  `json:"ts"`
 	Msg string `json:"msg"`
 }
 
 // NewUserNotifyMessageFromPubMsg converts pubtypes.UserNotifyMessage to UserNotifyMessage.
 func NewUserNotifyMessageFromPubMsg(msg *pubtypes.UserNotifyMessage) *UserNotifyMessage {
 	return &UserNotifyMessage{
+		Ts:  msg.Ts,
 		Msg: msg.Msg,
 	}
 }

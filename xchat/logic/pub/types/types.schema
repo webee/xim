@@ -5,6 +5,7 @@ struct MsgSource {
 
 struct UserNotifyMessage {
 	User   string
+	Ts     int64
 	Msg    string
 }
 

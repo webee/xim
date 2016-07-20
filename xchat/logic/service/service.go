@@ -111,8 +111,10 @@ const (
 
 // SendUserNotify sends user notify.
 func SendUserNotify(user string, msg string) (bool, error) {
+	ts := time.Now()
 	m := pubtypes.UserNotifyMessage{
 		User: user,
+		Ts:   ts.Unix(),
 		Msg:  msg,
 	}
 
