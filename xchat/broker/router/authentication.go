@@ -2,17 +2,8 @@ package router
 
 import (
 	"fmt"
-	"strings"
 	"xim/utils/jwtutils"
 )
-
-func decodeNSJwt(t string) (ns string, token string) {
-	parts := strings.SplitN(t, ":", 2)
-	if len(parts) > 1 {
-		return parts[0], parts[1]
-	}
-	return "", t
-}
 
 // jwt authentication.
 type jwtAuth struct {
@@ -25,7 +16,7 @@ func (e *jwtAuth) Challenge(details map[string]interface{}) (map[string]interfac
 }
 
 func authenticate(keys map[string][]byte, signature string) (map[string]interface{}, error) {
-	ns, t := decodeNSJwt(signature)
+	ns, t := jwtutils.DecodeNSJwt(signature)
 	key, ok := keys[ns]
 	if !ok {
 		return nil, fmt.Errorf("unknown user namespace: %s", ns)

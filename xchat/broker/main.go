@@ -29,14 +29,14 @@ func main() {
 	}
 
 	setupKeys()
-
-	// router
-	router.Init()
 	userKeys := map[string][]byte{
 		"":     userKey,
 		"test": testUserKey,
 		"cs":   csUserKey,
 	}
+
+	// router
+	router.Init()
 	xchatRouter, err := router.NewXChatRouter(userKeys, args.brokerDebug, args.testing, args.writeTimeout, args.pingTimeout, args.idleTimeout)
 	if err != nil {
 		log.Fatalln("create xchat router failed:", err)
