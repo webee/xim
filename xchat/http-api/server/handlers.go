@@ -6,6 +6,8 @@ import (
 	"xim/xchat/logic/service"
 	"xim/xchat/logic/service/types"
 
+	"xim/utils/nsutils"
+
 	"github.com/labstack/echo"
 )
 
@@ -23,6 +25,11 @@ type SendUserNotifyArgs struct {
 	Msg  string `json:"msg"`
 }
 
+func getNsUser(c echo.Context, u string) string {
+	ns := GetContextString(NsContextKey, c)
+	return nsutils.EncodeNSUser(ns, u)
+}
+
 func sendMsg(c echo.Context) error {
 	args := &SendMsgArgs{}
 	if err := c.Bind(args); err != nil {
@@ -36,7 +43,7 @@ func sendMsg(c echo.Context) error {
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
 
-	user := args.User
+	user := getNsUser(c, args.User)
 	msg := args.Msg
 	if len(msg) > 64*1024 {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "msg excced size limit"})
@@ -75,7 +82,7 @@ func sendUserNotify(c echo.Context) error {
 		return err
 	}
 
-	user := args.User
+	user := getNsUser(c, args.User)
 	msg := args.Msg
 	if len(msg) > 32*1024 {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "msg excced size limit"})

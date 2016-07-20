@@ -11,6 +11,12 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
+// constants.
+const (
+	NsContextKey    = "ns"
+	TokenContextKey = "token"
+)
+
 var (
 	l *ol.Logger
 )
@@ -51,8 +57,8 @@ func Start(c *Config) {
 func setup(e *echo.Echo) {
 	gXChatAPI := e.Group("/xchat/api")
 
-	gXChatAPI.Use(JWT("token", config.Key))
-	gXChatAPI.Use(RequireIsAdminUser)
+	gXChatAPI.Use(JWT(NsContextKey, TokenContextKey, config.Keys))
+	gXChatAPI.Use(RequireIsAdminUser(TokenContextKey))
 	gXChatAPI.GET("/test/", test)
 
 	gXChatAPI.Post("/user/msg/send/", sendMsg)

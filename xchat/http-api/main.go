@@ -27,11 +27,16 @@ func main() {
 	}
 
 	setupKeys()
+	userKeys := map[string][]byte{
+		"":     userKey,
+		"test": testUserKey,
+		"cs":   csUserKey,
+	}
 
 	server.Start(&server.Config{
 		Debug:          args.debug,
 		Testing:        args.testing,
-		Key:            userKey,
+		Keys:           userKeys,
 		Addr:           args.addr,
 		LogicRPCAddr:   args.logicRPCAddr,
 		RPCCallTimeout: args.rpcCallTimeout,
