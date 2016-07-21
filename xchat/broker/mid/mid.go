@@ -32,6 +32,30 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+func registerProcedure(client *turnpike.Client, uri string, p Procedure) {
+	if err := p.registerTo(client, uri); err != nil {
+		log.Fatalf("Error register %s: %s", uri, err)
+	}
+}
+
+func registerSessionProcedure(client *turnpike.Client, uri string, sp SessionProcedure) {
+	if err := sp.registerTo(client, uri); err != nil {
+		log.Fatalf("Error register %s: %s", uri, err)
+	}
+}
+
+func subscribeTopic(client *turnpike.Client, topic string, s Subscriber) {
+	if err := s.subscribeTo(client, topic); err != nil {
+		log.Fatalf("Error subscribing to %s: %s", topic, err)
+	}
+}
+
+func subscribeSessionTopic(client *turnpike.Client, topic string, ss SessionSubscriber) {
+	if err := ss.subscribeTo(client, topic); err != nil {
+		log.Fatalf("Error subscribing to %s: %s", topic, err)
+	}
+}
+
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	instanceID = uint64(rand.Int63n(math.MaxInt64))
@@ -46,80 +70,37 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 		log.Fatalf("create xchat error: %s", err)
 	}
 
-	if err := xchat.Subscribe(URIWAMPSessionOnJoin, sub(onJoin)); err != nil {
-		log.Fatalf("Error subscribing to %s: %s", URIWAMPSessionOnJoin, err)
-	}
+	subscribeTopic(xchat, URIWAMPSessionOnJoin, onJoin)
+	subscribeTopic(xchat, URIWAMPSessionOnLeave, onLeave)
 
-	if err := xchat.Subscribe(URIWAMPSessionOnLeave, sub(onLeave)); err != nil {
-		log.Fatalf("Error subscribing to %s: %s", URIWAMPSessionOnLeave, err)
-	}
-
-	if err := xchat.BasicRegister(URIXChatPing, call(ping)); err != nil {
+	// ping: test rpc.
+	if err := SessionProcedure(ping).xregisterTo(xchat, URIXChatPing); err != nil {
 		log.Fatalf("Error register %s: %s", URIXChatPing, err)
 	}
 
-	if err := xchat.BasicRegister(URIXChatPubUserInfo, call(pubUserInfo)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatPubUserInfo, err)
-	}
+	registerSessionProcedure(xchat, URIXChatPubUserInfo, pubUserInfo)
+	subscribeSessionTopic(xchat, URIXChatPubUserInfo, onPubUserInfo)
 
-	if err := xchat.Subscribe(URIXChatPubUserInfo, sub(onPubUserInfo)); err != nil {
-		log.Fatalf("Error subscribing to %s: %s", URIXChatPubUserInfo, err)
-	}
+	registerSessionProcedure(xchat, URIXChatSendMsg, sendMsg)
+	subscribeSessionTopic(xchat, URIXChatPubMsg, onPubMsg)
 
-	if err := xchat.BasicRegister(URIXChatSendMsg, call(sendMsg)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatSendMsg, err)
-	}
+	registerSessionProcedure(xchat, URIXChatJoinChat, joinChat)
+	registerSessionProcedure(xchat, URIXChatExitChat, exitChat)
 
-	if err := xchat.Subscribe(URIXChatPubMsg, sub(onPubMsg)); err != nil {
-		log.Fatalf("Error subscribing to %s: %s", URIXChatPubMsg, err)
-	}
+	registerSessionProcedure(xchat, URIXChatFetchChat, fetchChat)
+	registerSessionProcedure(xchat, URIXChatFetchChatMembers, fetchChatMembers)
+	registerSessionProcedure(xchat, URIXChatFetchChatMsgs, fetchChatMsgs)
 
-	// 会话
-	if err := xchat.BasicRegister(URIXChatJoinChat, call(joinChat)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatJoinChat, err)
-	}
-
-	if err := xchat.BasicRegister(URIXChatExitChat, call(exitChat)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatExitChat, err)
-	}
-
-	if err := xchat.BasicRegister(URIXChatFetchChat, call(fetchChat)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatFetchChat, err)
-	}
-
-	if err := xchat.BasicRegister(URIXChatFetchChatMembers, call(fetchChatMembers)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatFetchChatMembers, err)
-	}
-
-	if err := xchat.BasicRegister(URIXChatFetchChatMsgs, call(fetchChatMsgs)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatFetchChatMsgs, err)
-	}
-
-	if err := xchat.BasicRegister(URIXChatSyncChatRecv, call(syncChatRecv)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatSyncChatRecv, err)
-	}
-
-	if err := xchat.BasicRegister(URIXChatNewChat, call(newChat)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatNewChat, err)
-	}
-
-	if err := xchat.BasicRegister(URIXChatFetchChatList, call(fetchChatList)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatFetchChatList, err)
-	}
+	registerSessionProcedure(xchat, URIXChatSyncChatRecv, syncChatRecv)
+	registerSessionProcedure(xchat, URIXChatNewChat, newChat)
+	registerSessionProcedure(xchat, URIXChatFetchChatList, fetchChatList)
 
 	// Rooms
-	if err := xchat.BasicRegister(URIXChatEnterRoom, call(enterRoom)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatEnterRoom, err)
-	}
-
-	if err := xchat.BasicRegister(URIXChatExitRoom, call(exitRoom)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatExitRoom, err)
-	}
+	registerSessionProcedure(xchat, URIXChatEnterRoom, enterRoom)
+	registerSessionProcedure(xchat, URIXChatExitRoom, exitRoom)
 
 	// custome service
-	if err := xchat.BasicRegister(URIXChatGetCsChat, call(getCsChat)); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatGetCsChat, err)
-	}
+	registerSessionProcedure(xchat, URIXChatGetCsChat, getCsChat)
 
 	xchatSub = pub.NewSubscriber(config.LogicPubAddr, 128)
 	go handleMsg(xchatSub.Msgs())

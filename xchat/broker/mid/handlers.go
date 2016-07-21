@@ -1,7 +1,6 @@
 package mid
 
 import (
-	"encoding/json"
 	"strconv"
 	"time"
 	"xim/xchat/logic/db"
@@ -62,12 +61,7 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 }
 
 // ping
-func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Info("[rpc]%s: %v, %+v\n", URIXChatPing, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
+func ping(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	// TODO: 添加多种探测功能，rpc, 获取状态等
 	method := args[0].(string)
 
@@ -79,13 +73,16 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 			ids = append(ids, sess.ID)
 		}
 
-		return &turnpike.CallResult{Args: []interface{}{true, ids}}
+		rargs = []interface{}{true, ids}
+		return
 	} else if method == "debug_on" {
 		turnpike.Debug()
-		return &turnpike.CallResult{Args: []interface{}{true}}
+		rargs = []interface{}{true}
+		return
 	} else if method == "debug_off" {
 		turnpike.DebugOff()
-		return &turnpike.CallResult{Args: []interface{}{true}}
+		rargs = []interface{}{true}
+		return
 	}
 
 	payloadSize := 0
@@ -113,15 +110,19 @@ func ping(args []interface{}, kwargs map[string]interface{}) (result *turnpike.C
 			Payload: string(payload),
 		}, &content); err != nil {
 			l.Warning("%s error: %s", types.RPCXChatPing, err)
-			return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+			rerr = newDefaultAPIError(err.Error())
+			return
 		}
 
-		return &turnpike.CallResult{Args: []interface{}{true, s.ID, content}}
+		rargs = []interface{}{true, s.ID, content}
+		return
 	} else if method == "net" {
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
-		return &turnpike.CallResult{Args: []interface{}{true, s.ID, string(payload)}}
+		rargs = []interface{}{true, s.ID, string(payload)}
+		return
 	}
-	return &turnpike.CallResult{Args: []interface{}{false, 1, "invalid method"}}
+	rerr = newDefaultAPIError("invalid method")
+	return
 }
 
 func doPubUserInfo(s *Session, info string) {
@@ -137,52 +138,32 @@ func doPubUserInfo(s *Session, info string) {
 	xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
 }
 
-func pubUserInfo(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[call]%s: %v, %+v\n", URIXChatPubUserInfo, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
-
-	b, err := json.Marshal(&args[0])
-	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
-	}
-	info := string(b)
-
+func pubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	info := args[0].(string)
 	doPubUserInfo(s, info)
-	return &turnpike.CallResult{Args: []interface{}{true}}
+	rargs = []interface{}{true}
+	return
 }
 
-func onPubUserInfo(args []interface{}, kwargs map[string]interface{}) {
-	l.Debug("[pub]%s: %v, %+v\n", URIXChatPubUserInfo, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return
-	}
-
+func onPubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}) {
 	info := args[0].(string)
 	doPubUserInfo(s, info)
 }
 
 // 用户发送消息, 会话消息
-func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v", URIXChatSendMsg, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
-
+func sendMsg(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
+		return
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
 
 	msg := args[1].(string)
 	if len(msg) > 64*1024 {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "msg excced size limit"}}
+		rerr = MsgSizeExceedLimitError
+		return
 	}
 
 	src := &pubtypes.MsgSource{
@@ -199,7 +180,8 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		Kind:     types.MsgKindChat,
 	}, &message); err != nil {
 		l.Warning("%s error: %s", types.RPCXChatSendMsg, err)
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
 
 	go push(src, &message)
@@ -210,20 +192,17 @@ func sendMsg(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 	}
 	if withMsg {
 		toPushMsg := NewMessageFromPubMsg(&message)
-		return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}, Kwargs: map[string]interface{}{"msg": toPushMsg}}
-	}
-
-	return &turnpike.CallResult{Args: []interface{}{true, message.ID, message.Ts}}
-}
-
-// 用户发布消息, 通知消息
-func onPubMsg(args []interface{}, kwargs map[string]interface{}) {
-	l.Debug("[pub]%s: %v, %+v", URIXChatPubMsg, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
+		rargs = []interface{}{true, message.ID, message.Ts}
+		rkwargs = map[string]interface{}{"msg": toPushMsg}
 		return
 	}
 
+	rargs = []interface{}{true, message.ID, message.Ts}
+	return
+}
+
+// 用户发布消息, 通知消息
+func onPubMsg(s *Session, args []interface{}, kwargs map[string]interface{}) {
 	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		return
@@ -251,16 +230,11 @@ func onPubMsg(args []interface{}, kwargs map[string]interface{}) {
 }
 
 // 创建会话
-func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatNewChat, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
-
+func newChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	chatType := args[0].(string)
 	if chatType != "user" && chatType != "group" && chatType != "self" {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, "invalid chat type"}}
+		rerr = InvalidChatTypeError
+		return
 	}
 
 	users := []string{s.User}
@@ -275,7 +249,8 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 
 	xchatID, err := xchatHTTPClient.NewChat(chatType, users, title, "user", ext)
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
 
 	chatIdentity, err := service.ParseChatIdentity(xchatID)
@@ -290,21 +265,18 @@ func newChat(args []interface{}, kwargs map[string]interface{}) (result *turnpik
 		User:   s.User,
 		ChatID: chatID,
 	}, &userChat); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, &userChat}}
+	return []interface{}{true, &userChat}, nil, nil
 }
 
 // 获取会话信息
-func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChat, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
+func fetchChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
+		return
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
@@ -314,7 +286,8 @@ func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		// fetch chat.
 		chat := db.Chat{}
 		if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
-			return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+			rerr = newDefaultAPIError(err.Error())
+			return
 		}
 
 		userChat = chatToUserChat(s.User, &chat)
@@ -325,23 +298,21 @@ func fetchChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 			User:   s.User,
 			ChatID: chatID,
 		}, &uc); err != nil {
-			return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+			rerr = newDefaultAPIError(err.Error())
+			return
 		}
 		userChat = &uc
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, userChat}}
+	rargs = []interface{}{true, userChat}
+	return
 }
 
 // 获取会话成员信息
-func fetchChatMembers(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChatMembers, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
+func fetchChatMembers(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
+		return
 	}
 	chatID := chatIdentity.ID
 	//chatType := chatIdentity.Type
@@ -352,19 +323,15 @@ func fetchChatMembers(args []interface{}, kwargs map[string]interface{}) (result
 		User:   s.User,
 		ChatID: chatID,
 	}, &members); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, members}}
+	rargs = []interface{}{true, members}
+	return
 }
 
 // 获取会话列表
-func fetchChatList(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChatList, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
-
+func fetchChatList(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	// params
 	var onlyUnsync bool
 	if x, ok := kwargs["only_unsync"]; ok {
@@ -377,25 +344,21 @@ func fetchChatList(args []interface{}, kwargs map[string]interface{}) (result *t
 		User:       s.User,
 		OnlyUnsync: onlyUnsync,
 	}, &userChats); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, userChats}}
+	return []interface{}{true, userChats}, nil, nil
 }
 
 // 同时会话接收消息
-func syncChatRecv(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatSyncChatRecv, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
+func syncChatRecv(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
 	}
 	if chatIdentity.Type == "room" {
 		// 直接成功
-		return &turnpike.CallResult{Args: []interface{}{true}}
+		return []interface{}{true}, nil, nil
 	}
 
 	chatID := chatIdentity.ID
@@ -407,22 +370,19 @@ func syncChatRecv(args []interface{}, kwargs map[string]interface{}) (result *tu
 		ChatID: chatID,
 		MsgID:  msgID,
 	}, nil); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
-	return &turnpike.CallResult{Args: []interface{}{true}}
+	return []interface{}{true}, nil, nil
 }
 
 // 获取历史消息
-func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatFetchChatMsgs, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
+func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	// params
 	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
+		return
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
@@ -441,7 +401,7 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 	}
 
 	if lid > 0 && lid+1 >= rid {
-		return &turnpike.CallResult{Args: []interface{}{true, []interface{}{}}}
+		return []interface{}{true, []interface{}{}}, nil, nil
 	}
 
 	if kwargs["limit"] != nil {
@@ -465,14 +425,15 @@ func fetchChatMsgs(args []interface{}, kwargs map[string]interface{}) (result *t
 	}
 
 	if err := xchatLogic.Call(types.RPCXChatFetchUserChatMessages, arguments, &msgs); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
 
 	toPushMsgs := []*Message{}
 	for _, msg := range msgs {
 		toPushMsgs = append(toPushMsgs, NewMessageFromPubMsg(&msg))
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, toPushMsgs}}
+	return []interface{}{true, toPushMsgs}, nil, nil
 }
 
 // helplers
@@ -493,67 +454,55 @@ func chatToUserChat(user string, chat *db.Chat) *db.UserChat {
 
 // 房间
 // 进入房间
-func enterRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatEnterRoom, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
-
+func enterRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	roomID, err := strconv.ParseUint(args[0].(string), 10, 64)
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
+		return
 	}
 
 	chatID, err := s.EnterRoom(roomID)
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
 
 	// fetch chat.
 	chat := db.Chat{}
 	if err := xchatLogic.Call(types.RPCXChatFetchChat, chatID, &chat); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
 
 	userChat := chatToUserChat(s.User, &chat)
-	return &turnpike.CallResult{Args: []interface{}{true, userChat}}
+	return []interface{}{true, userChat}, nil, nil
 }
 
 // 离开房间
-func exitRoom(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatEnterRoom, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
-
+func exitRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	roomID, err := strconv.ParseUint(args[0].(string), 10, 64)
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
+		return
 	}
 
 	chatIdentity, err := service.ParseChatIdentity(args[1].(string))
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
 	chatID := chatIdentity.ID
 
 	s.ExitRoom(roomID, chatID)
 
-	return &turnpike.CallResult{Args: []interface{}{true}}
+	return []interface{}{true}, nil, nil
 }
 
-func joinChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatJoinChat, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
-
+func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
+		return
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
@@ -564,22 +513,19 @@ func joinChat(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 		Ns:       s.Ns,
 		User:     s.User,
 	}, nil); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true}}
+	rargs = []interface{}{true}
+	return
 }
 
-func exitChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatExitChat, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
-
+func exitChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
+		return
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
@@ -590,29 +536,27 @@ func exitChat(args []interface{}, kwargs map[string]interface{}) (result *turnpi
 		Ns:       s.Ns,
 		User:     s.User,
 	}, nil); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
 
-	return &turnpike.CallResult{Args: []interface{}{true}}
+	rargs = []interface{}{true}
+	return
 }
 
 // 客服
 // 获取我的客服会话
-func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
-	l.Debug("[rpc]%s: %v, %+v\n", URIXChatGetCsChat, args, kwargs)
-	s := getSessionFromDetails(kwargs["details"], false)
-	if s == nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 2, "session exception"}}
-	}
-
+func getCsChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	xchatID, err := xchatHTTPClient.NewChat("cs", []string{s.User}, "我的客服", "_cs", "")
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
 
 	chatIdentity, err := service.ParseChatIdentity(xchatID)
 	if err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = InvalidArgumentError
+		return
 	}
 	chatID := chatIdentity.ID
 
@@ -622,30 +566,8 @@ func getCsChat(args []interface{}, kwargs map[string]interface{}) (result *turnp
 		User:   s.User,
 		ChatID: chatID,
 	}, &userChat); err != nil {
-		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
+		rerr = newDefaultAPIError(err.Error())
+		return
 	}
-	return &turnpike.CallResult{Args: []interface{}{true, &userChat}}
-}
-
-func sub(handler turnpike.EventHandler) turnpike.EventHandler {
-	return func(args []interface{}, kargs map[string]interface{}) {
-		defer func() {
-			if r := recover(); r != nil {
-				l.Warning("sub error: %s", r)
-			}
-		}()
-		handler(args, kargs)
-	}
-}
-
-func call(handler turnpike.BasicMethodHandler) turnpike.BasicMethodHandler {
-	return func(args []interface{}, kargs map[string]interface{}) (result *turnpike.CallResult) {
-		defer func() {
-			if r := recover(); r != nil {
-				l.Warning("call error: %s", r)
-				result = &turnpike.CallResult{Err: turnpike.ErrInvalidArgument, Args: []interface{}{false, 4, turnpike.ErrInvalidArgument}}
-			}
-		}()
-		return handler(args, kargs)
-	}
+	return []interface{}{true, &userChat}, nil, nil
 }
