@@ -393,6 +393,11 @@ func syncChatRecv(args []interface{}, kwargs map[string]interface{}) (result *tu
 	if err != nil {
 		return &turnpike.CallResult{Args: []interface{}{false, 1, err.Error()}}
 	}
+	if chatIdentity.Type == "room" {
+		// 直接成功
+		return &turnpike.CallResult{Args: []interface{}{true}}
+	}
+
 	chatID := chatIdentity.ID
 	msgID := uint64(args[1].(float64))
 
