@@ -32,30 +32,6 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func registerProcedure(client *turnpike.Client, uri string, p Procedure) {
-	if err := p.registerTo(client, uri); err != nil {
-		log.Fatalf("Error register %s: %s", uri, err)
-	}
-}
-
-func registerSessionProcedure(client *turnpike.Client, uri string, sp SessionProcedure) {
-	if err := sp.registerTo(client, uri); err != nil {
-		log.Fatalf("Error register %s: %s", uri, err)
-	}
-}
-
-func subscribeTopic(client *turnpike.Client, topic string, s Subscriber) {
-	if err := s.subscribeTo(client, topic); err != nil {
-		log.Fatalf("Error subscribing to %s: %s", topic, err)
-	}
-}
-
-func subscribeSessionTopic(client *turnpike.Client, topic string, ss SessionSubscriber) {
-	if err := ss.subscribeTo(client, topic); err != nil {
-		log.Fatalf("Error subscribing to %s: %s", topic, err)
-	}
-}
-
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	instanceID = uint64(rand.Int63n(math.MaxInt64))
@@ -74,9 +50,7 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	subscribeTopic(xchat, URIWAMPSessionOnLeave, onLeave)
 
 	// ping: test rpc.
-	if err := SessionProcedure(ping).xregisterTo(xchat, URIXChatPing); err != nil {
-		log.Fatalf("Error register %s: %s", URIXChatPing, err)
-	}
+	registerSessionProcedure(xchat, URIXChatPing, ping)
 
 	registerSessionProcedure(xchat, URIXChatPubUserInfo, pubUserInfo)
 	subscribeSessionTopic(xchat, URIXChatPubUserInfo, onPubUserInfo)
@@ -107,4 +81,28 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 
 	// tasks
 	go TaskUpdatingOnlineUsers()
+}
+
+func registerProcedure(client *turnpike.Client, uri string, p Procedure) {
+	if err := p.registerTo(client, uri); err != nil {
+		log.Fatalf("Error register %s: %s", uri, err)
+	}
+}
+
+func registerSessionProcedure(client *turnpike.Client, uri string, sp SessionProcedure) {
+	if err := sp.registerTo(client, uri); err != nil {
+		log.Fatalf("Error register %s: %s", uri, err)
+	}
+}
+
+func subscribeTopic(client *turnpike.Client, topic string, s Subscriber) {
+	if err := s.subscribeTo(client, topic); err != nil {
+		log.Fatalf("Error subscribing to %s: %s", topic, err)
+	}
+}
+
+func subscribeSessionTopic(client *turnpike.Client, topic string, ss SessionSubscriber) {
+	if err := ss.subscribeTo(client, topic); err != nil {
+		log.Fatalf("Error subscribing to %s: %s", topic, err)
+	}
 }

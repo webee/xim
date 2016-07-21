@@ -19,6 +19,7 @@ type TaskChan struct {
 	tasks           chan chan []*Message
 	notifyTasks     chan chan []*NotifyMessage
 	userNotifyTasks chan chan []*UserNotifyMessage
+	rawTasks        chan chan *RawMessage
 	pushing         chan struct{}
 	pushingMutex    chan struct{}
 }
@@ -28,6 +29,7 @@ func newTaskChan() *TaskChan {
 		tasks:           make(chan chan []*Message, 64),
 		notifyTasks:     make(chan chan []*NotifyMessage, 32),
 		userNotifyTasks: make(chan chan []*UserNotifyMessage, 8),
+		rawTasks:        make(chan chan *RawMessage, 2),
 		pushing:         make(chan struct{}, 1),
 		pushingMutex:    make(chan struct{}, 1),
 	}
@@ -54,6 +56,13 @@ func (t *TaskChan) NewNotifyTask() (task chan []*NotifyMessage) {
 func (t *TaskChan) NewUserNotifyTask() (task chan []*UserNotifyMessage) {
 	task = make(chan []*UserNotifyMessage, 1)
 	t.userNotifyTasks <- task
+	return
+}
+
+// NewRawTask append a new raw message push task.
+func (t *TaskChan) NewRawTask() (task chan *RawMessage) {
+	task = make(chan *RawMessage, 1)
+	t.rawTasks <- task
 	return
 }
 

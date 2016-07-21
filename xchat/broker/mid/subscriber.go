@@ -11,19 +11,11 @@ type Subscriber func(args []interface{}, kwargs map[string]interface{})
 type SessionSubscriber func(s *Session, args []interface{}, kwargs map[string]interface{})
 
 func (s Subscriber) subscribeTo(client *turnpike.Client, topic string) error {
-	return client.Subscribe(topic, subTopic(topic, s, false))
-}
-
-func (s Subscriber) xsubscribeTo(client *turnpike.Client, topic string) error {
-	return client.Subscribe(topic, subTopic(topic, s, true))
+	return client.Subscribe(topic, subTopic(topic, s))
 }
 
 func (s SessionSubscriber) subscribeTo(client *turnpike.Client, topic string) error {
-	return client.Subscribe(topic, subTopic(topic, s.subscriber(), false))
-}
-
-func (s SessionSubscriber) xsubscribeTo(client *turnpike.Client, topic string) error {
-	return client.Subscribe(topic, subTopic(topic, s.subscriber(), true))
+	return client.Subscribe(topic, subTopic(topic, s.subscriber()))
 }
 
 func (s SessionSubscriber) subscriber() Subscriber {
@@ -36,18 +28,14 @@ func (s SessionSubscriber) subscriber() Subscriber {
 	}
 }
 
-func subTopic(topic string, subscriber Subscriber, logInfo bool) turnpike.EventHandler {
+func subTopic(topic string, subscriber Subscriber) turnpike.EventHandler {
 	return func(args []interface{}, kwargs map[string]interface{}) {
 		defer func() {
 			if r := recover(); r != nil {
 				l.Warning("[sub]%s: handle error, %s", topic, r)
 			}
 		}()
-		if logInfo {
-			l.Info("[sub]%s: %v, %+v\n", URIXChatPubUserInfo, args, kwargs)
-		} else {
-			l.Debug("[sub]%s: %v, %+v\n", URIXChatPubUserInfo, args, kwargs)
-		}
+		l.Debug("[sub]%s: %v, %+v", URIXChatPubUserInfo, args, kwargs)
 		subscriber(args, kwargs)
 	}
 }

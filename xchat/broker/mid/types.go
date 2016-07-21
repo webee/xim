@@ -56,3 +56,9 @@ func NewUserNotifyMessageFromPubMsg(msg *pubtypes.UserNotifyMessage) *UserNotify
 		Msg: msg.Msg,
 	}
 }
+
+// RawMessage is a raw message.
+type RawMessage struct {
+	Kind string
+	Msgs []interface{}
+}

@@ -11,19 +11,11 @@ type Procedure func(args []interface{}, kwargs map[string]interface{}) (rargs []
 type SessionProcedure func(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError)
 
 func (p Procedure) registerTo(client *turnpike.Client, uri string) error {
-	return client.BasicRegister(uri, callProcedure(uri, p, false))
-}
-
-func (p Procedure) xregisterTo(client *turnpike.Client, uri string) error {
-	return client.BasicRegister(uri, callProcedure(uri, p, true))
+	return client.BasicRegister(uri, callProcedure(uri, p))
 }
 
 func (p SessionProcedure) registerTo(client *turnpike.Client, uri string) error {
-	return client.BasicRegister(uri, callProcedure(uri, p.procedure(), false))
-}
-
-func (p SessionProcedure) xregisterTo(client *turnpike.Client, uri string) error {
-	return client.BasicRegister(uri, callProcedure(uri, p.procedure(), true))
+	return client.BasicRegister(uri, callProcedure(uri, p.procedure()))
 }
 
 func (p SessionProcedure) procedure() Procedure {
@@ -36,7 +28,7 @@ func (p SessionProcedure) procedure() Procedure {
 	}
 }
 
-func callProcedure(uri string, procedure Procedure, logInfo bool) turnpike.BasicMethodHandler {
+func callProcedure(uri string, procedure Procedure) turnpike.BasicMethodHandler {
 	return func(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -44,11 +36,7 @@ func callProcedure(uri string, procedure Procedure, logInfo bool) turnpike.Basic
 				result = &turnpike.CallResult{Args: APIErrorToRPCResult(InvalidArgumentError)}
 			}
 		}()
-		if logInfo {
-			l.Info("[rpc]%s: %v, %+v\n", uri, args, kwargs)
-		} else {
-			l.Debug("[rpc]%s: %v, %+v\n", uri, args, kwargs)
-		}
+		l.Debug("[rpc]%s: %v, %+v", uri, args, kwargs)
 		rargs, rkwargs, rerr := procedure(args, kwargs)
 		if rerr != nil {
 			return &turnpike.CallResult{Args: APIErrorToRPCResult(rerr)}

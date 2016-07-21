@@ -129,6 +129,7 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 	tasks := t.tasks
 	notifyTasks := t.notifyTasks
 	userNotifyTasks := t.userNotifyTasks
+	rawTasks := t.rawTasks
 
 	var accMsgs []*Message
 	var accNotifyMsgs []*NotifyMessage
@@ -165,6 +166,12 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				doPush(s.msgTopic, types.MsgKindUserNotify, accUserNotifyMsgs)
 				accUserNotifyMsgs = []*UserNotifyMessage{}
 			}
+		case task := <-rawTasks:
+			msg, ok := <-task
+			if !ok {
+				continue
+			}
+			doPush(s.msgTopic, msg.Kind, msg.Msgs)
 		case <-time.After(18 * time.Millisecond):
 			if len(accNotifyMsgs) > 0 {
 				doPush(s.msgTopic, types.MsgKindChatNotify, accNotifyMsgs)
@@ -200,6 +207,12 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				if ok {
 					accUserNotifyMsgs = append(accUserNotifyMsgs, msgs...)
 				}
+			case task := <-rawTasks:
+				msg, ok := <-task
+				if !ok {
+					continue
+				}
+				doPush(s.msgTopic, msg.Kind, msg.Msgs)
 			// TODO 根据消息发送状况确定等待时间
 			case <-time.After(3 * time.Second):
 				// 让下一位进入
@@ -218,5 +231,14 @@ func doPush(topic string, kind string, payload interface{}) {
 	err := xchat.Publish(topic, []interface{}{kind, payload}, emptyKwargs)
 	if err != nil {
 		l.Warning("publish msg error:", err)
+	}
+}
+
+func pushRawMsg(user string, msg *RawMessage) {
+	sesses := GetUserSessions(user)
+
+	for _, s := range sesses {
+		s.taskChan.NewRawTask() <- msg
+		tryPushing(s, s.taskChan)
 	}
 }

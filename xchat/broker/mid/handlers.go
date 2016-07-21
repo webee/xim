@@ -60,71 +60,6 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 	}
 }
 
-// ping
-func ping(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	// TODO: 添加多种探测功能，rpc, 获取状态等
-	method := args[0].(string)
-
-	if method == "session" {
-		user := args[1].(string)
-		sessions := GetUserSessions(user)
-		ids := []SessionID{}
-		for _, sess := range sessions {
-			ids = append(ids, sess.ID)
-		}
-
-		rargs = []interface{}{true, ids}
-		return
-	} else if method == "debug_on" {
-		turnpike.Debug()
-		rargs = []interface{}{true}
-		return
-	} else if method == "debug_off" {
-		turnpike.DebugOff()
-		rargs = []interface{}{true}
-		return
-	}
-
-	payloadSize := 0
-	if len(args) > 0 {
-		payloadSize = int(args[1].(float64))
-	}
-
-	if payloadSize < 0 {
-		payloadSize = 0
-	} else if payloadSize > 1024*1024 {
-		payloadSize = 1024 * 1024
-	}
-
-	payload := []byte{}
-	for i := 0; i < payloadSize; i++ {
-		payload = append(payload, 0x31)
-	}
-
-	sleep := int64(args[2].(float64))
-
-	if method == "rpc" {
-		var content string
-		if err := xchatLogic.Call(types.RPCXChatPing, &types.PingArgs{
-			Sleep:   sleep,
-			Payload: string(payload),
-		}, &content); err != nil {
-			l.Warning("%s error: %s", types.RPCXChatPing, err)
-			rerr = newDefaultAPIError(err.Error())
-			return
-		}
-
-		rargs = []interface{}{true, s.ID, content}
-		return
-	} else if method == "net" {
-		time.Sleep(time.Duration(sleep) * time.Millisecond)
-		rargs = []interface{}{true, s.ID, string(payload)}
-		return
-	}
-	rerr = newDefaultAPIError("invalid method")
-	return
-}
-
 func doPubUserInfo(s *Session, info string) {
 	s.SetClientInfo(info)
 
@@ -141,8 +76,7 @@ func doPubUserInfo(s *Session, info string) {
 func pubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	info := args[0].(string)
 	doPubUserInfo(s, info)
-	rargs = []interface{}{true}
-	return
+	return []interface{}{true}, nil, nil
 }
 
 func onPubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}) {
@@ -192,13 +126,10 @@ func sendMsg(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 	}
 	if withMsg {
 		toPushMsg := NewMessageFromPubMsg(&message)
-		rargs = []interface{}{true, message.ID, message.Ts}
-		rkwargs = map[string]interface{}{"msg": toPushMsg}
-		return
+		return []interface{}{true, message.ID, message.Ts}, map[string]interface{}{"msg": toPushMsg}, nil
 	}
 
-	rargs = []interface{}{true, message.ID, message.Ts}
-	return
+	return []interface{}{true, message.ID, message.Ts}, nil, nil
 }
 
 // 用户发布消息, 通知消息
@@ -303,8 +234,7 @@ func fetchChat(s *Session, args []interface{}, kwargs map[string]interface{}) (r
 		}
 		userChat = &uc
 	}
-	rargs = []interface{}{true, userChat}
-	return
+	return []interface{}{true, userChat}, nil, nil
 }
 
 // 获取会话成员信息
@@ -326,8 +256,7 @@ func fetchChatMembers(s *Session, args []interface{}, kwargs map[string]interfac
 		rerr = newDefaultAPIError(err.Error())
 		return
 	}
-	rargs = []interface{}{true, members}
-	return
+	return []interface{}{true, members}, nil, nil
 }
 
 // 获取会话列表
@@ -517,8 +446,7 @@ func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 		return
 	}
 
-	rargs = []interface{}{true}
-	return
+	return []interface{}{true}, nil, nil
 }
 
 func exitChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
@@ -540,8 +468,7 @@ func exitChat(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 		return
 	}
 
-	rargs = []interface{}{true}
-	return
+	return []interface{}{true}, nil, nil
 }
 
 // 客服
