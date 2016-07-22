@@ -6,9 +6,10 @@ import (
 )
 
 var (
-	userKey     []byte
-	testUserKey []byte
-	csUserKey   []byte
+	userKey       []byte
+	testUserKey   []byte
+	csUserKey     []byte
+	notifyUserKey []byte
 )
 
 func setupKeys() {
@@ -34,9 +35,17 @@ func setupKeys() {
 		log.Fatalln(err)
 	}
 
+	// notify user key
+	notifyUserKeyPath := args.notifyUserKeyPath
+
+	if notifyUserKey, err = ioutil.ReadFile(notifyUserKeyPath); err != nil {
+		log.Fatalln(err)
+	}
+
 	if args.debug {
 		log.Println("userKey: ", string(userKey))
 		log.Println("testUserKey: ", string(testUserKey))
 		log.Println("csUserKey: ", string(csUserKey))
+		log.Println("notifyUserKey: ", string(notifyUserKey))
 	}
 }

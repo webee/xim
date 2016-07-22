@@ -28,9 +28,10 @@ func main() {
 
 	setupKeys()
 	userKeys := map[string][]byte{
-		"":     userKey,
-		"test": testUserKey,
-		"cs":   csUserKey,
+		"":       userKey,
+		"test":   testUserKey,
+		"cs":     csUserKey,
+		"notify": notifyUserKey,
 	}
 
 	server.Start(&server.Config{

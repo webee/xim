@@ -279,7 +279,7 @@ func JoinChat(chatID uint64, chatType string, ns, user string) error {
 // ExitChat remove user from chat.
 func ExitChat(chatID uint64, chatType string, ns, user string) error {
 	// 退出规则
-	// 只有cs和group会话可以既出
+	// 只有cs和group会话可以退出
 	switch chatType {
 	case types.ChatTypeCS:
 		if ns != NSCs {

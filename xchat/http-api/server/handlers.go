@@ -25,8 +25,12 @@ type SendUserNotifyArgs struct {
 	Msg  string `json:"msg"`
 }
 
+func getNs(c echo.Context) string {
+	return GetContextString(NsContextKey, c)
+}
+
 func getNsUser(c echo.Context, u string) string {
-	ns := GetContextString(NsContextKey, c)
+	ns := getNs(c)
 	return nsutils.EncodeNSUser(ns, u)
 }
 
@@ -82,7 +86,13 @@ func sendUserNotify(c echo.Context) error {
 		return err
 	}
 
-	user := getNsUser(c, args.User)
+	ns := getNs(c)
+	user := args.User
+	if ns == "notify" {
+		// notify 可以发送给任何人，其它ns则只能给自己的ns用户发送
+		user = nsutils.EncodeNSUser(ns, user)
+	}
+
 	msg := args.Msg
 	if len(msg) > 32*1024 {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "msg excced size limit"})
