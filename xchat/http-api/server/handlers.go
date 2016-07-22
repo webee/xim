@@ -87,10 +87,10 @@ func sendUserNotify(c echo.Context) error {
 	}
 
 	ns := getNs(c)
-	user := args.User
+	user := nsutils.EncodeNSUser(ns, args.User)
 	if ns == "notify" {
 		// notify 可以发送给任何人，其它ns则只能给自己的ns用户发送
-		user = nsutils.EncodeNSUser(ns, user)
+		user = args.User
 	}
 
 	msg := args.Msg
