@@ -19,7 +19,7 @@ type ChannelActor struct {
 // NewChannelActor creates a new channel actor.
 func NewChannelActor() Actor {
 	return &ChannelActor{
-		acts: make(chan ActFunc),
+		acts: make(chan ActFunc, 64),
 	}
 }
 

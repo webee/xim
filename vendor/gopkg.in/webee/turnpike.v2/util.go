@@ -46,6 +46,9 @@ const (
 	// A Peer acknowledges ending of a session - used as a GOOBYE reply reason.
 	ErrGoodbyeAndOut = URI("wamp.error.goodbye_and_out")
 
+	// A Peer acknowledges ending of a session - used as a Abort reply reason.
+	ErrAbortAndOut = URI("wamp.error.abort_and_out")
+
 	// --- Authorization ---
 
 	// A join, call, register, publish or subscribe failed, since the Peer is not
