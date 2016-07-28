@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"xim/utils/nsutils"
 	"xim/xchat/logic/cache"
 	"xim/xchat/logic/db"
 	"xim/xchat/logic/mq"
@@ -231,7 +232,7 @@ func PubUserStatus(instanceID, sessionID uint64, user string, status string, inf
 	publishUserStatus(user, status, t)
 
 	// 发送上下线日志
-	if info != "" {
+	if info != "*" && info != "" {
 		msg := make(map[string]string)
 		msg["user"] = user
 		msg["type"] = status
@@ -254,10 +255,11 @@ func FetchNewRoomChatIDs(roomID uint64, chatIDs []uint64) ([]uint64, error) {
 }
 
 // JoinChat add user to chat.
-func JoinChat(chatID uint64, chatType string, ns, user string) error {
+func JoinChat(chatID uint64, chatType string, user string) error {
 	var limit int
+	ns, _ := nsutils.DecodeNSUser(user)
 	// 加入规则
-	// 只有cs和group会话可以加入
+	// 只有cs和users会话可以加入
 	// cs只可以加入cs会话
 	switch chatType {
 	case types.ChatTypeCS:
@@ -265,7 +267,7 @@ func JoinChat(chatID uint64, chatType string, ns, user string) error {
 			return ErrNoPermission
 		}
 		limit = 1
-	case types.ChatTypeGroup:
+	case types.ChatTypeUsers:
 		if ns == NSCs {
 			return ErrNoPermission
 		}
@@ -277,7 +279,8 @@ func JoinChat(chatID uint64, chatType string, ns, user string) error {
 }
 
 // ExitChat remove user from chat.
-func ExitChat(chatID uint64, chatType string, ns, user string) error {
+func ExitChat(chatID uint64, chatType string, user string) error {
+	ns, _ := nsutils.DecodeNSUser(user)
 	// 退出规则
 	// 只有cs和group会话可以退出
 	switch chatType {
@@ -285,7 +288,7 @@ func ExitChat(chatID uint64, chatType string, ns, user string) error {
 		if ns != NSCs {
 			return ErrIllegalOperation
 		}
-	case types.ChatTypeGroup:
+	case types.ChatTypeUsers:
 	default:
 		return ErrIllegalOperation
 	}

@@ -23,6 +23,7 @@ var (
 	xchatLogic  *nanorpc.Client
 	xchatSub    *pub.Subscriber
 	xchat       *turnpike.Client
+	realm       *turnpike.Realm
 	emptyArgs   = []interface{}{}
 	emptyKwargs = make(map[string]interface{})
 )
@@ -38,8 +39,16 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 
 	initXChatHTTPClient(config.Key, config.XChatHostURL)
 
-	var err error
+	var (
+		err error
+		ok  bool
+	)
 	xchatLogic = nanorpc.NewClient(config.LogicRPCAddr, config.RPCCallTimeout)
+
+	realm, ok = xchatRouter.GetRealm("xchat")
+	if !ok {
+		log.Fatalf("realm xchat not exists")
+	}
 
 	xchat, err = xchatRouter.GetLocalClientWithSize(100, "xchat", nil)
 	if err != nil {

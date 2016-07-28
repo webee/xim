@@ -9,6 +9,7 @@ const (
 	ChatTypeRoom  = "room"
 	ChatTypeSelf  = "self"
 	ChatTypeUser  = "user"
+	ChatTypeUsers = "users"
 	ChatTypeGroup = "group"
 	ChatTypeCS    = "cs"
 )
@@ -123,7 +124,6 @@ type SyncOnlineUsersArgs struct {
 type JoinChatArgs struct {
 	ChatID   uint64
 	ChatType string
-	Ns       string
 	User     string
 }
 
@@ -131,7 +131,6 @@ type JoinChatArgs struct {
 type ExitChatArgs struct {
 	ChatID   uint64
 	ChatType string
-	Ns       string
 	User     string
 }
 

@@ -3,7 +3,12 @@ package mid
 import (
 	"fmt"
 	"sync"
-	"xim/utils/nsutils"
+	"time"
+)
+
+// constants.
+const (
+	InitialClientInfo = "*"
 )
 
 // const variables.
@@ -70,8 +75,8 @@ func (t *TaskChan) NewRawTask() (task chan *RawMessage) {
 type Session struct {
 	sync.Mutex
 	ID         SessionID
-	Ns         string
 	User       string
+	created    time.Time
 	taskChan   *TaskChan
 	msgTopic   string
 	clientInfo string
@@ -84,14 +89,15 @@ func (s *Session) String() string {
 	return fmt.Sprintf("[%d]->%s", s.ID, s.User)
 }
 
-func newSession(id SessionID, ns, user string) *Session {
+func newSession(id SessionID, User string) *Session {
 	return &Session{
-		ID:       id,
-		Ns:       ns,
-		User:     nsutils.EncodeNSUser(ns, user),
-		taskChan: newTaskChan(),
-		msgTopic: fmt.Sprintf(URIXChatUserMsg, id),
-		rooms:    make(map[uint64]uint64),
+		ID:         id,
+		User:       User,
+		created:    time.Now(),
+		taskChan:   newTaskChan(),
+		msgTopic:   fmt.Sprintf(URIXChatUserMsg, id),
+		clientInfo: InitialClientInfo,
+		rooms:      make(map[uint64]uint64),
 	}
 }
 
@@ -227,4 +233,18 @@ func GetOnlineSessionUsers() map[uint64]string {
 		}
 	}
 	return users
+}
+
+// GetSlowSessions get sessions who pub client info late.
+func GetSlowSessions() []SessionID {
+	sessLock.RLock()
+	defer sessLock.RUnlock()
+	t := time.Now()
+	sesses := []SessionID{}
+	for id, sess := range sessions {
+		if t.Sub(sess.created).Seconds() > 30 && sess.clientInfo == InitialClientInfo {
+			sesses = append(sesses, id)
+		}
+	}
+	return sesses
 }

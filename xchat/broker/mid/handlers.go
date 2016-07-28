@@ -3,6 +3,7 @@ package mid
 import (
 	"strconv"
 	"time"
+	"xim/utils/nsutils"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service"
@@ -18,7 +19,8 @@ func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
 		return s
 	}
 	if forceCreate {
-		return newSession(id, details["ns"].(string), details["user"].(string))
+		ns, user := details["ns"].(string), details["user"].(string)
+		return newSession(id, nsutils.EncodeNSUser(ns, user))
 	}
 	return nil
 }
@@ -439,7 +441,6 @@ func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 	if err := xchatLogic.Call(types.RPCXChatJoinChat, &types.JoinChatArgs{
 		ChatID:   chatID,
 		ChatType: chatType,
-		Ns:       s.Ns,
 		User:     s.User,
 	}, nil); err != nil {
 		rerr = newDefaultAPIError(err.Error())
@@ -461,7 +462,6 @@ func exitChat(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 	if err := xchatLogic.Call(types.RPCXChatExitChat, &types.ExitChatArgs{
 		ChatID:   chatID,
 		ChatType: chatType,
-		Ns:       s.Ns,
 		User:     s.User,
 	}, nil); err != nil {
 		rerr = newDefaultAPIError(err.Error())

@@ -36,6 +36,7 @@ var realm1 *turnpike.Client
 // XChatRouter is a wamp router for xchat.
 type XChatRouter struct {
 	*turnpike.WebsocketServer
+	realms map[string]*turnpike.Realm
 }
 
 // NewXChatRouter creates a xchat router.
@@ -46,7 +47,7 @@ func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeou
 
 	auth := &jwtAuth{userKeys}
 	xauth := &xjwtAuth{userKeys}
-	realms := map[string]turnpike.Realm{
+	realms := map[string]*turnpike.Realm{
 		"xchat": {
 			Authorizer:  new(XChatAuthorizer),
 			Interceptor: NewDetailsInterceptor(roleIsUser, nil, "details"),
@@ -60,7 +61,7 @@ func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeou
 		},
 	}
 	if testing {
-		realms["realm1"] = turnpike.Realm{}
+		realms["realm1"] = &turnpike.Realm{}
 	}
 
 	s, err := turnpike.NewWebsocketServer(realms)
@@ -78,5 +79,14 @@ func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeou
 
 	return &XChatRouter{
 		WebsocketServer: s,
+		realms:          realms,
 	}, nil
+}
+
+// GetRealm get specified realm.
+func (r *XChatRouter) GetRealm(name string) (*turnpike.Realm, bool) {
+	if realm, ok := r.realms[name]; ok {
+		return realm, ok
+	}
+	return nil, false
 }
