@@ -20,11 +20,12 @@ func (p SessionProcedure) registerTo(client *turnpike.Client, uri string) error 
 
 func (p SessionProcedure) procedure() Procedure {
 	return func(args []interface{}, kwargs map[string]interface{}) ([]interface{}, map[string]interface{}, APIError) {
-		s := getSessionFromDetails(kwargs["details"], false)
-		if s == nil {
+		//s := getSessionFromDetails(kwargs["details"], false)
+		sess := getSessionFromID(kwargs["session_id"])
+		if sess == nil {
 			return nil, nil, SessionExceptionError
 		}
-		return p(s, args, kwargs)
+		return p(sess, args, kwargs)
 	}
 }
 

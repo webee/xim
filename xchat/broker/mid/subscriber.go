@@ -20,7 +20,8 @@ func (s SessionSubscriber) subscribeTo(client *turnpike.Client, topic string) er
 
 func (s SessionSubscriber) subscriber() Subscriber {
 	return func(args []interface{}, kwargs map[string]interface{}) {
-		sess := getSessionFromDetails(kwargs["details"], false)
+		//sess := getSessionFromDetails(kwargs["details"], false)
+		sess := getSessionFromID(kwargs["session_id"])
 		if sess == nil {
 			return
 		}
@@ -35,7 +36,7 @@ func subTopic(topic string, subscriber Subscriber) turnpike.EventHandler {
 				l.Warning("[sub]%s: handle error, %s", topic, r)
 			}
 		}()
-		l.Debug("[sub]%s: %v, %+v", URIXChatPubUserInfo, args, kwargs)
+		l.Debug("[sub]%s: %v, %+v", topic, args, kwargs)
 		subscriber(args, kwargs)
 	}
 }

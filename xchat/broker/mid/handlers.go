@@ -12,6 +12,14 @@ import (
 	"gopkg.in/webee/turnpike.v2"
 )
 
+func getSessionFromID(sessionID interface{}) *Session {
+	id := SessionID(sessionID.(turnpike.ID))
+	if s, ok := GetSession(id); ok {
+		return s
+	}
+	return nil
+}
+
 func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
 	details := d.(map[string]interface{})
 	id := SessionID(details["session"].(turnpike.ID))
