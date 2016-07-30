@@ -2,24 +2,31 @@ package turnpike
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
+	"log"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
+// errors.
+var (
+	ErrWSSendTimeout = errors.New("ws peer send timeout")
+	ErrWSIsClosed    = errors.New("ws peer is closed")
+)
+
 type websocketPeer struct {
-	conn         *websocket.Conn
-	serializer   Serializer
-	sendMsgs     chan Message
-	messages     chan Message
-	payloadType  int
-	inSending    chan struct{}
-	closing      chan struct{}
-	maxMsgSize   int64
-	writeTimeout time.Duration
-	pingTimeout  time.Duration
-	idleTimeout  time.Duration
+	sync.Mutex
+	conn        *websocket.Conn
+	serializer  Serializer
+	sendMsgs    chan Message
+	messages    chan Message
+	payloadType int
+	inSending   chan struct{}
+	closing     chan struct{}
+	*ConnectionConfig
 }
 
 // NewWebsocketPeer connects to the websocket server at the specified url.
@@ -48,11 +55,13 @@ func newWebsocketPeer(url, protocol, origin string, serializer Serializer, paylo
 		return nil, err
 	}
 	ep := &websocketPeer{
-		conn:        conn,
-		sendMsgs:    make(chan Message, 16),
-		messages:    make(chan Message, 10),
-		serializer:  serializer,
-		payloadType: payloadType,
+		conn:             conn,
+		sendMsgs:         make(chan Message, 16),
+		messages:         make(chan Message, 10),
+		serializer:       serializer,
+		payloadType:      payloadType,
+		closing:          make(chan struct{}),
+		ConnectionConfig: &ConnectionConfig{},
 	}
 	go ep.run()
 
@@ -60,8 +69,18 @@ func newWebsocketPeer(url, protocol, origin string, serializer Serializer, paylo
 }
 
 func (ep *websocketPeer) Send(msg Message) error {
-	ep.sendMsgs <- msg
-	return nil
+	select {
+	case ep.sendMsgs <- msg:
+		return nil
+	case <-time.After(5 * time.Second):
+		log.Println(ErrWSSendTimeout.Error())
+		// 发送太慢, 不正常的连接
+		ep.Close()
+		return ErrWSSendTimeout
+	case <-ep.closing:
+		log.Println(ErrWSIsClosed.Error())
+		return ErrWSIsClosed
+	}
 }
 
 func (ep *websocketPeer) Receive() <-chan Message {
@@ -69,9 +88,6 @@ func (ep *websocketPeer) Receive() <-chan Message {
 }
 
 func (ep *websocketPeer) doClosing() {
-	if ep.closing == nil {
-		return
-	}
 	select {
 	case <-ep.closing:
 	default:
@@ -80,10 +96,6 @@ func (ep *websocketPeer) doClosing() {
 }
 
 func (ep *websocketPeer) isClosed() bool {
-	if ep.closing == nil {
-		return true
-	}
-
 	select {
 	case <-ep.closing:
 		return true
@@ -112,21 +124,24 @@ func (ep *websocketPeer) Close() error {
 }
 
 func (ep *websocketPeer) updateReadDeadline() {
-	if ep.idleTimeout > 0 {
-		ep.conn.SetReadDeadline(time.Now().Add(ep.idleTimeout))
+	ep.Lock()
+	defer ep.Unlock()
+	if ep.IdleTimeout > 0 {
+		ep.conn.SetReadDeadline(time.Now().Add(ep.IdleTimeout))
 	}
 }
 
 func (ep *websocketPeer) setReadDead() {
+	ep.Lock()
+	defer ep.Unlock()
 	ep.conn.SetReadDeadline(time.Now())
 }
 
 func (ep *websocketPeer) run() {
-	ep.closing = make(chan struct{})
 	go ep.sending()
 
-	if ep.maxMsgSize > 0 {
-		ep.conn.SetReadLimit(ep.maxMsgSize)
+	if ep.MaxMsgSize > 0 {
+		ep.conn.SetReadLimit(ep.MaxMsgSize)
 	}
 	ep.conn.SetPongHandler(func(v string) error {
 		tlog.Println("pong:", v)
@@ -169,10 +184,10 @@ func (ep *websocketPeer) run() {
 func (ep *websocketPeer) sending() {
 	ep.inSending = make(chan struct{})
 	var ticker *time.Ticker
-	if ep.pingTimeout == 0 {
+	if ep.PingTimeout == 0 {
 		ticker = time.NewTicker(7 * 24 * time.Hour)
 	} else {
-		ticker = time.NewTicker(ep.pingTimeout)
+		ticker = time.NewTicker(ep.PingTimeout)
 	}
 
 	defer func() {
@@ -188,7 +203,7 @@ func (ep *websocketPeer) sending() {
 				return
 			}
 		case <-ticker.C:
-			if err := ep.conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(ep.writeTimeout)); err != nil {
+			if err := ep.conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(ep.WriteTimeout)); err != nil {
 				return
 			}
 		case <-ep.closing:
@@ -215,8 +230,8 @@ func (ep *websocketPeer) doSend(msg Message) (closed bool, err error) {
 		tlog.Println("error serializing peer message:", err)
 		return
 	}
-	if ep.writeTimeout > 0 {
-		ep.conn.SetWriteDeadline(time.Now().Add(ep.writeTimeout))
+	if ep.WriteTimeout > 0 {
+		ep.conn.SetWriteDeadline(time.Now().Add(ep.WriteTimeout))
 	}
 	if err = ep.conn.WriteMessage(ep.payloadType, b); err != nil {
 		return true, err

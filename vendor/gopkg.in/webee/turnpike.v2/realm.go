@@ -177,6 +177,9 @@ func (r *Realm) handleSession(sess *Session) {
 			logErr(sess.Send(&Goodbye{Reason: ErrGoodbyeAndOut, Details: make(map[string]interface{})}))
 			tlog.Printf("[%s] leaving: %v", sess, msg.Reason)
 			return
+		case *Abort:
+			tlog.Printf("[%s] abort: %v", sess, msg.Reason)
+			return
 
 		// Broker messages
 		case *Publish:

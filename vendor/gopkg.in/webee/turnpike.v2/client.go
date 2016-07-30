@@ -251,6 +251,9 @@ func (c *Client) Receive() {
 		case *Goodbye:
 			tlog.Println("client received Goodbye message")
 			break
+		case *Abort:
+			tlog.Println("client received Abort message")
+			break
 
 		default:
 			tlog.Println("unhandled message:", msg.MessageType(), msg)
