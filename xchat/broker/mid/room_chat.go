@@ -122,7 +122,7 @@ func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
 // Remove remove session from room chat.
 func (rc *RoomChats) Remove(chatID uint64, id SessionID) {
 	rc.Lock()
-	rc.Unlock()
+	defer rc.Unlock()
 	chat, ok := rc.chats[chatID]
 	if !ok {
 		return
@@ -134,7 +134,7 @@ func (rc *RoomChats) Remove(chatID uint64, id SessionID) {
 // Members returns room chat's members.
 func (rc *RoomChats) Members(chatID uint64) (ids []SessionID) {
 	rc.RLock()
-	rc.RUnlock()
+	defer rc.RUnlock()
 
 	chat, ok := rc.chats[chatID]
 	if !ok {
@@ -151,7 +151,7 @@ func (rc *RoomChats) Members(chatID uint64) (ids []SessionID) {
 // HasChat checks if room has chat.
 func (rc *RoomChats) HasChat(chatID uint64) bool {
 	rc.RLock()
-	rc.RUnlock()
+	defer rc.RUnlock()
 
 	_, ok := rc.chats[chatID]
 	return ok
