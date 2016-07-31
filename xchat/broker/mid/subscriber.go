@@ -33,7 +33,7 @@ func subTopic(topic string, subscriber Subscriber) turnpike.EventHandler {
 	return func(args []interface{}, kwargs map[string]interface{}) {
 		defer func() {
 			if r := recover(); r != nil {
-				l.Warning("[sub]%s: handle error, %s", topic, r)
+				l.Warning("[sub]%s: handle error, %s, %v, %+v", topic, r, args, kwargs)
 			}
 		}()
 		l.Debug("[sub]%s: %v, %+v", topic, args, kwargs)

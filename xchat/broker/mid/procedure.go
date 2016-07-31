@@ -33,7 +33,7 @@ func callProcedure(uri string, procedure Procedure) turnpike.BasicMethodHandler 
 	return func(args []interface{}, kwargs map[string]interface{}) (result *turnpike.CallResult) {
 		defer func() {
 			if r := recover(); r != nil {
-				l.Warning("[rpc]%s: call error, %s", uri, r)
+				l.Warning("[rpc]%s: call error, %s, %v, %+v", uri, r, args, kwargs)
 				result = &turnpike.CallResult{Args: APIErrorToRPCResult(InvalidArgumentError)}
 			}
 		}()
