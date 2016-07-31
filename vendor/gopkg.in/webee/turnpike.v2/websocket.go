@@ -225,15 +225,22 @@ func (ep *websocketPeer) sending() {
 }
 
 func (ep *websocketPeer) doSend(msg Message) (closed bool, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("doSend panic: %s, %+v", r, msg)
+			closed = true
+		}
+	}()
 	b, err := ep.serializer.Serialize(msg)
 	if err != nil {
-		tlog.Println("error serializing peer message:", err)
-		return
+		log.Printf("error serializing peer message: %s, %+v", err, msg)
+		return true, err
 	}
 	if ep.WriteTimeout > 0 {
 		ep.conn.SetWriteDeadline(time.Now().Add(ep.WriteTimeout))
 	}
 	if err = ep.conn.WriteMessage(ep.payloadType, b); err != nil {
+		tlog.Println("error write message: ", err)
 		return true, err
 	}
 	return
