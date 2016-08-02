@@ -225,12 +225,7 @@ func (ep *websocketPeer) sending() {
 }
 
 func (ep *websocketPeer) doSend(msg Message) (closed bool, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("doSend panic: %s, %+v", r, msg)
-			closed = true
-		}
-	}()
+	tlog.Printf("do sending message: %s< %+v >", msg.MessageType(), msg)
 	b, err := ep.serializer.Serialize(msg)
 	if err != nil {
 		log.Printf("error serializing peer message: %s, %+v", err, msg)
