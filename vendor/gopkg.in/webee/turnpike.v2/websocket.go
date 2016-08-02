@@ -88,6 +88,9 @@ func (ep *websocketPeer) Receive() <-chan Message {
 }
 
 func (ep *websocketPeer) doClosing() {
+	ep.Lock()
+	defer ep.Unlock()
+
 	select {
 	case <-ep.closing:
 	default:
