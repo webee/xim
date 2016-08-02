@@ -1,6 +1,7 @@
 package mid
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 	"xim/utils/nsutils"
@@ -70,7 +71,21 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 	}
 }
 
-func doPubUserInfo(s *Session, info string) {
+func doPubUserInfo(s *Session, infox interface{}) {
+	info := ""
+	switch x := infox.(type) {
+	case string:
+		info = x
+	case map[string]interface{}:
+		if s, err := json.Marshal(x); err != nil {
+			info = string(s)
+		} else {
+			panic(err)
+		}
+	default:
+		// panic.
+		info = x.(string)
+	}
 	s.SetClientInfo(info)
 
 	arguments := &types.PubUserStatusArgs{
@@ -84,14 +99,12 @@ func doPubUserInfo(s *Session, info string) {
 }
 
 func pubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	info := args[0].(string)
-	doPubUserInfo(s, info)
+	doPubUserInfo(s, args[0])
 	return []interface{}{true}, nil, nil
 }
 
 func onPubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}) {
-	info := args[0].(string)
-	doPubUserInfo(s, info)
+	doPubUserInfo(s, args[0])
 }
 
 // 用户发送消息, 会话消息
