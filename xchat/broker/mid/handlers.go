@@ -23,7 +23,7 @@ func getSessionFromID(sessionID interface{}) *Session {
 
 func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
 	details := d.(map[string]interface{})
-	sessionID, ok := details["sessionID"]
+	sessionID, ok := details["session"]
 	if !ok {
 		return nil
 	}
