@@ -8,7 +8,8 @@ const (
 	URIXChatPing = "xchat.ping"
 
 	// 用户信息发布
-	URIXChatPubUserInfo = "xchat.user.info.pub"
+	URIXChatPubUserInfo       = "xchat.user.info.pub"
+	URIXChatPubUserStatusInfo = "xchat.user.status.pub"
 
 	// 用户发送消息到会话
 	URIXChatSendMsg = "xchat.user.msg.send"

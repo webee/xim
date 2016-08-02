@@ -47,10 +47,7 @@ func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []
 		members := getChatMembers(chatID, updated)
 
 		for _, member := range members {
-			ss := GetUserSessions(member.User)
-			for _, x := range ss {
-				sessions = append(sessions, x)
-			}
+			sessions = append(sessions, GetUserSessions(member.User)...)
 		}
 	}
 

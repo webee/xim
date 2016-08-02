@@ -41,13 +41,7 @@ func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	AddSession(s)
 	l.Debug("join: %s", s)
 	// 上线状态
-	arguments := &types.PubUserStatusArgs{
-		InstanceID: instanceID,
-		SessionID:  uint64(s.ID),
-		User:       s.User,
-		Status:     types.UserStatusOnline,
-	}
-	xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
+	doPubUserStatusInfo(s, types.UserStatusOnline)
 }
 
 // 处理用户断开注销
@@ -60,15 +54,32 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 		l.Debug("left: %s", s)
 
 		// 离线状态
+		doPubUserStatusInfo(s, types.UserStatusOffline)
+	}
+}
+
+func doPubUserStatusInfo(s *Session, infox interface{}) {
+	switch x := infox.(type) {
+	case string:
+		// set status
 		arguments := &types.PubUserStatusArgs{
 			InstanceID: instanceID,
 			SessionID:  uint64(s.ID),
 			User:       s.User,
-			Status:     types.UserStatusOffline,
+			Status:     x,
 			Info:       s.GetClientInfo(),
 		}
 		xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
 	}
+}
+
+func pubUserStatusInfo(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	doPubUserStatusInfo(s, args[0])
+	return []interface{}{true}, nil, nil
+}
+
+func onPubUserStatusInfo(s *Session, args []interface{}, kwargs map[string]interface{}) {
+	doPubUserStatusInfo(s, args[0])
 }
 
 func doPubUserInfo(s *Session, infox interface{}) {

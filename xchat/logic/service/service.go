@@ -227,7 +227,10 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, 
 func PubUserStatus(instanceID, sessionID uint64, user string, status string, info string) error {
 	l.Debug("instance:%d, session:%d, user:%s, status:%s, info:%s", instanceID, sessionID, user, status, info)
 	// 记录用户在线状态
-	UpdateUserStatus(instanceID, sessionID, user, status)
+	if err := UpdateUserStatus(instanceID, sessionID, user, status); err != nil {
+		return err
+	}
+
 	t := time.Now()
 	publishUserStatus(user, status, t)
 
