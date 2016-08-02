@@ -23,7 +23,12 @@ func getSessionFromID(sessionID interface{}) *Session {
 
 func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
 	details := d.(map[string]interface{})
-	id := SessionID(details["session"].(turnpike.ID))
+	sessionID, ok := details["sessionID"]
+	if !ok {
+		return nil
+	}
+
+	id := SessionID(sessionID.(turnpike.ID))
 	if s, ok := GetSession(id); ok {
 		return s
 	}
@@ -38,6 +43,10 @@ func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
 func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	details := args[0].(map[string]interface{})
 	s := getSessionFromDetails(details, true)
+	if s == nil {
+		return
+	}
+
 	AddSession(s)
 	l.Debug("join: %s", s)
 	// 上线状态

@@ -164,6 +164,7 @@ func (r *defaultRouter) Accept(client Peer) error {
 }
 
 func (r *defaultRouter) OpenSession(realm *Realm, sess *Session) {
+	tlog.Printf("open session: %+v", sess)
 	for _, callback := range r.sessionOpenCallbacks {
 		go callback(uint(sess.Id), string(realm.URI))
 	}
