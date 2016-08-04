@@ -78,7 +78,7 @@ func (ep *websocketPeer) Send(msg Message) error {
 		ep.Close()
 		return ErrWSSendTimeout
 	case <-ep.closing:
-		log.Println(ErrWSIsClosed.Error())
+		tlog.Println(ErrWSIsClosed.Error())
 		return ErrWSIsClosed
 	}
 }
@@ -228,7 +228,6 @@ func (ep *websocketPeer) sending() {
 }
 
 func (ep *websocketPeer) doSend(msg Message) (closed bool, err error) {
-	tlog.Printf("do sending message: %s< %+v >", msg.MessageType(), msg)
 	b, err := ep.serializer.Serialize(msg)
 	if err != nil {
 		log.Printf("error serializing peer message: %s, %+v", err, msg)

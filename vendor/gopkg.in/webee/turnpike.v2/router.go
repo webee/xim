@@ -149,9 +149,6 @@ func (r *defaultRouter) Accept(client Peer) error {
 	}
 	tlog.Println("Established session:", welcome.Id)
 
-	// session details
-	welcome.Details["session"] = welcome.Id
-	welcome.Details["realm"] = hello.Realm
 	sess := &Session{
 		Peer:    client,
 		Id:      welcome.Id,
