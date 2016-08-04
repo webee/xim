@@ -4,6 +4,23 @@ import (
 	"gopkg.in/webee/turnpike.v2"
 )
 
+// SessionChecker check the Session to determine whether do inject.
+type SessionChecker func(*turnpike.Session) bool
+
+// SessionTransformer generate details to be injected from session.
+type SessionTransformer func(*turnpike.Session) map[string]interface{}
+
+// DetailsInterceptor inject session details for pub and call.
+type DetailsInterceptor struct {
+	sessionChecker     SessionChecker
+	sessionTransformer SessionTransformer
+	key                string
+}
+
+func sessionOk(session *turnpike.Session) bool {
+	return true
+}
+
 // SessionIDInterceptor inject session id for pub and call.
 type SessionIDInterceptor struct {
 	sessionChecker SessionChecker

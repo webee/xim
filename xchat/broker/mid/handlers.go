@@ -21,14 +21,8 @@ func getSessionFromID(sessionID interface{}) *Session {
 	return nil
 }
 
-func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
-	details := d.(map[string]interface{})
-	sessionID, ok := details["session"]
-	if !ok {
-		return nil
-	}
-
-	id := SessionID(sessionID.(turnpike.ID))
+func getSessionFromSessionDetails(sessionID turnpike.ID, details map[string]interface{}, forceCreate bool) *Session {
+	id := SessionID(sessionID)
 	if s, ok := GetSession(id); ok {
 		return s
 	}
@@ -41,8 +35,14 @@ func getSessionFromDetails(d interface{}, forceCreate bool) *Session {
 
 // 处理用户连接
 func onJoin(args []interface{}, kwargs map[string]interface{}) {
-	details := args[0].(map[string]interface{})
-	s := getSessionFromDetails(details, true)
+	sessionID := args[0].(turnpike.ID)
+	details := args[1].(map[string]interface{})
+	if _, ok := details["is_local"]; ok {
+		// ignore local client.
+		return
+	}
+
+	s := getSessionFromSessionDetails(sessionID, details, true)
 	if s == nil {
 		return
 	}

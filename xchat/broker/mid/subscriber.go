@@ -20,7 +20,6 @@ func (s SessionSubscriber) subscribeTo(client *turnpike.Client, topic string) er
 
 func (s SessionSubscriber) subscriber() Subscriber {
 	return func(args []interface{}, kwargs map[string]interface{}) {
-		//sess := getSessionFromDetails(kwargs["details"], false)
 		sess := getSessionFromID(kwargs["session_id"])
 		if sess == nil {
 			return

@@ -138,6 +138,7 @@ func (r *defaultRouter) Accept(client Peer) error {
 	if welcome.Details == nil {
 		welcome.Details = make(map[string]interface{})
 	}
+	welcome.Details["realm"] = hello.Realm
 	// add default details to welcome message
 	for k, v := range defaultWelcomeDetails {
 		if _, ok := welcome.Details[k]; !ok {
