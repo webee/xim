@@ -6,22 +6,22 @@ import (
 
 // SessionIDInterceptor inject session id for pub and call.
 type SessionIDInterceptor struct {
-	detailsChecker DetailsChecker
+	sessionChecker SessionChecker
 	key            string
 }
 
-func getSessionIDFromDetails(details map[string]interface{}) interface{} {
-	return details["session"]
+func getSessionIDFromSession(session *turnpike.Session) turnpike.ID {
+	return session.Id
 }
 
 // NewSessionIDInterceptor returns the default interceptor, which does nothing.
-func NewSessionIDInterceptor(detailsChecker DetailsChecker, key string) turnpike.Interceptor {
-	if detailsChecker == nil {
-		detailsChecker = detailsOk
+func NewSessionIDInterceptor(sessionChecker SessionChecker, key string) turnpike.Interceptor {
+	if sessionChecker == nil {
+		sessionChecker = sessionOk
 	}
 
 	return &SessionIDInterceptor{
-		detailsChecker: detailsChecker,
+		sessionChecker: sessionChecker,
 		key:            key,
 	}
 }
@@ -30,20 +30,20 @@ func NewSessionIDInterceptor(detailsChecker DetailsChecker, key string) turnpike
 func (di *SessionIDInterceptor) Intercept(session *turnpike.Session, msg *turnpike.Message) {
 	switch (*msg).MessageType() {
 	case turnpike.CALL:
-		if di.detailsChecker(session.Details) {
+		if di.sessionChecker(session) {
 			call := (*msg).(*turnpike.Call)
 			if call.ArgumentsKw == nil {
 				call.ArgumentsKw = make(map[string]interface{})
 			}
-			call.ArgumentsKw[di.key] = getSessionIDFromDetails(session.Details)
+			call.ArgumentsKw[di.key] = getSessionIDFromSession(session)
 		}
 	case turnpike.PUBLISH:
-		if di.detailsChecker(session.Details) {
+		if di.sessionChecker(session) {
 			publish := (*msg).(*turnpike.Publish)
 			if publish.ArgumentsKw == nil {
 				publish.ArgumentsKw = make(map[string]interface{})
 			}
-			publish.ArgumentsKw[di.key] = getSessionIDFromDetails(session.Details)
+			publish.ArgumentsKw[di.key] = getSessionIDFromSession(session)
 		}
 	}
 }

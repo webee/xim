@@ -21,8 +21,8 @@ func Init() {
 	l = logger.Logger.GetLogger("router")
 }
 
-func roleIsUser(details map[string]interface{}) bool {
-	if val, ok := details["role"]; ok {
+func roleIsUser(session *turnpike.Session) bool {
+	if val, ok := session.Details["role"]; ok {
 		if role, ok := val.(string); ok {
 			return role == "user"
 		}
@@ -50,7 +50,7 @@ func NewXChatRouter(userKeys map[string][]byte, debug, testing bool, writeTimeou
 	realms := map[string]*turnpike.Realm{
 		"xchat": {
 			Authorizer: new(XChatAuthorizer),
-			//Interceptor: NewDetailsInterceptor(roleIsUser, nil, "details"),
+			//Interceptor: NewSessionDetailsInterceptor(roleIsUser, nil, "details"),
 			Interceptor: NewSessionIDInterceptor(roleIsUser, "session_id"),
 			CRAuthenticators: map[string]turnpike.CRAuthenticator{
 				"jwt":    auth,
