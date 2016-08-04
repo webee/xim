@@ -125,6 +125,7 @@ type JoinChatArgs struct {
 	ChatID   uint64
 	ChatType string
 	User     string
+	Users    []string
 }
 
 // ExitChatArgs is the arguments of ExitChat.

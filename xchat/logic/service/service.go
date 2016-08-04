@@ -258,7 +258,7 @@ func FetchNewRoomChatIDs(roomID uint64, chatIDs []uint64) ([]uint64, error) {
 }
 
 // JoinChat add user to chat.
-func JoinChat(chatID uint64, chatType string, user string) error {
+func JoinChat(chatID uint64, chatType string, user string, users []string) error {
 	var limit int
 	ns, _ := nsutils.DecodeNSUser(user)
 	// 加入规则
@@ -266,26 +266,35 @@ func JoinChat(chatID uint64, chatType string, user string) error {
 	// cs只可以加入cs会话
 	switch chatType {
 	case types.ChatTypeCS:
-		if ns != NSCs {
+		// 只能加入自己
+		if ns != NSCs || len(users) > 0 {
 			return ErrNoPermission
 		}
 		limit = 1
+		users = []string{user}
 	case types.ChatTypeUsers:
 		if ns == NSCs {
 			return ErrNoPermission
+		}
+		// 必须是会话成员
+		if _, err := db.GetUserChatWithType(user, chatID, chatType); err != nil {
+			return ErrNoPermission
+		}
+		if len(users) == 0 {
+			return nil
 		}
 	default:
 		return ErrNoPermission
 	}
 
-	return db.AddChatMembers(chatID, []string{user}, limit)
+	return db.AddChatMembers(chatID, users, limit)
 }
 
 // ExitChat remove user from chat.
 func ExitChat(chatID uint64, chatType string, user string) error {
 	ns, _ := nsutils.DecodeNSUser(user)
 	// 退出规则
-	// 只有cs和group会话可以退出
+	// 只有cs和users会话可以退出
 	switch chatType {
 	case types.ChatTypeCS:
 		if ns != NSCs {

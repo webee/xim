@@ -205,15 +205,17 @@ func onPubMsg(s *Session, args []interface{}, kwargs map[string]interface{}) {
 
 // 创建会话
 func newChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	// TODO: arguments databinding.
 	chatType := args[0].(string)
-	if chatType != "user" && chatType != "group" && chatType != "self" {
+	if chatType != "user" && chatType != "users" && chatType != "self" {
 		rerr = InvalidChatTypeError
 		return
 	}
 
+	ns, _ := nsutils.DecodeNSUser(s.User)
 	users := []string{s.User}
 	for _, u := range args[1].([]interface{}) {
-		users = append(users, u.(string))
+		users = append(users, nsutils.EncodeNSUser(ns, u.(string)))
 	}
 	title := args[2].(string)
 	ext := ""
@@ -221,6 +223,7 @@ func newChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 		ext = x.(string)
 	}
 
+	// NOTE: 利用了ns=""的情况可以添加任何ns的用户
 	xchatID, err := xchatHTTPClient.NewChat(chatType, users, title, "user", ext)
 	if err != nil {
 		rerr = newDefaultAPIError(err.Error())
@@ -478,11 +481,20 @@ func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
+	ns, _ := nsutils.DecodeNSUser(s.User)
+	users := []string{}
+	if len(args) >= 2 {
+		// 邀请的人员
+		for _, u := range args[1].([]interface{}) {
+			users = append(users, nsutils.EncodeNSUser(ns, u.(string)))
+		}
+	}
 
 	if err := xchatLogic.Call(types.RPCXChatJoinChat, &types.JoinChatArgs{
 		ChatID:   chatID,
 		ChatType: chatType,
 		User:     s.User,
+		Users:    users,
 	}, nil); err != nil {
 		rerr = newDefaultAPIError(err.Error())
 		return

@@ -168,7 +168,7 @@ func (r *RPCXChat) FetchNewRoomChatIDs(args *types.FetchNewRoomChatIDs, reply *[
 
 // JoinChat add user to chat.
 func (r *RPCXChat) JoinChat(args *types.JoinChatArgs, reply *types.NoReply) error {
-	return JoinChat(args.ChatID, args.ChatType, args.User)
+	return JoinChat(args.ChatID, args.ChatType, args.User, args.Users)
 }
 
 // ExitChat remove user from chat.
