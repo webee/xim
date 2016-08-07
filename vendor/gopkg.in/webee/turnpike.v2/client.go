@@ -314,6 +314,11 @@ func (c *Client) handleInvocation(msg *Invocation) {
 		go func() {
 			result := proc.handler(msg.Arguments, msg.ArgumentsKw, msg.Details)
 			tlog.Printf("[%s] %s: %+v", msg.MessageType(), proc.name, result)
+			if result == nil {
+				Debug()
+				tlog.Printf("XXXXX[%d][%s] %s: %+v", msg.Request, msg.MessageType(), proc.name, msg)
+				tlog.Printf("XXXXX[%d][%s] %s: %+v, %+v, %+v", msg.Request, msg.MessageType(), proc.name, msg.Registration, msg.Arguments, msg.ArgumentsKw)
+			}
 
 			var tosend Message
 			tosend = &Yield{
