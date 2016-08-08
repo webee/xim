@@ -97,7 +97,7 @@ func doPubUserInfo(s *Session, infox interface{}) {
 	case string:
 		info = x
 	case map[string]interface{}:
-		if s, err := json.Marshal(x); err != nil {
+		if s, err := json.Marshal(x); err == nil {
 			info = string(s)
 		} else {
 			panic(err)
