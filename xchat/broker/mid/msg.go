@@ -56,20 +56,20 @@ func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []
 
 func pushUserNotify(msg *pubtypes.UserNotifyMessage) {
 	sesses := GetUserSessions(msg.User)
-	toPushMsgs := []*UserNotifyMessage{NewUserNotifyMessageFromPubMsg(msg)}
+	toPushMsgs := []StatelessMsg{NewUserNotifyMessageFromPubMsg(msg)}
 
 	for _, s := range sesses {
-		s.taskChan.NewUserNotifyTask() <- toPushMsgs
+		s.taskChan.NewStatelessTask() <- toPushMsgs
 		tryPushing(s, s.taskChan)
 	}
 }
 
 func pushNotify(msg *pubtypes.ChatNotifyMessage) {
 	sesses := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
-	toPushMsgs := []*NotifyMessage{NewNotifyMessageFromPubMsg(msg)}
+	toPushMsgs := []StatelessMsg{NewNotifyMessageFromPubMsg(msg)}
 
 	for _, s := range sesses {
-		s.taskChan.NewNotifyTask() <- toPushMsgs
+		s.taskChan.NewStatelessTask() <- toPushMsgs
 		tryPushing(s, s.taskChan)
 	}
 }
@@ -124,24 +124,22 @@ func pushChatUserMsgs(s *Session, t *TaskChan) {
 func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 	pushing := t.pushing
 	tasks := t.tasks
-	notifyTasks := t.notifyTasks
-	userNotifyTasks := t.userNotifyTasks
+	statelessTasks := t.statelessTasks
 	rawTasks := t.rawTasks
 
 	var accMsgs []*Message
-	var accNotifyMsgs []*NotifyMessage
-	var accUserNotifyMsgs []*UserNotifyMessage
+	var accStatelessMsgs []StatelessMsg
 	for {
 		select {
-		case task := <-notifyTasks:
+		case task := <-statelessTasks:
 			msgs, ok := <-task
 			if !ok || len(msgs) == 0 {
 				continue
 			}
-			accNotifyMsgs = append(accNotifyMsgs, msgs...)
-			if len(accNotifyMsgs) > 32 {
-				doPush(s.msgTopic, types.MsgKindChatNotify, accNotifyMsgs)
-				accNotifyMsgs = []*NotifyMessage{}
+			accStatelessMsgs = append(accStatelessMsgs, msgs...)
+			if len(accStatelessMsgs) > 32 {
+				doPushStatelessMsgs(s.msgTopic, accStatelessMsgs)
+				accStatelessMsgs = []StatelessMsg{}
 			}
 		case task := <-tasks:
 			msgs, ok := <-task
@@ -153,16 +151,6 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				doPush(s.msgTopic, types.MsgKindChat, accMsgs)
 				accMsgs = []*Message{}
 			}
-		case task := <-userNotifyTasks:
-			msgs, ok := <-task
-			if !ok || len(msgs) == 0 {
-				continue
-			}
-			accUserNotifyMsgs = append(accUserNotifyMsgs, msgs...)
-			if len(accUserNotifyMsgs) > 0 {
-				doPush(s.msgTopic, types.MsgKindUserNotify, accUserNotifyMsgs)
-				accUserNotifyMsgs = []*UserNotifyMessage{}
-			}
 		case task := <-rawTasks:
 			msg, ok := <-task
 			if !ok {
@@ -170,17 +158,17 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 			}
 			doPush(s.msgTopic, msg.Kind, msg.Msgs)
 		case <-time.After(18 * time.Millisecond):
-			if len(accNotifyMsgs) > 0 {
-				doPush(s.msgTopic, types.MsgKindChatNotify, accNotifyMsgs)
-				accNotifyMsgs = []*NotifyMessage{}
+			if len(accStatelessMsgs) > 0 {
+				if len(accStatelessMsgs) == 1 {
+					doPush(s.msgTopic, accStatelessMsgs[0].Kind(), accStatelessMsgs)
+				} else {
+					doPushStatelessMsgs(s.msgTopic, accStatelessMsgs)
+				}
+				accStatelessMsgs = []StatelessMsg{}
 			}
 			if len(accMsgs) > 0 {
 				doPush(s.msgTopic, types.MsgKindChat, accMsgs)
 				accMsgs = []*Message{}
-			}
-			if len(accUserNotifyMsgs) > 0 {
-				doPush(s.msgTopic, types.MsgKindUserNotify, accUserNotifyMsgs)
-				accUserNotifyMsgs = []*UserNotifyMessage{}
 			}
 
 			if clear {
@@ -189,20 +177,15 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 			}
 
 			select {
-			case task := <-notifyTasks:
+			case task := <-statelessTasks:
 				msgs, ok := <-task
 				if ok {
-					accNotifyMsgs = append(accNotifyMsgs, msgs...)
+					accStatelessMsgs = append(accStatelessMsgs, msgs...)
 				}
 			case task := <-tasks:
 				msgs, ok := <-task
 				if ok {
 					accMsgs = append(accMsgs, msgs...)
-				}
-			case task := <-userNotifyTasks:
-				msgs, ok := <-task
-				if ok {
-					accUserNotifyMsgs = append(accUserNotifyMsgs, msgs...)
 				}
 			case task := <-rawTasks:
 				msg, ok := <-task
@@ -221,6 +204,17 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				return
 			}
 		}
+	}
+}
+
+func doPushStatelessMsgs(topic string, msgs []StatelessMsg) {
+	// TODO: optimize.
+	kindMsgs := make(map[string][]StatelessMsg)
+	for _, msg := range msgs {
+		kindMsgs[msg.Kind()] = append(kindMsgs[msg.Kind()], msg)
+	}
+	for kind, msgs := range kindMsgs {
+		doPush(topic, kind, msgs)
 	}
 }
 

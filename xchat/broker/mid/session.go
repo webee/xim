@@ -21,22 +21,20 @@ type SessionID uint64
 
 // TaskChan is chat's msg push task channels.
 type TaskChan struct {
-	tasks           chan chan []*Message
-	notifyTasks     chan chan []*NotifyMessage
-	userNotifyTasks chan chan []*UserNotifyMessage
-	rawTasks        chan chan *RawMessage
-	pushing         chan struct{}
-	pushingMutex    chan struct{}
+	tasks          chan chan []*Message
+	statelessTasks chan chan []StatelessMsg
+	rawTasks       chan chan *RawMessage
+	pushing        chan struct{}
+	pushingMutex   chan struct{}
 }
 
 func newTaskChan() *TaskChan {
 	t := &TaskChan{
-		tasks:           make(chan chan []*Message, 64),
-		notifyTasks:     make(chan chan []*NotifyMessage, 32),
-		userNotifyTasks: make(chan chan []*UserNotifyMessage, 8),
-		rawTasks:        make(chan chan *RawMessage, 2),
-		pushing:         make(chan struct{}, 1),
-		pushingMutex:    make(chan struct{}, 1),
+		tasks:          make(chan chan []*Message, 64),
+		statelessTasks: make(chan chan []StatelessMsg, 32),
+		rawTasks:       make(chan chan *RawMessage, 2),
+		pushing:        make(chan struct{}, 1),
+		pushingMutex:   make(chan struct{}, 1),
 	}
 	t.pushing <- NT
 	t.pushingMutex <- NT
@@ -50,17 +48,10 @@ func (t *TaskChan) NewTask() (task chan []*Message) {
 	return
 }
 
-// NewNotifyTask append a new notify message push task.
-func (t *TaskChan) NewNotifyTask() (task chan []*NotifyMessage) {
-	task = make(chan []*NotifyMessage, 1)
-	t.notifyTasks <- task
-	return
-}
-
-// NewUserNotifyTask append a new user notify message push task.
-func (t *TaskChan) NewUserNotifyTask() (task chan []*UserNotifyMessage) {
-	task = make(chan []*UserNotifyMessage, 1)
-	t.userNotifyTasks <- task
+// NewStatelessTask append a new stateless message push task.
+func (t *TaskChan) NewStatelessTask() (task chan []StatelessMsg) {
+	task = make(chan []StatelessMsg, 1)
+	t.statelessTasks <- task
 	return
 }
 
