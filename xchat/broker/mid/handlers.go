@@ -336,11 +336,63 @@ func fetchChatList(s *Session, args []interface{}, kwargs map[string]interface{}
 	return []interface{}{true, userChats}, nil, nil
 }
 
-// 同时会话接收消息
+func doSetUserChat(user string, chatID uint64, key string, value interface{}) error {
+	return xchatLogic.Call(types.RPCXChatSetUserChat, &types.SetUserChatArgs{
+		User:   user,
+		ChatID: chatID,
+		Key:    key,
+		Value:  value,
+	}, nil)
+}
+
+// 设置用户会话属性
+func setChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
+	if err != nil {
+		rerr = InvalidArgumentError
+		return
+	}
+	if chatIdentity.Type == "room" {
+		// 直接成功
+		return []interface{}{true}, nil, nil
+	}
+
+	chatID := chatIdentity.ID
+
+	for key, x := range kwargs {
+		switch key {
+		case "session_id":
+			// pass this.
+			continue
+		case "dnd":
+			if val, ok := x.(bool); ok {
+				if err := doSetUserChat(s.User, chatID, key, val); err != nil {
+					rerr = newDefaultAPIError(err.Error())
+					return
+				}
+				continue
+			}
+		case "cur_id":
+			if val, ok := x.(float64); ok {
+				if err := doSetUserChat(s.User, chatID, key, uint64(val)); err != nil {
+					rerr = newDefaultAPIError(err.Error())
+					return
+				}
+				continue
+			}
+		}
+		rerr = InvalidArgumentError
+		return
+	}
+	return []interface{}{true}, nil, nil
+}
+
+// 同步会话接收消息
 func syncChatRecv(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		rerr = InvalidArgumentError
+		return
 	}
 	if chatIdentity.Type == "room" {
 		// 直接成功

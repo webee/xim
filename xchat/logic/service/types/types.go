@@ -58,6 +58,14 @@ type FetchUserChatListArgs struct {
 	OnlyUnsync bool
 }
 
+// SetUserChatArgs is the arguments of SetUserChat.
+type SetUserChatArgs struct {
+	User   string
+	ChatID uint64
+	Key    string
+	Value  interface{}
+}
+
 // SyncUserChatRecvArgs is the arguments of SyncUserChatRecv.
 type SyncUserChatRecvArgs struct {
 	User   string
@@ -166,6 +174,7 @@ const (
 	RPCXChatFetchChat              = "RPCXChat.FetchChat"
 	RPCXChatFetchUserChat          = "RPCXChat.FetchUserChat"
 	RPCXChatFetchUserChatList      = "RPCXChat.FetchUserChatList"
+	RPCXChatSetUserChat            = "RPCXChat.SetUserChat"
 	RPCXChatSyncUserChatRecv       = "RPCXChat.SyncUserChatRecv"
 	RPCXChatFetchChatMembers       = "RPCXChat.FetchChatMembers"
 	RPCXChatFetchUserChatMembers   = "RPCXChat.FetchUserChatMembers"

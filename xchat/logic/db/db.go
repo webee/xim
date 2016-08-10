@@ -216,6 +216,13 @@ func GetOrCreateNewRoomChatIDs(roomID uint64, chatIDs []uint64) (ids []uint64, e
 	return
 }
 
+// SetUserChat set user's chat attribute.
+func SetUserChat(user string, chatID uint64, key string, value interface{}) (err error) {
+	s := fmt.Sprintf(`UPDATE xchat_member SET %s=$1 WHERE "user"=$2 and chat_id=$3`, key)
+	_, err = db.Exec(s, value, user, chatID)
+	return
+}
+
 // SyncUserChatRecv set user's current recv msg id.
 func SyncUserChatRecv(user string, chatID uint64, msgID uint64) (err error) {
 	_, err = db.Exec(`UPDATE xchat_member SET cur_id=$1 WHERE "user"=$2 and chat_id=$3 and cur_id<$4`, msgID, user, chatID, msgID)

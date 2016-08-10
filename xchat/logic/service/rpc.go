@@ -60,6 +60,11 @@ func (r *RPCXChat) FetchUserChatList(args *types.FetchUserChatListArgs, reply *[
 	return nil
 }
 
+// SetUserChat set user's chat attribute.
+func (r *RPCXChat) SetUserChat(args *types.SetUserChatArgs, reply *types.NoReply) (err error) {
+	return SetUserChat(args.User, args.ChatID, args.Key, args.Value)
+}
+
 // SyncUserChatRecv sync user's chat msg recv.
 func (r *RPCXChat) SyncUserChatRecv(args *types.SyncUserChatRecvArgs, reply *types.NoReply) (err error) {
 	return SyncUserChatRecv(args.User, args.ChatID, args.MsgID)
