@@ -30,6 +30,7 @@ var (
 )
 
 func notifyOfflineUsers(from string, chatID uint64, kind, chatType, domain, msg string, ts time.Time) {
+	// TODO: 免打扰和@结合, exclude dnds.
 	if !offlineNotifyEnabledChatTypes[chatType] {
 		return
 	}
@@ -44,7 +45,7 @@ func notifyOfflineUsers(from string, chatID uint64, kind, chatType, domain, msg 
 		Ts:       ts,
 	}
 
-	members, err := db.GetChatMembers(chatID)
+	members, err := db.GetFullChatMembers(chatID)
 	if err != nil {
 		l.Warning("get chat members error: %s", err.Error())
 		return
@@ -52,7 +53,8 @@ func notifyOfflineUsers(from string, chatID uint64, kind, chatType, domain, msg 
 
 	users := []string{}
 	for _, member := range members {
-		if member.User != from {
+		// 不发通知给自己，免打扰，已退出的
+		if member.User != from && !member.Dnd && !member.IsExited {
 			users = append(users, member.User)
 		}
 	}
@@ -68,6 +70,7 @@ func notifyOfflineUsers(from string, chatID uint64, kind, chatType, domain, msg 
 
 	for _, user := range offlineUsers {
 		m.User = user
+		l.Debug("notify %s, %+v", user, m)
 		b, err := json.Marshal(&m)
 		if err != nil {
 			l.Warning("json encoding error: %s", err.Error())

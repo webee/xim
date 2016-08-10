@@ -23,9 +23,15 @@ func InitDB(driverName, dataSourceName string, maxConn int) (close func()) {
 	}
 }
 
+// GetFullChatMembers returns chat's members with full attributes.
+func GetFullChatMembers(chatID uint64) (members []FullMember, err error) {
+	err = db.Select(&members, `SELECT "user", joined, cur_id, exit_msg_id, is_exited, dnd FROM xchat_member where chat_id=$1 and is_exited=false`, chatID)
+	return
+}
+
 // GetChatMembers returns chat's members.
 func GetChatMembers(chatID uint64) (members []Member, err error) {
-	err = db.Select(&members, `SELECT "user", joined FROM xchat_member where chat_id=$1`, chatID)
+	err = db.Select(&members, `SELECT "user", joined FROM xchat_member where chat_id=$1 and is_exited=false`, chatID)
 	return
 }
 

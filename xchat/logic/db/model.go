@@ -69,6 +69,16 @@ func (d *UserChat) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// FullMember is a chat member with full attributes.
+type FullMember struct {
+	User      string    `db:"user"`
+	Joined    time.Time `db:"joined"`
+	CurID     uint64    `db:"cur_id"`
+	ExitMsgID uint64    `db:"exit_msg_id"`
+	IsExited  bool      `db:"is_exited"`
+	Dnd       bool      `db:"dnd"`
+}
+
 // Member is a chat member.
 type Member struct {
 	User   string    `db:"user" json:"user"`
