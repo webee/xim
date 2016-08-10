@@ -41,9 +41,9 @@ type SendMsgArgs struct {
 	Source   *pubtypes.MsgSource
 	ChatID   uint64
 	ChatType string
+	Domain   string
 	User     string
 	Msg      string
-	Kind     string
 }
 
 // FetchUserChatArgs is the arguments of FetchUserChat
@@ -143,8 +143,9 @@ type FetchNewRoomChatIDs struct {
 
 // SendUserNotifyArgs is the arguments of SendUserNotify.
 type SendUserNotifyArgs struct {
-	User string
-	Msg  string
+	User   string
+	Domain string
+	Msg    string
 }
 
 // SendUserNotifyReply is the reply of SendUserNotify.
@@ -158,6 +159,7 @@ const (
 	RPCXChatPubUserStatus          = "RPCXChat.PubUserStatus"
 	RPCXChatSyncOnlineUsers        = "RPCXChat.SyncOnlineUsers"
 	RPCXChatSendMsg                = "RPCXChat.SendMsg"
+	RPCXChatSendNotify             = "RPCXChat.SendNotify"
 	RPCXChatFetchChatMessages      = "RPCXChat.FetchChatMessages"
 	RPCXChatFetchChatMessagesByIDs = "RPCXChat.FetchChatMessagesByIDs"
 	RPCXChatFetchUserChatMessages  = "RPCXChat.FetchUserChatMessages"

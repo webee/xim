@@ -2,8 +2,8 @@ package server
 
 import (
 	"net/http"
+	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
-	"xim/xchat/logic/service"
 	"xim/xchat/logic/service/types"
 
 	"xim/utils/nsutils"
@@ -21,8 +21,9 @@ type SendMsgArgs struct {
 
 // SendUserNotifyArgs is arguments of sendUserNotify.
 type SendUserNotifyArgs struct {
-	User string `json:"user"`
-	Msg  string `json:"msg"`
+	User   string `json:"user"`
+	Domain string `json:"domain"`
+	Msg    string `json:"msg"`
 }
 
 func getNs(c echo.Context) string {
@@ -40,7 +41,7 @@ func sendMsg(c echo.Context) error {
 		return err
 	}
 
-	chatIdentity, err := service.ParseChatIdentity(args.ChatID)
+	chatIdentity, err := db.ParseChatIdentity(args.ChatID)
 	if err != nil {
 		return err
 	}
@@ -61,18 +62,16 @@ func sendMsg(c echo.Context) error {
 			ChatType: chatType,
 			User:     user,
 			Msg:      msg,
-			Kind:     types.MsgKindChat,
 		}, &message); err != nil {
 			l.Warning("%s error: %s", types.RPCXChatSendMsg, err)
 			return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "send msg failed"})
 		}
 	case types.MsgKindChatNotify:
-		xchatLogic.AsyncCall(types.RPCXChatSendMsg, &types.SendMsgArgs{
+		xchatLogic.AsyncCall(types.RPCXChatSendNotify, &types.SendMsgArgs{
 			ChatID:   chatID,
 			ChatType: chatType,
 			User:     user,
 			Msg:      msg,
-			Kind:     types.MsgKindChatNotify,
 		})
 	default:
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "invalid msg kind"})
@@ -100,8 +99,9 @@ func sendUserNotify(c echo.Context) error {
 
 	var reply types.SendUserNotifyReply
 	if err := xchatLogic.Call(types.RPCXChatSendUserNotify, &types.SendUserNotifyArgs{
-		User: user,
-		Msg:  msg,
+		User:   user,
+		Domain: args.Domain,
+		Msg:    msg,
 	}, &reply); err != nil {
 		l.Warning("%s error: %s", types.RPCXChatSendUserNotify, err)
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "send msg failed"})

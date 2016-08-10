@@ -7,7 +7,6 @@ import (
 	"xim/utils/nsutils"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
-	"xim/xchat/logic/service"
 	"xim/xchat/logic/service/types"
 
 	"gopkg.in/webee/turnpike.v2"
@@ -127,41 +126,55 @@ func onPubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}
 	doPubUserInfo(s, args[0])
 }
 
-// 用户发送消息, 会话消息
-func sendMsg(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
+func bindSendMsgArgs(s *Session, args []interface{}) (sendMsgArgs *types.SendMsgArgs, rerr APIError) {
+	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
-		rerr = InvalidArgumentError
-		return
+		return nil, InvalidArgumentError
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
 
 	msg := args[1].(string)
 	if len(msg) > 64*1024 {
-		rerr = MsgSizeExceedLimitError
-		return
+		// NOTE: msg exceed size limit
+		return nil, MsgSizeExceedLimitError
+	}
+	domain := ""
+	if len(args) >= 3 {
+		domain = args[2].(string)
 	}
 
 	src := &pubtypes.MsgSource{
 		InstanceID: instanceID,
 		SessionID:  uint64(s.ID),
 	}
-	var message pubtypes.ChatMessage
-	if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
+
+	sendMsgArgs = &types.SendMsgArgs{
 		Source:   src,
 		ChatID:   chatID,
 		ChatType: chatType,
+		Domain:   domain,
 		User:     s.User,
 		Msg:      msg,
-		Kind:     types.MsgKindChat,
-	}, &message); err != nil {
+	}
+	return
+}
+
+// 用户发送消息, 会话消息
+func sendMsg(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	sendMsgArgs, rerr := bindSendMsgArgs(s, args)
+	if rerr != nil {
+		return
+	}
+
+	var message pubtypes.ChatMessage
+	if err := xchatLogic.Call(types.RPCXChatSendMsg, sendMsgArgs, &message); err != nil {
 		l.Warning("%s error: %s", types.RPCXChatSendMsg, err)
 		rerr = newDefaultAPIError(err.Error())
 		return
 	}
 
-	go push(src, &message)
+	go push(sendMsgArgs.Source, &message)
 
 	withMsg := false
 	if x, ok := kwargs["with_msg"]; ok {
@@ -176,31 +189,29 @@ func sendMsg(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 }
 
 // 用户发布消息, 通知消息
-func onPubMsg(s *Session, args []interface{}, kwargs map[string]interface{}) {
-	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
-	if err != nil {
-		return
-	}
-	chatID := chatIdentity.ID
-	chatType := chatIdentity.Type
-	msg := args[1].(string)
-	if len(msg) > 16*1024 {
-		// NOTE: msg exceed size limit
+func onPubNotify(s *Session, args []interface{}, kwargs map[string]interface{}) {
+	sendMsgArgs, rerr := bindSendMsgArgs(s, args)
+	if rerr != nil {
 		return
 	}
 
-	src := &pubtypes.MsgSource{
-		InstanceID: instanceID,
-		SessionID:  uint64(s.ID),
+	xchatLogic.AsyncCall(types.RPCXChatSendNotify, sendMsgArgs)
+}
+
+func sendNotify(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	sendMsgArgs, rerr := bindSendMsgArgs(s, args)
+	if rerr != nil {
+		return
 	}
-	xchatLogic.AsyncCall(types.RPCXChatSendMsg, &types.SendMsgArgs{
-		Source:   src,
-		ChatID:   chatID,
-		ChatType: chatType,
-		User:     s.User,
-		Msg:      msg,
-		Kind:     types.MsgKindChatNotify,
-	})
+
+	var ts int64
+	if err := xchatLogic.Call(types.RPCXChatSendNotify, sendMsgArgs, &ts); err != nil {
+		l.Warning("%s error: %s", types.RPCXChatSendNotify, err)
+		rerr = newDefaultAPIError(err.Error())
+		return
+	}
+
+	return []interface{}{true, ts}, nil, nil
 }
 
 // 创建会话
@@ -230,7 +241,7 @@ func newChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 		return
 	}
 
-	chatIdentity, err := service.ParseChatIdentity(xchatID)
+	chatIdentity, err := db.ParseChatIdentity(xchatID)
 	if err != nil {
 		return
 	}
@@ -250,7 +261,7 @@ func newChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 
 // 获取会话信息
 func fetchChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
+	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		rerr = InvalidArgumentError
 		return
@@ -285,7 +296,7 @@ func fetchChat(s *Session, args []interface{}, kwargs map[string]interface{}) (r
 
 // 获取会话成员信息
 func fetchChatMembers(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
+	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		rerr = InvalidArgumentError
 		return
@@ -327,7 +338,7 @@ func fetchChatList(s *Session, args []interface{}, kwargs map[string]interface{}
 
 // 同时会话接收消息
 func syncChatRecv(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
+	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		rerr = InvalidArgumentError
 	}
@@ -354,7 +365,7 @@ func syncChatRecv(s *Session, args []interface{}, kwargs map[string]interface{})
 // 获取历史消息
 func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	// params
-	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
+	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		rerr = InvalidArgumentError
 		return
@@ -461,7 +472,7 @@ func exitRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 		return
 	}
 
-	chatIdentity, err := service.ParseChatIdentity(args[1].(string))
+	chatIdentity, err := db.ParseChatIdentity(args[1].(string))
 	if err != nil {
 		rerr = newDefaultAPIError(err.Error())
 		return
@@ -474,7 +485,7 @@ func exitRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 }
 
 func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
+	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		rerr = InvalidArgumentError
 		return
@@ -504,7 +515,7 @@ func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 }
 
 func exitChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	chatIdentity, err := service.ParseChatIdentity(args[0].(string))
+	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		rerr = InvalidArgumentError
 		return
@@ -533,7 +544,7 @@ func getCsChat(s *Session, args []interface{}, kwargs map[string]interface{}) (r
 		return
 	}
 
-	chatIdentity, err := service.ParseChatIdentity(xchatID)
+	chatIdentity, err := db.ParseChatIdentity(xchatID)
 	if err != nil {
 		rerr = InvalidArgumentError
 		return

@@ -14,14 +14,16 @@ const (
 	// 用户发送消息到会话
 	URIXChatSendMsg = "xchat.user.msg.send"
 
-	// 用户发布消息到会话
-	URIXChatPubMsg = "xchat.user.msg.pub"
+	// 用户发送notify消息到会话
+	URIXChatSendNotify = "xchat.user.notify.send"
+	URIXChatPubNotify  = "xchat.user.notify.pub"
 
 	URIXChatNewChat          = "xchat.user.chat.new"
 	URIXChatFetchChat        = "xchat.user.chat.fetch"
 	URIXChatFetchChatList    = "xchat.user.chat.list"
 	URIXChatFetchChatMembers = "xchat.user.chat.members"
 	URIXChatFetchChatMsgs    = "xchat.user.chat.msgs"
+	URIXChatSetUserChat      = "xchat.user.chat.set"
 	URIXChatSyncChatRecv     = "xchat.user.chat.recv.sync"
 
 	// 会话

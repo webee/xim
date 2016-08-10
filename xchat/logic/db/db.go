@@ -25,7 +25,7 @@ func InitDB(driverName, dataSourceName string, maxConn int) (close func()) {
 
 // GetChatMembers returns chat's members.
 func GetChatMembers(chatID uint64) (members []Member, err error) {
-	err = db.Select(&members, `SELECT chat_id, "user", joined, cur_id FROM xchat_member where chat_id=$1`, chatID)
+	err = db.Select(&members, `SELECT "user", joined FROM xchat_member where chat_id=$1`, chatID)
 	return
 }
 
@@ -90,29 +90,29 @@ func GetChatMessages(chatID uint64, chatType string, lID, rID uint64, limit int,
 	if !desc {
 		if rID > 0 {
 			if limit > 0 {
-				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id LIMIT $5`, chatID, chatType, lID, rID, limit)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg, domain FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id LIMIT $5`, chatID, chatType, lID, rID, limit)
 			} else {
-				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id`, chatID, chatType, lID, rID)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg, domain FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id`, chatID, chatType, lID, rID)
 			}
 		} else {
 			if limit > 0 {
-				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id LIMIT $4`, chatID, chatType, lID, limit)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg, domain FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id LIMIT $4`, chatID, chatType, lID, limit)
 			} else {
-				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id`, chatID, chatType, lID)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg, domain FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id`, chatID, chatType, lID)
 			}
 		}
 	} else {
 		if rID > 0 {
 			if limit > 0 {
-				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id DESC LIMIT $5`, chatID, chatType, lID, rID, limit)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg, domain FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id DESC LIMIT $5`, chatID, chatType, lID, rID, limit)
 			} else {
-				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id DESC`, chatID, chatType, lID, rID)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg, domain FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 and id < $4 ORDER BY id DESC`, chatID, chatType, lID, rID)
 			}
 		} else {
 			if limit > 0 {
-				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id DESC LIMIT $4`, chatID, chatType, lID, limit)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg, domain FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id DESC LIMIT $4`, chatID, chatType, lID, limit)
 			} else {
-				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id DESC`, chatID, chatType, lID)
+				err = db.Select(&msgs, `SELECT chat_id, chat_type, id, uid, ts, msg, domain FROM xchat_message WHERE chat_id=$1 and chat_type=$2 and id > $3 ORDER BY id DESC`, chatID, chatType, lID)
 			}
 		}
 	}
@@ -125,7 +125,7 @@ func GetChatMessagesByIDs(chatID uint64, chatType string, msgIDs []uint64) (msgs
 		return
 	}
 
-	query, args, err := sqlx.In(`SELECT chat_id, chat_type, id, uid, ts, msg FROM xchat_message WHERE chat_id=? and chat_type=? and id IN (?)`, chatID, chatType, msgIDs)
+	query, args, err := sqlx.In(`SELECT chat_id, chat_type, id, uid, ts, msg, domain FROM xchat_message WHERE chat_id=? and chat_type=? and id IN (?)`, chatID, chatType, msgIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -151,23 +151,23 @@ func GetChatWithType(chatID uint64, chatType string) (chat *Chat, err error) {
 // GetUserChat returns user's chat.
 func GetUserChat(user string, chatID uint64) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
+	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
 	return
 }
 
 // GetUserChatWithType returns user's chat.
 func GetUserChatWithType(user string, chatID uint64, chatType string) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`, user, chatID, chatType)
+	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`, user, chatID, chatType)
 	return
 }
 
 // GetUserChatList returns user's chat list.
 func GetUserChatList(user string, onlyUnsync bool) (userChats []UserChat, err error) {
 	if onlyUnsync {
-		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
+		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
 	} else {
-		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, m.user, m.cur_id, m.joined FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
+		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
 	}
 	return
 }
@@ -223,11 +223,12 @@ func SyncUserChatRecv(user string, chatID uint64, msgID uint64) (err error) {
 }
 
 // NewMsg insert a new message.
-func NewMsg(chatID uint64, chatType string, user string, msg string) (message *Message, err error) {
+func NewMsg(chatID uint64, chatType, domain string, user string, msg string) (message *Message, err error) {
 	err = Transaction(db, func(tx *sqlx.Tx) error {
 		message = &Message{
 			ChatID:   chatID,
 			ChatType: chatType,
+			Domain:   domain,
 			User:     user,
 			Msg:      msg,
 		}
@@ -235,7 +236,7 @@ func NewMsg(chatID uint64, chatType string, user string, msg string) (message *M
 		if err = tx.Get(message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 RETURNING msg_id as id`, chatID); err != nil {
 			return err
 		}
-		if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, chat_type, id, uid, ts, msg) values($1, $2, $3, $4, now(), $5) RETURNING ts`, chatID, chatType, message.ID, user, msg); err != nil {
+		if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, chat_type, id, uid, ts, msg, domain) values($1, $2, $3, $4, now(), $5, $6) RETURNING ts`, chatID, chatType, message.ID, user, msg, domain); err != nil {
 			return err
 		}
 		return nil

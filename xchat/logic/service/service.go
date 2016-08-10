@@ -111,12 +111,13 @@ const (
 )
 
 // SendUserNotify sends user notify.
-func SendUserNotify(user string, msg string) (bool, error) {
+func SendUserNotify(user string, domain string, msg string) (bool, error) {
 	ts := time.Now()
 	m := pubtypes.UserNotifyMessage{
-		User: user,
-		Ts:   ts.Unix(),
-		Msg:  msg,
+		User:   user,
+		Domain: domain,
+		Ts:     ts.Unix(),
+		Msg:    msg,
 	}
 
 	if ok, err := cache.IsUserOnline(user); !ok {
@@ -132,7 +133,7 @@ func SendUserNotify(user string, msg string) (bool, error) {
 }
 
 // SendChatMsg sends chat message.
-func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, user string, msg string) (*pubtypes.ChatMessage, error) {
+func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, domain string, user string, msg string) (*pubtypes.ChatMessage, error) {
 	var updated int64
 	userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 	if err != nil {
@@ -148,14 +149,16 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, user s
 		updated = userChat.Updated.Unix()
 	}
 
-	message, err := db.NewMsg(chatID, chatType, user, msg)
+	message, err := db.NewMsg(chatID, chatType, domain, user, msg)
 	if err != nil {
 		return nil, err
 	}
 
+	// NOTE: updated 为会话更新时间, 用来判断是否更新members缓存
 	m := pubtypes.ChatMessage{
 		ChatID:   message.ChatID,
 		ChatType: message.ChatType,
+		Domain:   message.Domain,
 		ID:       message.ID,
 		User:     message.User,
 		Ts:       message.Ts.Unix(),
@@ -183,22 +186,22 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, user s
 		Source: src,
 		Msg:    m,
 	})
-	go notifyOfflineUsers(message.User, message.ChatID, types.MsgKindChat, message.ChatType, message.Msg, message.Ts)
+	go notifyOfflineUsers(message.User, chatID, types.MsgKindChat, chatType, domain, message.Msg, message.Ts)
 
 	return &m, err
 }
 
 // SendChatNotifyMsg sends chat notify message.
-func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, user string, msg string) error {
+func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, domain string, user string, msg string) (int64, error) {
 	var updated int64
 	userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 	if err != nil {
 		chat, err2 := db.GetChatWithType(chatID, chatType)
 		if err2 != nil {
-			return fmt.Errorf("no permission: %s", err2.Error())
+			return 0, fmt.Errorf("no permission: %s", err2.Error())
 		}
 		if chat.Type != "room" {
-			return fmt.Errorf("no permission: %s", err.Error())
+			return 0, fmt.Errorf("no permission: %s", err.Error())
 		}
 	} else {
 		updated = userChat.Updated.Unix()
@@ -208,6 +211,7 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, 
 	m := pubtypes.ChatNotifyMessage{
 		ChatID:   chatID,
 		ChatType: chatType,
+		Domain:   domain,
 		User:     user,
 		Ts:       ts.Unix(),
 		Msg:      msg,
@@ -218,9 +222,9 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType string, 
 		Source: src,
 		Msg:    m,
 	})
-	go notifyOfflineUsers(m.User, m.ChatID, types.MsgKindChatNotify, m.ChatType, m.Msg, ts)
+	go notifyOfflineUsers(m.User, chatID, types.MsgKindChatNotify, chatType, domain, m.Msg, ts)
 
-	return nil
+	return ts.Unix(), nil
 }
 
 // PubUserStatus publish user's status msg.

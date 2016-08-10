@@ -1,25 +1,31 @@
 package mid
 
 import (
-	"fmt"
+	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
 )
 
+// Msg is a kind message.
+type Msg interface {
+	Kind() string
+}
+
 // StatefulMsg is a stateful message.
 type StatefulMsg interface {
-	Kind() string
+	Msg
 	State() interface{}
 }
 
 // StatelessMsg is a stateless message.
 type StatelessMsg interface {
-	Kind() string
+	Msg
 }
 
 // Message is a chat message.
 type Message struct {
 	ChatID string `json:"chat_id"`
+	Domain string `json:"domain,omitempty"`
 	User   string `json:"user"`
 	ID     uint64 `json:"id"`
 	Ts     int64  `json:"ts"`
@@ -39,7 +45,8 @@ func (msg Message) State() interface{} {
 // NewMessageFromPubMsg converts pubtypes.ChatMessage to Message.
 func NewMessageFromPubMsg(msg *pubtypes.ChatMessage) *Message {
 	return &Message{
-		ChatID: fmt.Sprintf("%s.%d", msg.ChatType, msg.ChatID),
+		ChatID: db.EncodeChatIdentity(msg.ChatType, msg.ChatID),
+		Domain: msg.Domain,
 		User:   msg.User,
 		ID:     msg.ID,
 		Ts:     msg.Ts,
@@ -50,6 +57,7 @@ func NewMessageFromPubMsg(msg *pubtypes.ChatMessage) *Message {
 // NotifyMessage is a chat notify message.
 type NotifyMessage struct {
 	ChatID string `json:"chat_id"`
+	Domain string `json:"domain,omitempty"`
 	User   string `json:"user"`
 	Ts     int64  `json:"ts"`
 	Msg    string `json:"msg"`
@@ -63,7 +71,8 @@ func (msg NotifyMessage) Kind() string {
 // NewNotifyMessageFromPubMsg converts pubtypes.ChatNotifyMessage to NotifyMessage.
 func NewNotifyMessageFromPubMsg(msg *pubtypes.ChatNotifyMessage) *NotifyMessage {
 	return &NotifyMessage{
-		ChatID: fmt.Sprintf("%s.%d", msg.ChatType, msg.ChatID),
+		ChatID: db.EncodeChatIdentity(msg.ChatType, msg.ChatID),
+		Domain: msg.Domain,
 		User:   msg.User,
 		Ts:     msg.Ts,
 		Msg:    msg.Msg,
@@ -72,8 +81,9 @@ func NewNotifyMessageFromPubMsg(msg *pubtypes.ChatNotifyMessage) *NotifyMessage 
 
 // UserNotifyMessage is a user notify message.
 type UserNotifyMessage struct {
-	Ts  int64  `json:"ts"`
-	Msg string `json:"msg"`
+	Domain string `json:"domain,omitempty"`
+	Ts     int64  `json:"ts"`
+	Msg    string `json:"msg"`
 }
 
 // Kind returns the message kind.
@@ -84,8 +94,9 @@ func (msg UserNotifyMessage) Kind() string {
 // NewUserNotifyMessageFromPubMsg converts pubtypes.UserNotifyMessage to UserNotifyMessage.
 func NewUserNotifyMessageFromPubMsg(msg *pubtypes.UserNotifyMessage) *UserNotifyMessage {
 	return &UserNotifyMessage{
-		Ts:  msg.Ts,
-		Msg: msg.Msg,
+		Domain: msg.Domain,
+		Ts:     msg.Ts,
+		Msg:    msg.Msg,
 	}
 }
 

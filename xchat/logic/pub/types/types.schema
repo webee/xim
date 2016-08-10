@@ -5,6 +5,7 @@ struct MsgSource {
 
 struct UserNotifyMessage {
 	User   string
+	Domain string
 	Ts     int64
 	Msg    string
 }
@@ -12,6 +13,7 @@ struct UserNotifyMessage {
 struct ChatMessage {
 	ChatID uint64
 	ChatType string
+	Domain string
 	ID  uint64
 	User   string
 	Ts     int64
@@ -22,6 +24,7 @@ struct ChatMessage {
 struct ChatNotifyMessage {
 	ChatID uint64
 	ChatType string
+	Domain string
 	User   string
 	Ts     int64
 	Msg    string

@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"time"
+	"xim/xchat/logic/db"
 	"xim/xchat/logic/mq"
 	"xim/xchat/logic/service/types"
 )
@@ -17,7 +18,7 @@ type csReq struct {
 }
 
 func publishCSRequest(user string, chatID uint64, kind string, msgID uint64, msg string, ts time.Time) {
-	chatIdentity := ChatIdentity{
+	chatIdentity := db.ChatIdentity{
 		ID:   chatID,
 		Type: types.ChatTypeCS,
 	}

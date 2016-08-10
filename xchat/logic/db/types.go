@@ -1,4 +1,4 @@
-package service
+package db
 
 import (
 	"errors"
@@ -19,7 +19,12 @@ type ChatIdentity struct {
 }
 
 func (ci ChatIdentity) String() string {
-	return fmt.Sprintf("%s.%d", ci.Type, ci.ID)
+	return EncodeChatIdentity(ci.Type, ci.ID)
+}
+
+// EncodeChatIdentity encode chat_type and chat_id to string chat identity.
+func EncodeChatIdentity(chatType string, chatID uint64) string {
+	return fmt.Sprintf("%s.%d", chatType, chatID)
 }
 
 // ParseChatIdentity parse chat identity from string.

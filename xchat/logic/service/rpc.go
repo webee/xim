@@ -141,17 +141,21 @@ func (r *RPCXChat) FetchChatMessagesByIDs(args *types.FetchChatMessagesByIDsArgs
 
 // SendMsg sends message.
 func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage) (err error) {
-	switch args.Kind {
-	case types.MsgKindChat:
-		msg, err := SendChatMsg(args.Source, args.ChatID, args.ChatType, args.User, args.Msg)
-		if err != nil {
-			return err
-		}
-		*reply = *msg
-		return nil
-	case types.MsgKindChatNotify:
-		return SendChatNotifyMsg(args.Source, args.ChatID, args.ChatType, args.User, args.Msg)
+	msg, err := SendChatMsg(args.Source, args.ChatID, args.ChatType, args.Domain, args.User, args.Msg)
+	if err != nil {
+		return err
 	}
+	*reply = *msg
+	return nil
+}
+
+// SendNotify sends notify message.
+func (r *RPCXChat) SendNotify(args *types.SendMsgArgs, reply *int64) (err error) {
+	ts, err := SendChatNotifyMsg(args.Source, args.ChatID, args.ChatType, args.Domain, args.User, args.Msg)
+	if err != nil {
+		return err
+	}
+	*reply = ts
 	return nil
 }
 
@@ -178,7 +182,7 @@ func (r *RPCXChat) ExitChat(args *types.ExitChatArgs, reply *types.NoReply) erro
 
 // SendUserNotify send notify to user.
 func (r *RPCXChat) SendUserNotify(args *types.SendUserNotifyArgs, reply *types.SendUserNotifyReply) error {
-	ok, err := SendUserNotify(args.User, args.Msg)
+	ok, err := SendUserNotify(args.User, args.Domain, args.Msg)
 	if err != nil {
 		return err
 	}

@@ -91,15 +91,31 @@ func (d *MsgSource) Unmarshal(buf []byte) (uint64, error) {
 }
 
 type UserNotifyMessage struct {
-	User string
-	Ts   int64
-	Msg  string
+	User   string
+	Domain string
+	Ts     int64
+	Msg    string
 }
 
 func (d *UserNotifyMessage) Size() (s uint64) {
 
 	{
 		l := uint64(len(d.User))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t <<= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.Domain))
 
 		{
 
@@ -159,6 +175,25 @@ func (d *UserNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 
 		}
 		copy(buf[i+0:], d.User)
+		i += l
+	}
+	{
+		l := uint64(len(d.Domain))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+0] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+0] = byte(t)
+			i++
+
+		}
+		copy(buf[i+0:], d.Domain)
 		i += l
 	}
 	{
@@ -226,6 +261,26 @@ func (d *UserNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 		i += l
 	}
 	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+0] & 0x7F)
+			for buf[i+0]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+0]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		d.Domain = string(buf[i+0 : i+0+l])
+		i += l
+	}
+	{
 
 		d.Ts = 0 | (int64(buf[i+0+0]) << 0) | (int64(buf[i+1+0]) << 8) | (int64(buf[i+2+0]) << 16) | (int64(buf[i+3+0]) << 24) | (int64(buf[i+4+0]) << 32) | (int64(buf[i+5+0]) << 40) | (int64(buf[i+6+0]) << 48) | (int64(buf[i+7+0]) << 56)
 
@@ -256,6 +311,7 @@ func (d *UserNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 type ChatMessage struct {
 	ChatID   uint64
 	ChatType string
+	Domain   string
 	ID       uint64
 	User     string
 	Ts       int64
@@ -267,6 +323,21 @@ func (d *ChatMessage) Size() (s uint64) {
 
 	{
 		l := uint64(len(d.ChatType))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t <<= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.Domain))
 
 		{
 
@@ -360,6 +431,25 @@ func (d *ChatMessage) Marshal(buf []byte) ([]byte, error) {
 
 		}
 		copy(buf[i+8:], d.ChatType)
+		i += l
+	}
+	{
+		l := uint64(len(d.Domain))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+8] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+8] = byte(t)
+			i++
+
+		}
+		copy(buf[i+8:], d.Domain)
 		i += l
 	}
 	{
@@ -489,6 +579,26 @@ func (d *ChatMessage) Unmarshal(buf []byte) (uint64, error) {
 		i += l
 	}
 	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+8] & 0x7F)
+			for buf[i+8]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+8]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		d.Domain = string(buf[i+8 : i+8+l])
+		i += l
+	}
+	{
 
 		d.ID = 0 | (uint64(buf[i+0+8]) << 0) | (uint64(buf[i+1+8]) << 8) | (uint64(buf[i+2+8]) << 16) | (uint64(buf[i+3+8]) << 24) | (uint64(buf[i+4+8]) << 32) | (uint64(buf[i+5+8]) << 40) | (uint64(buf[i+6+8]) << 48) | (uint64(buf[i+7+8]) << 56)
 
@@ -549,6 +659,7 @@ func (d *ChatMessage) Unmarshal(buf []byte) (uint64, error) {
 type ChatNotifyMessage struct {
 	ChatID   uint64
 	ChatType string
+	Domain   string
 	User     string
 	Ts       int64
 	Msg      string
@@ -559,6 +670,21 @@ func (d *ChatNotifyMessage) Size() (s uint64) {
 
 	{
 		l := uint64(len(d.ChatType))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t <<= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.Domain))
 
 		{
 
@@ -652,6 +778,25 @@ func (d *ChatNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 
 		}
 		copy(buf[i+8:], d.ChatType)
+		i += l
+	}
+	{
+		l := uint64(len(d.Domain))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+8] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+8] = byte(t)
+			i++
+
+		}
+		copy(buf[i+8:], d.Domain)
 		i += l
 	}
 	{
@@ -759,6 +904,26 @@ func (d *ChatNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 
 		}
 		d.ChatType = string(buf[i+8 : i+8+l])
+		i += l
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+8] & 0x7F)
+			for buf[i+8]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+8]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		d.Domain = string(buf[i+8 : i+8+l])
 		i += l
 	}
 	{

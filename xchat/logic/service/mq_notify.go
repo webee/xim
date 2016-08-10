@@ -15,6 +15,7 @@ type offlineMsg struct {
 	ChatID   uint64    `json:"chat_id"`
 	ChatType string    `json:"chat_type"`
 	Kind     string    `json:"kind"`
+	Domain   string    `json:"domain"`
 	Msg      string    `json:"msg"`
 	Ts       time.Time `json:"ts"`
 }
@@ -22,12 +23,13 @@ type offlineMsg struct {
 var (
 	offlineNotifyEnabledChatTypes = map[string]bool{
 		types.ChatTypeUser:  true,
+		types.ChatTypeUsers: true,
 		types.ChatTypeGroup: true,
 		types.ChatTypeCS:    true,
 	}
 )
 
-func notifyOfflineUsers(from string, chatID uint64, kind, chatType, msg string, ts time.Time) {
+func notifyOfflineUsers(from string, chatID uint64, kind, chatType, domain, msg string, ts time.Time) {
 	if !offlineNotifyEnabledChatTypes[chatType] {
 		return
 	}
@@ -35,8 +37,9 @@ func notifyOfflineUsers(from string, chatID uint64, kind, chatType, msg string, 
 	m := offlineMsg{
 		From:     from,
 		ChatID:   chatID,
-		Kind:     kind,
 		ChatType: chatType,
+		Kind:     kind,
+		Domain:   domain,
 		Msg:      msg,
 		Ts:       ts,
 	}

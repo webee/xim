@@ -68,7 +68,8 @@ func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	subscribeSessionTopic(xchat, URIXChatPubUserStatusInfo, onPubUserStatusInfo)
 
 	registerSessionProcedure(xchat, URIXChatSendMsg, sendMsg)
-	subscribeSessionTopic(xchat, URIXChatPubMsg, onPubMsg)
+	registerSessionProcedure(xchat, URIXChatSendNotify, sendNotify)
+	subscribeSessionTopic(xchat, URIXChatPubNotify, onPubNotify)
 
 	registerSessionProcedure(xchat, URIXChatJoinChat, joinChat)
 	registerSessionProcedure(xchat, URIXChatExitChat, exitChat)
