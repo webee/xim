@@ -64,6 +64,8 @@ var connection = new autobahn.Connection({
 // fired when connection is established and session attached
 connection.onopen = function (newSession, details) {
   session = newSession;
+  window.session = session;
+
   console.log("Connected");
   console.log("session:", session);
   console.log("details:", details);
@@ -182,7 +184,7 @@ function testSendMsg(s, chat_id, i, n, show) {
 function testSendNotify(s, chat_id, i, n, interval) {
   if (i < n) {
     var content = s + i;
-    session.publish('xchat.user.msg.pub', [chat_id, content]);
+    session.publish('xchat.user.notify.pub', [chat_id, content]);
     interval = interval || 100;
     setTimeout(function () {
       testSendNotify(s, chat_id, i + 1, n, interval);

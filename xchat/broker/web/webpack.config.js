@@ -1,3 +1,4 @@
+var webpack = require('webpack');
 var path = require('path');
 
 module.exports = {
@@ -9,7 +10,8 @@ module.exports = {
   },
   output: {
     path: path.join(__dirname, 'demo/dist'),
-    filename: '[name].bundle.js'
+    filename: '[name].bundle.js',
+    publicPath: '/demo/dist/'
   },
   module: {
     noParse: /node_modules\/autobahn\/autobahn.js/,
@@ -21,5 +23,18 @@ module.exports = {
   node: {
     fs: "empty",
     tls: "empty"
-  }
+  },
+  plugins: [
+    new webpack.optimize.OccurenceOrderPlugin(),
+    new webpack.DefinePlugin({
+      'process.env': {
+        'NODE_ENV': JSON.stringify('production')
+      }
+    }),
+    new webpack.optimize.UglifyJsPlugin({
+      compressor: {
+        warnings: false
+      }
+    })
+  ]
 };
