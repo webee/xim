@@ -10,7 +10,7 @@ CREATE TABLE xchat_message
   uid character varying(32) NOT NULL,
   ts timestamp with time zone NOT NULL,
   msg text NOT NULL,
-  domain character varying(16),
+  domain character varying(16) NOT NULL,
   CONSTRAINT xchat_message_pkey PRIMARY KEY (chat_id, chat_type, id)
 )
 WITH (
