@@ -2,10 +2,46 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>webRTC Demo</title>
+    <meta name="description" content="WebRTC code samples">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta itemprop="description" content="XChat WebRTC demo">
+    <meta itemprop="name" content="XChat WebRTC demo">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta id="theme-color" name="theme-color" content="#ffffff">
+
+    <base target="_self">
+
+    <title>XChat WebRTC Demo</title>
+
+    <link href="//fonts.useso.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../css/base.css" />
+    <link rel="stylesheet" href="css/main.css" />
   </head>
   <body>
-    <h1>webRTC Demo</h1>
+    <div id="container">
+      <div class="highlight">
+        <a href="/demo/">demo</a> | <a href="/demo/rtc">rtc</a>
+      </div>
+
+      <h1>XChat WebRTC Demo</h1>
+
+      <video id="localVideo" autoplay muted></video>
+      <video id="remoteVideo" autoplay></video>
+
+      <div>
+        <button id="startButton">Start</button>
+        <button id="callButton">Call</button>
+        <button id="hangupButton">Hang Up</button>
+      </div>
+
+      <p>stat:</p>
+
+
+      <div id="footer">
+        <a href="https://github.com/webee/">github.com/webee/</a>
+      </div>
+
+    </div>
 
     <script type="text/javascript" src="/demo/dist/rtc.bundle.js" charset="utf-8"></script>
   </body>

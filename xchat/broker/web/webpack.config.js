@@ -1,7 +1,8 @@
 var webpack = require('webpack');
 var path = require('path');
+var env = process.env.NODE_ENV || "development";
 
-module.exports = {
+config = {
   entry: {
     index: './demo/js/index.js',
     rtc: [
@@ -23,12 +24,15 @@ module.exports = {
   node: {
     fs: "empty",
     tls: "empty"
-  },
-  plugins: [
+  }
+};
+
+if (env === "production") {
+  config.plugins = [
     new webpack.optimize.OccurenceOrderPlugin(),
     new webpack.DefinePlugin({
       'process.env': {
-        'NODE_ENV': JSON.stringify('production')
+        'NODE_ENV': env
       }
     }),
     new webpack.optimize.UglifyJsPlugin({
@@ -37,4 +41,6 @@ module.exports = {
       }
     })
   ]
-};
+}
+
+module.exports = config;

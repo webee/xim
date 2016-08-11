@@ -1,18 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>CM</title>
+  <meta charset="utf-8">
+  <meta name="description" content="WebRTC code samples">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <meta itemprop="description" content="XChat WebRTC demo">
+  <meta itemprop="name" content="XChat WebRTC demo">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta id="theme-color" name="theme-color" content="#ffffff">
+
+  <base target="_self">
+
+  <title>XChat Demo</title>
+
+  <link href="//fonts.useso.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/main.css"/>
 </head>
 <body>
-<h1>XChat</h1>
-<p>Open JavaScript console to watch output.</p>
-<form onsubmit="return false">
-  <input id="chat_id" size=12 type="text" value="group.1"></input>
-  <input id="send" size="75" type="text"></input><input type="submit" onclick="sendMsg()" value="发送"></input>
-</form>
-<div id="msg">
-  <p>start</p>
+<div id="container">
+  <div class="highlight">
+    <a href="/demo/">demo</a> | <a href="/demo/rtc">rtc</a>
+  </div>
+
+  <h1>XChat Demo</h1>
+  <p>Open JavaScript console to watch output.</p>
+
+  <form onsubmit="return false">
+    <input id="chat_id" size=12 type="text" value="group.1">
+    <input id="send" size="75" type="text"><input type="submit" onclick="demo.sendMsg()" value="发送">
+  </form>
+  <div id="msg">
+    <p>start</p>
+  </div>
+
+  <div id="footer">
+    <a href="https://github.com/webee/">github.com/webee/</a>
+  </div>
+
 </div>
 
 <script type="text/javascript" src="/demo/dist/index.bundle.js" charset="utf-8"></script>
