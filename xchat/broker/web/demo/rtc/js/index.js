@@ -1,5 +1,51 @@
 import 'webrtc-adapter';
-import {trace} from '../../js/common';
+import {XChatClient, autobahn_debug} from '../../js/xchat_client';
+import {anyUserkey} from '../../js/configs';
+import {decode_ns_user} from '../../js/utils';
+import {trace, trace_objs} from '../../js/common';
+
+// init.
+autobahn_debug(true);
+
+var user = decode_ns_user(document.location.hash.substr(1) || "test:test");
+var sToken = document.location.search.substr(1);
+var wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" + document.location.host + "/ws";
+
+
+var xchatClient = new XChatClient(user, sToken, wsuri, anyUserkey);
+
+xchatClient.onready = function () {
+  fetchUserChat();
+};
+
+xchatClient.addMsgListener((kind, msg)=>{
+  trace_objs("rtc notify>", kind, msg);
+}, "chat_notify", "rtc");
+
+xchatClient.open();
+
+
+var cur_callee = document.querySelector("#callee").value;
+var cur_chat_id = null;
+
+window.fetchUserChat = function fetchUserChat() {
+  var callee = document.querySelector("#callee").value;
+  xchatClient.call("xchat.user.chat.new", ['user', [callee], '单聊'], {is_ns_user:true}).then(res=>{
+    trace_objs("res>", res);
+    var ret = res.args[0];
+    if (!ret) {
+      alert("error:" + res.args[1]);
+      document.querySelector("#callee").value = cur_callee;
+      return
+    }
+    var chat = res.args[1];
+    cur_callee = callee;
+    cur_chat_id = chat.id;
+    document.querySelector("#chat_id").innerText = chat.id;
+  }).catch(err=>{
+    console.error("error:", err);
+  });
+};
 
 var startButton = document.getElementById('startButton');
 var callButton = document.getElementById('callButton');

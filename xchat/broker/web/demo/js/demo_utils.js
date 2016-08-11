@@ -10,6 +10,10 @@ export class DemoUtils {
     return document.getElementById("chat_id").value;
   }
 
+  get_domain() {
+    return document.getElementById("domain").value;
+  }
+
   get_send_msg() {
     return document.getElementById("send").value;
   }
@@ -18,8 +22,8 @@ export class DemoUtils {
     document.getElementById("send").value = "";
   }
 
-  do_send_msg(chat_id, msg, show, onsuccess, onfail, onerror) {
-    this.xchatClient.sendMsg(chat_id, msg).then(
+  do_send_msg(chat_id, domain, msg, show, onsuccess, onfail, onerror) {
+    this.xchatClient.sendMsg(chat_id, msg, domain).then(
       res=> {
         console.log("res:", res);
         var args = res.args;
@@ -55,22 +59,23 @@ export class DemoUtils {
   sendMsg() {
     var chat_id = this.get_chat_id();
     var content = this.get_send_msg();
+    var domain = this.get_domain();
     if (content.length === 0) {
       alert("消息不能为空");
       return
     }
 
-    this.do_send_msg(chat_id, content, true, this.clear_send_msg.bind(this), function (fail) {
+    this.do_send_msg(chat_id, domain, content, true, this.clear_send_msg.bind(this), function (fail) {
       setTimeout(()=>alert("error:" + fail), 0);
     }, function (err) {
       setTimeout(()=>alert("send error:" + err), 0);
     });
   }
 
-  testSendMsg(s, chat_id, i, n, show) {
+  testSendMsg(s, chat_id, i, n, show, domain) {
     if (i < n) {
       var content = s.format(i);
-      this.do_send_msg(chat_id, content, show, (function () {
+      this.do_send_msg(chat_id, domain, content, show, (function () {
         this.testSendMsg(s, chat_id, i + 1, n, show);
       }).bind(this));
     }

@@ -223,10 +223,19 @@ func newChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 		return
 	}
 
+	isNsUser := false
+	if x, ok := kwargs["is_ns_user"]; ok {
+		isNsUser = x.(bool)
+	}
+
 	ns, _ := nsutils.DecodeNSUser(s.User)
 	users := []string{s.User}
 	for _, u := range args[1].([]interface{}) {
-		users = append(users, nsutils.EncodeNSUser(ns, u.(string)))
+		if isNsUser {
+			users = append(users, u.(string))
+		} else {
+			users = append(users, nsutils.EncodeNSUser(ns, u.(string)))
+		}
 	}
 	title := args[2].(string)
 	ext := ""

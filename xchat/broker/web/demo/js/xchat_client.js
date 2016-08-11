@@ -44,8 +44,27 @@ export class XChatClient {
     this.connection.open();
   }
 
-  sendMsg(chat_id, msg) {
+  sendMsg(chat_id, msg, domain) {
+    if (domain) {
+      return this.session.call('xchat.user.msg.send', [chat_id, msg, domain]);
+    }
     return this.session.call('xchat.user.msg.send', [chat_id, msg]);
+  }
+
+  sendNotify(chat_id, msg, domain) {
+    if (domain) {
+      return this.session.call('xchat.user.notify.send', [chat_id, msg, domain]);
+    }
+    return this.session.call('xchat.user.notify.send', [chat_id, msg]);
+  }
+
+  pubNotify(chat_id, msg, domain) {
+    if (domain) {
+      this.session.publish('xchat.user.notify.pub', [chat_id, msg, domain]);
+      return
+    }
+    this.session.publish('xchat.user.notify.pub', [chat_id, msg]);
+    return
   }
 
   call(method, args, kwargs) {
