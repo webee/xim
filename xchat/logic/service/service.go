@@ -289,6 +289,7 @@ func JoinChat(chatID uint64, chatType string, user string, users []string) error
 		if _, err := db.GetUserChatWithType(user, chatID, chatType); err != nil {
 			return ErrNoPermission
 		}
+		// 只能邀请
 		if len(users) == 0 {
 			return nil
 		}
@@ -300,7 +301,7 @@ func JoinChat(chatID uint64, chatType string, user string, users []string) error
 }
 
 // ExitChat remove user from chat.
-func ExitChat(chatID uint64, chatType string, user string) error {
+func ExitChat(chatID uint64, chatType string, user string, users []string) error {
 	ns, _ := nsutils.DecodeNSUser(user)
 	// 退出规则
 	// 只有cs和users会话可以退出
@@ -309,9 +310,18 @@ func ExitChat(chatID uint64, chatType string, user string) error {
 		if ns != NSCs {
 			return ErrIllegalOperation
 		}
+		users = []string{user}
 	case types.ChatTypeUsers:
+		// 必须是会话成员
+		if _, err := db.GetUserChatWithType(user, chatID, chatType); err != nil {
+			return ErrNoPermission
+		}
+		// 当有users的时候则是请出成员, 否则为自己离开
+		if len(users) == 0 {
+			users = []string{user}
+		}
 	default:
 		return ErrIllegalOperation
 	}
-	return db.RemoveChatMembers(chatID, []string{user})
+	return db.RemoveChatMembers(chatID, users)
 }

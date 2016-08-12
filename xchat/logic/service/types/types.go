@@ -128,19 +128,12 @@ type SyncOnlineUsersArgs struct {
 	Users      map[uint64]string
 }
 
-// JoinChatArgs is the arguments of JoinChat.
-type JoinChatArgs struct {
+// JoinExitChatArgs is the arguments of Join(Exit)Chat.
+type JoinExitChatArgs struct {
 	ChatID   uint64
 	ChatType string
 	User     string
 	Users    []string
-}
-
-// ExitChatArgs is the arguments of ExitChat.
-type ExitChatArgs struct {
-	ChatID   uint64
-	ChatType string
-	User     string
 }
 
 // FetchNewRoomChatIDs is the arguments of FetchNewRoomChatIDs

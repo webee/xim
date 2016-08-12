@@ -176,13 +176,13 @@ func (r *RPCXChat) FetchNewRoomChatIDs(args *types.FetchNewRoomChatIDs, reply *[
 }
 
 // JoinChat add user to chat.
-func (r *RPCXChat) JoinChat(args *types.JoinChatArgs, reply *types.NoReply) error {
+func (r *RPCXChat) JoinChat(args *types.JoinExitChatArgs, reply *types.NoReply) error {
 	return JoinChat(args.ChatID, args.ChatType, args.User, args.Users)
 }
 
 // ExitChat remove user from chat.
-func (r *RPCXChat) ExitChat(args *types.ExitChatArgs, reply *types.NoReply) error {
-	return ExitChat(args.ChatID, args.ChatType, args.User)
+func (r *RPCXChat) ExitChat(args *types.JoinExitChatArgs, reply *types.NoReply) error {
+	return ExitChat(args.ChatID, args.ChatType, args.User, args.Users)
 }
 
 // SendUserNotify send notify to user.

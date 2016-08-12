@@ -545,7 +545,7 @@ func exitRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 	return []interface{}{true}, nil, nil
 }
 
-func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+func bindJoinExitChatArgs(s *Session, args []interface{}, kwargs map[string]interface{}) (joinExitChatArgs *types.JoinExitChatArgs, rerr APIError) {
 	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		rerr = InvalidArgumentError
@@ -553,21 +553,42 @@ func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
+
+	isNsUser := false
+	if x, ok := kwargs["is_ns_user"]; ok {
+		isNsUser = x.(bool)
+	}
+
 	ns, _ := nsutils.DecodeNSUser(s.User)
 	users := []string{}
 	if len(args) >= 2 {
 		// 邀请的人员
-		for _, u := range args[1].([]interface{}) {
-			users = append(users, nsutils.EncodeNSUser(ns, u.(string)))
+		if isNsUser {
+			for _, u := range args[1].([]interface{}) {
+				users = append(users, u.(string))
+			}
+		} else {
+			for _, u := range args[1].([]interface{}) {
+				users = append(users, nsutils.EncodeNSUser(ns, u.(string)))
+			}
 		}
 	}
 
-	if err := xchatLogic.Call(types.RPCXChatJoinChat, &types.JoinChatArgs{
+	return &types.JoinExitChatArgs{
 		ChatID:   chatID,
 		ChatType: chatType,
 		User:     s.User,
 		Users:    users,
-	}, nil); err != nil {
+	}, nil
+}
+
+func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	joinExitChatArgs, rerr := bindJoinExitChatArgs(s, args, kwargs)
+	if rerr != nil {
+		return
+	}
+
+	if err := xchatLogic.Call(types.RPCXChatJoinChat, joinExitChatArgs, nil); err != nil {
 		rerr = newDefaultAPIError(err.Error())
 		return
 	}
@@ -576,19 +597,12 @@ func joinChat(s *Session, args []interface{}, kwargs map[string]interface{}) (ra
 }
 
 func exitChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
-	if err != nil {
-		rerr = InvalidArgumentError
+	joinExitChatArgs, rerr := bindJoinExitChatArgs(s, args, kwargs)
+	if rerr != nil {
 		return
 	}
-	chatID := chatIdentity.ID
-	chatType := chatIdentity.Type
 
-	if err := xchatLogic.Call(types.RPCXChatExitChat, &types.ExitChatArgs{
-		ChatID:   chatID,
-		ChatType: chatType,
-		User:     s.User,
-	}, nil); err != nil {
+	if err := xchatLogic.Call(types.RPCXChatExitChat, joinExitChatArgs, nil); err != nil {
 		rerr = newDefaultAPIError(err.Error())
 		return
 	}
