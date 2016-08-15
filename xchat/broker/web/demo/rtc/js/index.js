@@ -141,10 +141,7 @@ function on_callee_ok() {
 }
 
 function on_candidate(candidate) {
-  pc.addIceCandidate(new RTCIceCandidate({
-    sdpMLineIndex: candidate.sdpMLineIndex,
-    candidate: candidate.candidate
-  }));
+  pc.addIceCandidate(new RTCIceCandidate(candidate));
 }
 
 function on_sdp_offer(sdp) {
@@ -193,11 +190,27 @@ function createPeerConnection() {
   try {
     let pc = new RTCPeerConnection({
         'iceServers': [{
-          'url': 'stun:stun.l.google.com:19302'
-        }]
+            'url': 'stun:t.turn.engdd.com:3478'
+        }, {
+            'url': 'turn:t.turn.engdd.com:3478?transport=udp',
+            'credential': 't.qqwj',
+            'username': 't.qqwj'
+          }, {
+            'url': 'turn:t.turn.engdd.com:3478?transport=tcp',
+            'credential': 't.qqwj',
+            'username': 't.qqwj'
+          }
+        ]
       }
     );
     pc.onicecandidate = handleIceCandidate;
+    pc.onnegotiationneeded = undefined;
+    pc.onnegotiationneeded = function() {
+    };
+
+    pc.onsignalingstatechange = function(event) {
+      document.querySelector("#state").innerText = pc.signalingState;
+    };
     pc.onaddstream = handleRemoteStreamAdded;
     pc.onremovestream = handleRemoteStreamRemoved;
     console.log('Created RTCPeerConnection');
@@ -227,12 +240,13 @@ function handleRemoteStreamRemoved(event) {
   console.log('Remote stream removed. Event: ', event);
 }
 
-function setLocalAndSendMessage(sessionDescription) {
+function setLocalAndSendMessage(sdp) {
   // Set Opus as the preferred codec in SDP if Opus is present.
   //  sessionDescription.sdp = preferOpus(sessionDescription.sdp);
-  pc.setLocalDescription(sessionDescription);
-  console.log('setLocalAndSendMessage sending message', sessionDescription);
-  signalingChannel.sendSdp(sessionDescription);
+  pc.setLocalDescription(sdp, function () {
+    console.log('setLocalAndSendMessage sending message', sdp);
+    signalingChannel.sendSdp(sdp);
+  });
 }
 
 function handleCreateOfferOrAnswerError(event) {
