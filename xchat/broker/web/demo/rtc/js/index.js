@@ -3,6 +3,7 @@ import {XChatClient, autobahn_debug} from '../../js/xchat_client';
 import {anyUserkey} from '../../js/configs';
 import {decode_ns_user} from '../../js/utils';
 import {trace, trace_objs} from '../../js/common';
+import {RTCManager} from './rtc_manager';
 
 // init.
 autobahn_debug(true);
@@ -13,24 +14,18 @@ var wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" + d
 
 
 var xchatClient = new XChatClient(user, sToken, wsuri, anyUserkey);
-
+var rtcManager = new RTCManager(xchatClient);
 xchatClient.onready = function () {
   fetchUserChat();
 };
 
-xchatClient.addMsgListener((kind, msg)=>{
-  trace_objs("rtc notify>", kind, msg);
-}, "chat_notify", "rtc");
-
-xchatClient.open();
-
-
+// caller perspective.
 var cur_callee = document.querySelector("#callee").value;
 var cur_chat_id = null;
 
 window.fetchUserChat = function fetchUserChat() {
   var callee = document.querySelector("#callee").value;
-  xchatClient.call("xchat.user.chat.new", ['user', [callee], '单聊'], {is_ns_user:true}).then(res=>{
+  xchatClient.call("xchat.user.chat.new", ['user', [callee], '单聊'], { is_ns_user: true }).then(res=> {
     trace_objs("res>", res);
     var ret = res.args[0];
     if (!ret) {
@@ -42,229 +37,208 @@ window.fetchUserChat = function fetchUserChat() {
     cur_callee = callee;
     cur_chat_id = chat.id;
     document.querySelector("#chat_id").innerText = chat.id;
-  }).catch(err=>{
+  }).catch(err=> {
     console.error("error:", err);
   });
 };
 
-var startButton = document.getElementById('startButton');
-var callButton = document.getElementById('callButton');
-var hangupButton = document.getElementById('hangupButton');
-callButton.disabled = true;
+var callingButton = document.querySelector('#callingButton');
+var cancelButton = document.querySelector('#cancelButton');
+var answerButton = document.querySelector('#answerButton');
+var hangupButton = document.querySelector('#hangupButton');
+
+cancelButton.disabled = true;
+answerButton.disabled = true;
 hangupButton.disabled = true;
-startButton.onclick = start;
-callButton.onclick = call;
+
+callingButton.onclick = calling;
+answerButton.onclick = answer;
 hangupButton.onclick = hangup;
 
-var startTime;
-var localVideo = document.getElementById('localVideo');
-var remoteVideo = document.getElementById('remoteVideo');
-
-localVideo.addEventListener('loadedmetadata', function() {
-  trace('Local video videoWidth: ' + this.videoWidth +
-    'px,  videoHeight: ' + this.videoHeight + 'px');
-});
-
-remoteVideo.addEventListener('loadedmetadata', function() {
-  trace('Remote video videoWidth: ' + this.videoWidth +
-    'px,  videoHeight: ' + this.videoHeight + 'px');
-});
-
-remoteVideo.onresize = function() {
-  trace('Remote video size changed to ' +
-    remoteVideo.videoWidth + 'x' + remoteVideo.videoHeight);
-  // We'll use the first onsize callback as an indication that video has started
-  // playing out.
-  if (startTime) {
-    var elapsedTime = window.performance.now() - startTime;
-    trace('Setup time: ' + elapsedTime.toFixed(3) + 'ms');
-    startTime = null;
-  }
-};
-
+var signalingChannel = null;
 var localStream;
-var pc1;
-var pc2;
+var pc;
 var offerOptions = {
   offerToReceiveAudio: 1,
   offerToReceiveVideo: 1
 };
 
-function getName(pc) {
-  return (pc === pc1) ? 'pc1' : 'pc2';
-}
+var constraints = {
+  audio: true,
+  video: true
+};
 
-function getOtherPc(pc) {
-  return (pc === pc1) ? pc2 : pc1;
-}
 
-function gotStream(stream) {
-  trace('Received local stream');
-  localVideo.srcObject = stream;
-  localStream = stream;
-  callButton.disabled = false;
-}
+rtcManager.oncalling = function (signaling_channel) {
+  signalingChannel = signaling_channel;
+  signalingChannel.oncandidate = on_candidate;
+  signalingChannel.onsdp = on_sdp_offer;
 
-function start() {
-  trace('Requesting local stream');
-  startButton.disabled = true;
-  navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true
+  callingButton.disabled = true;
+  cancelButton.disabled = false;
+  answerButton.disabled = false;
+};
+
+xchatClient.open();
+
+
+var sdpConstraints = {
+  'mandatory': {
+    'OfferToReceiveAudio': true,
+    'OfferToReceiveVideo': true
+  }
+};
+
+
+var localVideo = document.getElementById('localVideo');
+var remoteVideo = document.getElementById('remoteVideo');
+
+localVideo.addEventListener('loadedmetadata', function () {
+  trace('Local video videoWidth: ' + this.videoWidth +
+    'px,  videoHeight: ' + this.videoHeight + 'px');
+});
+
+remoteVideo.addEventListener('loadedmetadata', function () {
+  trace('Remote video videoWidth: ' + this.videoWidth +
+    'px,  videoHeight: ' + this.videoHeight + 'px');
+});
+
+remoteVideo.onresize = function () {
+  trace('Remote video size changed to ' + remoteVideo.videoWidth + 'x' + remoteVideo.videoHeight);
+};
+
+
+// 呼叫
+function calling() {
+  console.log("getUserMedia:", constraints);
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(function (stream) {
+      trace('Received local stream');
+      localVideo.srcObject = stream;
+      localStream = stream;
+
+      signalingChannel = rtcManager.calling(cur_chat_id);
+      signalingChannel.onok = on_callee_ok;
+      signalingChannel.oncandidate = on_candidate;
+      signalingChannel.onsdp = on_sdp_answer;
+      // states.
+      callingButton.disabled = true;
+      cancelButton.disabled = false;
     })
-    .then(gotStream)
-    .catch(function(e) {
-      alert('getUserMedia() error: ' + e.name);
+    .catch(function (e) {
+      console.log('getUserMedia() error: ' + e.name);
     });
 }
 
-function call() {
-  callButton.disabled = true;
+function on_callee_ok() {
+  pc = createPeerConnection();
+  pc.addStream(localStream);
+  pc.createOffer(setLocalAndSendMessage, handleCreateOfferOrAnswerError);
+
+  // states.
+  cancelButton.disabled = true;
   hangupButton.disabled = false;
-  trace('Starting call');
-  startTime = window.performance.now();
-  var videoTracks = localStream.getVideoTracks();
-  var audioTracks = localStream.getAudioTracks();
-  if (videoTracks.length > 0) {
-    trace('Using video device: ' + videoTracks[0].label);
-  }
-  if (audioTracks.length > 0) {
-    trace('Using audio device: ' + audioTracks[0].label);
-  }
-  var servers = null;
-  pc1 = new RTCPeerConnection(servers);
-  trace('Created local peer connection object pc1');
-  pc1.onicecandidate = function(e) {
-    onIceCandidate(pc1, e);
-  };
-  pc2 = new RTCPeerConnection(servers);
-  trace('Created remote peer connection object pc2');
-  pc2.onicecandidate = function(e) {
-    onIceCandidate(pc2, e);
-  };
-  pc1.oniceconnectionstatechange = function(e) {
-    onIceStateChange(pc1, e);
-  };
-  pc2.oniceconnectionstatechange = function(e) {
-    onIceStateChange(pc2, e);
-  };
-  pc2.onaddstream = gotRemoteStream;
-
-  pc1.addStream(localStream);
-  trace('Added local stream to pc1');
-
-  trace('pc1 createOffer start');
-  pc1.createOffer(
-    offerOptions
-  ).then(
-    onCreateOfferSuccess,
-    onCreateSessionDescriptionError
-  );
 }
 
-function onCreateSessionDescriptionError(error) {
-  trace('Failed to create session description: ' + error.toString());
+function on_candidate(candidate) {
+  pc.addIceCandidate(new RTCIceCandidate({
+    sdpMLineIndex: candidate.sdpMLineIndex,
+    candidate: candidate.candidate
+  }));
 }
 
-function onCreateOfferSuccess(desc) {
-  trace('Offer from pc1\n' + desc.sdp);
-  trace('pc1 setLocalDescription start');
-  pc1.setLocalDescription(desc).then(
-    function() {
-      onSetLocalSuccess(pc1);
-    },
-    onSetSessionDescriptionError
-  );
-  trace('pc2 setRemoteDescription start');
-  pc2.setRemoteDescription(desc).then(
-    function() {
-      onSetRemoteSuccess(pc2);
-    },
-    onSetSessionDescriptionError
-  );
-  trace('pc2 createAnswer start');
-  // Since the 'remote' side has no media stream we need
-  // to pass in the right constraints in order for it to
-  // accept the incoming offer of audio and video.
-  pc2.createAnswer().then(
-    onCreateAnswerSuccess,
-    onCreateSessionDescriptionError
-  );
-}
-
-function onSetLocalSuccess(pc) {
-  trace(getName(pc) + ' setLocalDescription complete');
-}
-
-function onSetRemoteSuccess(pc) {
-  trace(getName(pc) + ' setRemoteDescription complete');
-}
-
-function onSetSessionDescriptionError(error) {
-  trace('Failed to set session description: ' + error.toString());
-}
-
-function gotRemoteStream(e) {
-  remoteVideo.srcObject = e.stream;
-  trace('pc2 received remote stream');
-}
-
-function onCreateAnswerSuccess(desc) {
-  trace('Answer from pc2:\n' + desc.sdp);
-  trace('pc2 setLocalDescription start');
-  pc2.setLocalDescription(desc).then(
-    function() {
-      onSetLocalSuccess(pc2);
-    },
-    onSetSessionDescriptionError
-  );
-  trace('pc1 setRemoteDescription start');
-  pc1.setRemoteDescription(desc).then(
-    function() {
-      onSetRemoteSuccess(pc1);
-    },
-    onSetSessionDescriptionError
-  );
-}
-
-function onIceCandidate(pc, event) {
-  if (event.candidate) {
-    getOtherPc(pc).addIceCandidate(
-      new RTCIceCandidate(event.candidate)
-    ).then(
-      function() {
-        onAddIceCandidateSuccess(pc);
-      },
-      function(err) {
-        onAddIceCandidateError(pc, err);
-      }
-    );
-    trace(getName(pc) + ' ICE candidate: \n' + event.candidate.candidate);
+function on_sdp_offer(sdp) {
+  if (sdp.type === "offer") {
+    pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    console.log('Sending answer to peer.');
+    pc.createAnswer().then(setLocalAndSendMessage, handleCreateOfferOrAnswerError);
   }
 }
 
-function onAddIceCandidateSuccess(pc) {
-  trace(getName(pc) + ' addIceCandidate success');
-}
-
-function onAddIceCandidateError(pc, error) {
-  trace(getName(pc) + ' failed to add ICE Candidate: ' + error.toString());
-}
-
-function onIceStateChange(pc, event) {
-  if (pc) {
-    trace(getName(pc) + ' ICE state: ' + pc.iceConnectionState);
-    console.log('ICE state change event: ', event);
+function on_sdp_answer(sdp) {
+  if (sdp.type === "answer") {
+    pc.setRemoteDescription(new RTCSessionDescription(sdp));
   }
+}
+
+
+function answer() {
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(function (stream) {
+      localVideo.srcObject = stream;
+      localStream = stream;
+      pc = createPeerConnection();
+      pc.addStream(localStream);
+      signalingChannel.ok(function () {
+        cancelButton.disabled = true;
+        answerButton.disabled = true;
+        hangupButton.disabled = false;
+      }, function () {
+      });
+    })
+    .catch(function (e) {
+      console.log('getUserMedia() error: ' + e.name);
+    });
+}
+
+
+function cancel() {
 }
 
 function hangup() {
-  trace('Ending call');
-  pc1.close();
-  pc2.close();
-  pc1 = null;
-  pc2 = null;
-  hangupButton.disabled = true;
-  callButton.disabled = false;
 }
+
+
+function createPeerConnection() {
+  try {
+    let pc = new RTCPeerConnection({
+        'iceServers': [{
+          'url': 'stun:stun.l.google.com:19302'
+        }]
+      }
+    );
+    pc.onicecandidate = handleIceCandidate;
+    pc.onaddstream = handleRemoteStreamAdded;
+    pc.onremovestream = handleRemoteStreamRemoved;
+    console.log('Created RTCPeerConnection');
+    return pc;
+  } catch (e) {
+    console.log('Failed to create PeerConnection, exception: ' + e.message);
+    return null;
+  }
+}
+
+
+function handleIceCandidate(event) {
+  console.log('ice candidate event: ', event);
+  if (event.candidate) {
+    signalingChannel.sendIceCandidate(event.candidate);
+  } else {
+    console.log('End of candidates.');
+  }
+}
+
+function handleRemoteStreamAdded(event) {
+  console.log('Remote stream added.');
+  remoteVideo.srcObject = event.stream;
+}
+
+function handleRemoteStreamRemoved(event) {
+  console.log('Remote stream removed. Event: ', event);
+}
+
+function setLocalAndSendMessage(sessionDescription) {
+  // Set Opus as the preferred codec in SDP if Opus is present.
+  //  sessionDescription.sdp = preferOpus(sessionDescription.sdp);
+  pc.setLocalDescription(sessionDescription);
+  console.log('setLocalAndSendMessage sending message', sessionDescription);
+  signalingChannel.sendSdp(sessionDescription);
+}
+
+function handleCreateOfferOrAnswerError(event) {
+  console.log('create offer or answer error: ', event);
+}
+
+
+
 

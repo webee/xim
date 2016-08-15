@@ -128,7 +128,6 @@ export class XChatClient {
   }
 
   on_msg(args, kwargs) {
-    trace_objs("msg>", args, kwargs);
     var kind = args[0];
     var msgs = args[1];
     if (this.onmsg) {
