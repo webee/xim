@@ -21,7 +21,7 @@ func handleMsg(ms <-chan interface{}) {
 			}
 			go push(src, &msg)
 		case pubtypes.ChatNotifyMessage:
-			go pushNotify(&msg)
+			go pushNotify(src, &msg)
 		case pubtypes.UserNotifyMessage:
 			go pushUserNotify(&msg)
 		case pubtypes.SetAreaLimitCmd:
@@ -64,11 +64,15 @@ func pushUserNotify(msg *pubtypes.UserNotifyMessage) {
 	}
 }
 
-func pushNotify(msg *pubtypes.ChatNotifyMessage) {
+func pushNotify(src *pubtypes.MsgSource, msg *pubtypes.ChatNotifyMessage) {
 	sesses := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
 	toPushMsgs := []StatelessMsg{NewNotifyMessageFromPubMsg(msg)}
 
 	for _, s := range sesses {
+		if src != nil && src.InstanceID == uint64(instanceID) && src.SessionID == uint64(s.ID) {
+			// 不需要推送自己发送的消息
+			continue
+		}
 		s.taskChan.NewStatelessTask() <- toPushMsgs
 		tryPushing(s, s.taskChan)
 	}
