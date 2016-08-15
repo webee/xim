@@ -191,16 +191,7 @@ function createPeerConnection() {
     let pc = new RTCPeerConnection({
         'iceServers': [{
             'url': 'stun:t.turn.engdd.com:3478'
-        }, {
-            'url': 'turn:t.turn.engdd.com:3478?transport=udp',
-            'credential': 't.qqwj',
-            'username': 't.qqwj'
-          }, {
-            'url': 'turn:t.turn.engdd.com:3478?transport=tcp',
-            'credential': 't.qqwj',
-            'username': 't.qqwj'
-          }
-        ]
+        }]
       }
     );
     pc.onicecandidate = handleIceCandidate;
