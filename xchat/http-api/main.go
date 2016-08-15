@@ -41,5 +41,7 @@ func main() {
 		Addr:           args.addr,
 		LogicRPCAddr:   args.logicRPCAddr,
 		RPCCallTimeout: args.rpcCallTimeout,
+		TurnUser:       args.turnUser,
+		TurnSecret:     args.turnSecret,
 	})
 }

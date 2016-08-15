@@ -48,6 +48,9 @@ func Start(c *Config) {
 		e.GET("/test/", test)
 	}
 
+	// xrtc apis.
+	e.GET("/xrtc/api/turn", fetchTurnServers)
+
 	setup(e)
 
 	l.Info("http listening: %s", config.Addr)

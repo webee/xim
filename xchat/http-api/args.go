@@ -19,6 +19,8 @@ type Args struct {
 	notifyUserKeyPath string
 	logicRPCAddr      string
 	rpcCallTimeout    time.Duration
+	turnUser          string
+	turnSecret        string
 }
 
 var (
@@ -37,4 +39,6 @@ func init() {
 	flag.StringVar(&args.addr, "addr", "127.0.0.1:9981", "http api server listen addr.")
 	flag.StringVar(&args.logicRPCAddr, "logic-rpc-addr", "tcp://:16787", "logic rpc addresses.")
 	flag.DurationVar(&args.rpcCallTimeout, "rpc-timeout", 5*time.Second, "call rpc timeout.")
+	flag.StringVar(&args.turnUser, "turn-user", "qqwj", "turn server user")
+	flag.StringVar(&args.turnSecret, "turn-secret", "qqwj", "turn server secret")
 }

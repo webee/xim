@@ -10,4 +10,6 @@ type Config struct {
 	Addr           string
 	LogicRPCAddr   string
 	RPCCallTimeout time.Duration
+	TurnUser       string
+	TurnSecret     string
 }
