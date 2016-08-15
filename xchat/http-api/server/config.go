@@ -12,4 +12,5 @@ type Config struct {
 	RPCCallTimeout time.Duration
 	TurnUser       string
 	TurnSecret     string
+	TurnURI        string
 }

@@ -32,8 +32,8 @@ func fetchTurnServers(c echo.Context) error {
 		"password": password,
 		"ttl":      ttl,
 		"uris": []string{
-			"turn:t.turn.engdd.com:3478?transport=udp",
-			"turn:t.turn.engdd.com:3478?transport=tcp",
+			fmt.Sprintf("turn:%s?transport=udp", config.TurnURI),
+			fmt.Sprintf("turn:%s?transport=tcp", config.TurnURI),
 		},
 	}
 	return c.JSON(http.StatusOK, servers)

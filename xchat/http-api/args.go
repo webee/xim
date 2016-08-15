@@ -21,6 +21,7 @@ type Args struct {
 	rpcCallTimeout    time.Duration
 	turnUser          string
 	turnSecret        string
+	turnURI           string
 }
 
 var (
@@ -41,4 +42,5 @@ func init() {
 	flag.DurationVar(&args.rpcCallTimeout, "rpc-timeout", 5*time.Second, "call rpc timeout.")
 	flag.StringVar(&args.turnUser, "turn-user", "qqwj", "turn server user")
 	flag.StringVar(&args.turnSecret, "turn-secret", "qqwj", "turn server secret")
+	flag.StringVar(&args.turnURI, "turn-uri", "t.turn.engdd.com:3478", "turn server uri")
 }

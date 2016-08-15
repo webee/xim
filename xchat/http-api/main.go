@@ -43,5 +43,6 @@ func main() {
 		RPCCallTimeout: args.rpcCallTimeout,
 		TurnUser:       args.turnUser,
 		TurnSecret:     args.turnSecret,
+		TurnURI:        args.turnURI,
 	})
 }
