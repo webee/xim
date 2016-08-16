@@ -1,4 +1,5 @@
 import 'webrtc-adapter';
+import axios from 'axios';
 import {XChatClient, autobahn_debug} from '../../js/xchat_client';
 import {anyUserkey} from '../../js/configs';
 import {decode_ns_user} from '../../js/utils';
@@ -16,7 +17,9 @@ var wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" + d
 var xchatClient = new XChatClient(user, sToken, wsuri, anyUserkey);
 var rtcManager = new RTCManager(xchatClient);
 xchatClient.onready = function () {
-  fetchUserChat();
+  if (!cur_chat_id) {
+    fetchUserChat();
+  }
 };
 
 // caller perspective.
@@ -131,13 +134,14 @@ function calling() {
 }
 
 function on_callee_ok() {
-  pc = createPeerConnection();
-  pc.addStream(localStream);
-  pc.createOffer(setLocalAndSendMessage, handleCreateOfferOrAnswerError);
+  createPeerConnection(pc=> {
+    pc.addStream(localStream);
+    pc.createOffer(setLocalAndSendMessage, handleCreateOfferOrAnswerError);
 
-  // states.
-  cancelButton.disabled = true;
-  hangupButton.disabled = false;
+    // states.
+    cancelButton.disabled = true;
+    hangupButton.disabled = false;
+  });
 }
 
 function on_candidate(candidate) {
@@ -164,13 +168,14 @@ function answer() {
     .then(function (stream) {
       localVideo.srcObject = stream;
       localStream = stream;
-      pc = createPeerConnection();
-      pc.addStream(localStream);
-      signalingChannel.ok(function () {
-        cancelButton.disabled = true;
-        answerButton.disabled = true;
-        hangupButton.disabled = false;
-      }, function () {
+      createPeerConnection(pc=> {
+        pc.addStream(localStream);
+        signalingChannel.ok(function () {
+          cancelButton.disabled = true;
+          answerButton.disabled = true;
+          hangupButton.disabled = false;
+        }, function () {
+        });
       });
     })
     .catch(function (e) {
@@ -186,20 +191,32 @@ function hangup() {
 }
 
 
-function createPeerConnection() {
+function createPeerConnection(callback) {
+  axios.get('http://t.xchat.engdd.com/xrtc/api/turn').then(res=> {
+    let iceServers = [{
+      url: 'stun:t.turn.engdd.com:3478'
+    }, {
+      username: res.data.username,
+      credential: res.data.password,
+      urls: res.data.uris
+    }];
+    console.log("ice servers: ", iceServers);
+    pc = doCreatePeerConnection({ iceServers: iceServers });
+    callback(pc);
+  }).catch(err=> {
+    console.log("fetch turn servers error:", err);
+  });
+}
+
+function doCreatePeerConnection(iceServers) {
   try {
-    let pc = new RTCPeerConnection({
-        'iceServers': [{
-            'url': 'stun:t.turn.engdd.com:3478'
-        }]
-      }
-    );
+    let pc = new RTCPeerConnection(iceServers);
     pc.onicecandidate = handleIceCandidate;
     pc.onnegotiationneeded = undefined;
-    pc.onnegotiationneeded = function() {
+    pc.onnegotiationneeded = function () {
     };
 
-    pc.onsignalingstatechange = function(event) {
+    pc.onsignalingstatechange = function (event) {
       document.querySelector("#state").innerText = pc.signalingState;
     };
     pc.onaddstream = handleRemoteStreamAdded;
