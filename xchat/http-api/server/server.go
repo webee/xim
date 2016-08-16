@@ -48,10 +48,8 @@ func Start(c *Config) {
 		e.GET("/test/", test)
 	}
 
-	// xrtc apis.
-	e.GET("/xrtc/api/turn", fetchTurnServers)
-
 	setup(e)
+	setupXRTC(e)
 
 	l.Info("http listening: %s", config.Addr)
 	e.Run(standard.New(config.Addr))
@@ -70,4 +68,11 @@ func setup(e *echo.Echo) {
 
 func test(c echo.Context) error {
 	return c.String(http.StatusOK, "OK")
+}
+
+func setupXRTC(e *echo.Echo) {
+	gXRTCAPI := e.Group("/xrtc/api")
+
+	gXRTCAPI.Use(middleware.CORS())
+	gXRTCAPI.GET("/turn", fetchTurnServers)
 }
