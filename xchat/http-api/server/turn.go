@@ -17,7 +17,7 @@ func fetchTurnServers(c echo.Context) error {
 	user := config.TurnUser
 	realm := "qqwj.com"
 	secret := config.TurnSecret
-	ttl := int64(3600)
+	ttl := config.TurnPasswordTTL
 
 	h := md5.New()
 	io.WriteString(h, fmt.Sprintf("%s:%s:%s", user, realm, secret))

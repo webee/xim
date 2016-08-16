@@ -35,14 +35,15 @@ func main() {
 	}
 
 	server.Start(&server.Config{
-		Debug:          args.debug,
-		Testing:        args.testing,
-		Keys:           userKeys,
-		Addr:           args.addr,
-		LogicRPCAddr:   args.logicRPCAddr,
-		RPCCallTimeout: args.rpcCallTimeout,
-		TurnUser:       args.turnUser,
-		TurnSecret:     args.turnSecret,
-		TurnURI:        args.turnURI,
+		Debug:           args.debug,
+		Testing:         args.testing,
+		Keys:            userKeys,
+		Addr:            args.addr,
+		LogicRPCAddr:    args.logicRPCAddr,
+		RPCCallTimeout:  args.rpcCallTimeout,
+		TurnUser:        args.turnUser,
+		TurnSecret:      args.turnSecret,
+		TurnPasswordTTL: args.turnPasswordTTL,
+		TurnURI:         args.turnURI,
 	})
 }
