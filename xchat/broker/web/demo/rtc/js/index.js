@@ -192,7 +192,7 @@ function hangup() {
 
 
 function createPeerConnection(callback) {
-  axios.get('http://t.xchat.engdd.com/xrtc/api/turn').then(res=> {
+  axios.get('//t.xchat.engdd.com/xrtc/api/turn').then(res=> {
     let iceServers = [{
       url: 'stun:t.turn.engdd.com:3478'
     }, {
