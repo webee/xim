@@ -13,6 +13,7 @@ import (
 )
 
 func fetchTurnServers(c echo.Context) error {
+	// TODO: add user/secret params, add token check.
 	user := config.TurnUser
 	realm := "qqwj.com"
 	secret := config.TurnSecret
