@@ -32,7 +32,7 @@ if (env === "production") {
     new webpack.optimize.OccurenceOrderPlugin(),
     new webpack.DefinePlugin({
       'process.env': {
-        'NODE_ENV': env
+        'NODE_ENV': JSON.stringify(env)
       }
     }),
     new webpack.optimize.UglifyJsPlugin({
