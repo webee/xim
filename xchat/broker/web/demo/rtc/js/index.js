@@ -179,9 +179,11 @@ function answer() {
 
 // 挂断/取消
 function hangup() {
-  signalingChannel.hangup();
+  if (signalingChannel) {
+    signalingChannel.hangup();
 
-  end();
+    end();
+  }
 }
 
 function end() {
@@ -269,6 +271,13 @@ function doCreatePeerConnection(iceServers) {
     pc.onsignalingstatechange = function (event) {
       document.querySelector("#state").innerText = pc.signalingState;
     };
+    pc.oniceconnectionstatechange = function (event) {
+      document.querySelector("#conn_state").innerText = pc.iceConnectionState;
+      if (pc.iceConnectionState === "disconnected") {
+        hangup();
+      }
+    };
+
     pc.onaddstream = handleRemoteStreamAdded;
     pc.onremovestream = handleRemoteStreamRemoved;
     console.log('Created RTCPeerConnection');
