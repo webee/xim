@@ -12,8 +12,15 @@ import (
 	"github.com/labstack/echo"
 )
 
-func fetchTurnServers(c echo.Context) error {
+// IceConfig is ice config.
+type IceConfig struct {
+	IceServers []map[string]interface{} `json:"iceServers"`
+	TTL        int64                    `json:"ttl"`
+}
+
+func fetchIceConfig(c echo.Context) error {
 	// TODO: add user/secret params, add token check.
+	// TODO: check ip area, return the best turn servers.
 	user := config.TurnUser
 	realm := "qqwj.com"
 	secret := config.TurnSecret
@@ -26,16 +33,25 @@ func fetchTurnServers(c echo.Context) error {
 
 	mac := hmac.New(sha1.New, key)
 	io.WriteString(mac, username)
-	password := mac.Sum(nil)
+	credential := mac.Sum(nil)
 
-	servers := map[string]interface{}{
-		"username": username,
-		"password": password,
-		"ttl":      ttl,
-		"uris": []string{
-			fmt.Sprintf("turn:%s?transport=udp", config.TurnURI),
-			fmt.Sprintf("turn:%s?transport=tcp", config.TurnURI),
+	iceConfig := IceConfig{
+		TTL: ttl,
+		IceServers: []map[string]interface{}{
+			map[string]interface{}{
+				"urls": []string{
+					fmt.Sprintf("stun:%s", config.TurnURI),
+				},
+			},
+			map[string]interface{}{
+				"username":   username,
+				"credential": credential,
+				"urls": []string{
+					fmt.Sprintf("turn:%s?transport=udp", config.TurnURI),
+					fmt.Sprintf("turn:%s?transport=tcp", config.TurnURI),
+				},
+			},
 		},
 	}
-	return c.JSON(http.StatusOK, servers)
+	return c.JSON(http.StatusOK, iceConfig)
 }

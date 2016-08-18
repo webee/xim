@@ -74,5 +74,5 @@ func setupXRTC(e *echo.Echo) {
 	gXRTCAPI := e.Group("/xrtc/api")
 
 	gXRTCAPI.Use(middleware.CORS())
-	gXRTCAPI.GET("/turn", fetchTurnServers)
+	gXRTCAPI.GET("/iceconfig", fetchIceConfig)
 }
