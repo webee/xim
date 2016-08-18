@@ -75,18 +75,22 @@ export class SignalingChannel {
   }
 
   on_calling(peer_id) {
-    // 接到呼叫: b:init->ringing, do=>回复ringing消息
-    if (this.transfer_state("init", "ringing")) {
-      this.peer_id = peer_id;
-      let ringing_msg = { type: "ringing", peer_id: peer_id, id: this.id };
-      this.send_msg(ringing_msg);
+    if (this.role === "callee") {
+      // 接到呼叫: b:init->ringing, do=>回复ringing消息
+      if (this.transfer_state("init", "ringing")) {
+        this.peer_id = peer_id;
+        let ringing_msg = { type: "ringing", peer_id: peer_id, id: this.id };
+        this.send_msg(ringing_msg);
+      }
     }
   }
 
   on_ringing(peer_id) {
-    // 呼叫对象响铃: a:[calling|ringing]->ringing
-    if (this.transfer_state("calling", "ringing") || this.transfer_state("ringing", "ringing")) {
-      this.ringing_peers[peer_id] = "ringing";
+    if (this.role === "caller") {
+      // 呼叫对象响铃: a:[calling|ringing]->ringing
+      if (this.transfer_state("calling", "ringing") || this.transfer_state("ringing", "ringing")) {
+        this.ringing_peers[peer_id] = "ringing";
+      }
     }
   }
 
@@ -99,6 +103,14 @@ export class SignalingChannel {
         let ok_msg = { type: "ok", peer_id: peer_id, id: this.id };
         this.send_msg(ok_msg);
         this.onok();
+
+        // notify other ringing peers.
+        delete this.ringing_peers[peer_id];
+        let reason = "busy";
+        for (let peer_id in this.ringing_peers) {
+          let hangup_msg = { type: 'hangup', peer_id: peer_id, id: this.id, reason: reason };
+          this.send_msg(hangup_msg);
+        }
       }
     } else if (this.role === 'callee') {
     }
@@ -108,11 +120,23 @@ export class SignalingChannel {
     // 1. 呼叫对象拒绝: a:ringing->end, a:calling->end
     // 2. 呼叫者取消: b:ringing->end, b:calling->end
     // 3. 挂断: x:ready->end
+    var do_end = false;
     if (this.role === 'caller') {
+      if (reason === "busy" || reason === "refuse") {
+        delete this.ringing_peers[peer_id];
+        if (Object.keys(this.ringing_peers).length === 0) {
+          do_end = true;
+        }
+      } else {
+        do_end = true;
+      }
     } else if (this.role === 'callee') {
+      do_end = true;
     }
-    if (this.transfer_state(this.state, "end")) {
-      this.onhangup(this.state, reason);
+    if (do_end) {
+      if (this.transfer_state(this.state, "end")) {
+        this.onhangup(this.state, reason);
+      }
     }
   }
 
@@ -160,7 +184,7 @@ export class SignalingChannel {
       } else if (this.state === "ringing") {
         if (this.role === "caller") {
           reason = "cancel";
-          for(let peer_id in this.ringing_peers) {
+          for (let peer_id in this.ringing_peers) {
             let hangup_msg = { type: 'hangup', peer_id: peer_id, id: this.id, reason: reason };
             this.send_msg(hangup_msg);
           }
