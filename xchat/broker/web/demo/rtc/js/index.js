@@ -15,11 +15,49 @@ var wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" + d
 
 
 var xchatClient = new XChatClient(user, sToken, wsuri, anyUserkey);
-var rtcManager = new RTCManager(xchatClient);
 xchatClient.onready = function () {
   if (!cur_chat_id) {
     fetchUserChat();
   }
+};
+xchatClient.open();
+
+var rtcManager = new RTCManager(xchatClient);
+
+
+var callingButton = document.querySelector('#callingButton');
+
+var answerButton = document.querySelector('#answerButton');
+var hangupButton = document.querySelector('#hangupButton');
+
+callingButton.onclick = calling;
+answerButton.onclick = answer;
+hangupButton.onclick = hangup;
+
+
+rtcManager.oncalling = function (signaling_channel) {
+  if (signalingChannel !== null) {
+    console.log("another call coming");
+    signaling_channel.hangup("busy");
+    rtcManager.removeSignalChannel(signaling_channel.id);
+    return;
+  }
+  console.log("calling coming...");
+
+  signalingChannel = signaling_channel;
+  signalingChannel.oncandidate = on_candidate;
+  signalingChannel.onsdp = on_sdp_offer;
+  signalingChannel.onhangup = on_caller_hangup;
+
+  // states.
+  // 呼叫界面消失
+  callingButton.disabled = true;
+  document.querySelector("#toCallArea").style.display = "none";
+
+  // 通话界面显示
+  answerButton.disabled = false;
+  hangupButton.disabled = false;
+  document.querySelector("#callingArea").style.display = "";
 };
 
 // caller perspective.
@@ -28,11 +66,11 @@ var cur_chat_id = null;
 
 window.fetchUserChat = function fetchUserChat() {
   var callee = document.querySelector("#callee").value;
-  xchatClient.call("xchat.user.chat.new", ['user', [callee], '单聊'], { is_ns_user: true }).then(res=> {
+  xchatClient.call("xchat.user.chat.new", ['user', [callee], ''], { is_ns_user: true }).then(res=> {
     trace_objs("res>", res);
     var ret = res.args[0];
     if (!ret) {
-      alert("error:" + res.args[1]);
+      console.error("error:", res.args[1]);
       document.querySelector("#callee").value = cur_callee;
       return
     }
@@ -40,26 +78,15 @@ window.fetchUserChat = function fetchUserChat() {
     cur_callee = callee;
     cur_chat_id = chat.id;
     document.querySelector("#chat_id").innerText = chat.id;
+    callingButton.disabled = false;
   }).catch(err=> {
     console.error("error:", err);
   });
 };
 
-var callingButton = document.querySelector('#callingButton');
-var cancelButton = document.querySelector('#cancelButton');
-var answerButton = document.querySelector('#answerButton');
-var hangupButton = document.querySelector('#hangupButton');
-
-cancelButton.disabled = true;
-answerButton.disabled = true;
-hangupButton.disabled = true;
-
-callingButton.onclick = calling;
-answerButton.onclick = answer;
-hangupButton.onclick = hangup;
-
 var signalingChannel = null;
 var localStream;
+var remoteStream;
 var pc;
 var offerOptions = {
   offerToReceiveAudio: 1,
@@ -70,20 +97,6 @@ var constraints = {
   audio: true,
   video: true
 };
-
-
-rtcManager.oncalling = function (signaling_channel) {
-  signalingChannel = signaling_channel;
-  signalingChannel.oncandidate = on_candidate;
-  signalingChannel.onsdp = on_sdp_offer;
-
-  callingButton.disabled = true;
-  cancelButton.disabled = false;
-  answerButton.disabled = false;
-};
-
-xchatClient.open();
-
 
 var sdpConstraints = {
   'mandatory': {
@@ -113,10 +126,18 @@ remoteVideo.onresize = function () {
 
 // 呼叫
 function calling() {
+  // states.
+  document.querySelector("#toCallArea").style.display = "none";
+  callingButton.disabled = true;
+
+  document.querySelector("#callingArea").style.display = "";
+  answerButton.disabled = true;
+  hangupButton.disabled = true;
+
   console.log("getUserMedia:", constraints);
   navigator.mediaDevices.getUserMedia(constraints)
     .then(function (stream) {
-      trace('Received local stream');
+      console.log('Received local stream');
       localVideo.srcObject = stream;
       localStream = stream;
 
@@ -124,24 +145,87 @@ function calling() {
       signalingChannel.onok = on_callee_ok;
       signalingChannel.oncandidate = on_candidate;
       signalingChannel.onsdp = on_sdp_answer;
+      signalingChannel.onhangup = on_callee_hangup;
+
       // states.
-      callingButton.disabled = true;
-      cancelButton.disabled = false;
+      hangupButton.disabled = false;
     })
     .catch(function (e) {
       console.log('getUserMedia() error: ' + e.name);
     });
 }
 
+
+// 接听
+function answer() {
+  answerButton.disabled = true;
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(function (stream) {
+      localVideo.srcObject = stream;
+      localStream = stream;
+      createPeerConnection(pc=> {
+        pc.addStream(localStream);
+        signalingChannel.ok(function () {
+        }, function () {
+        });
+      });
+    })
+    .catch(function (e) {
+      console.log('getUserMedia() error: ' + e.name);
+      answerButton.disabled = false;
+    });
+}
+
+
+// 挂断/取消
+function hangup() {
+  signalingChannel.hangup();
+
+  end();
+}
+
+function end() {
+  rtcManager.removeSignalChannel(signalingChannel);
+  signalingChannel = null;
+
+  if (pc) {
+    pc.close();
+    pc = null;
+  }
+  if (localStream) {
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream = null;
+  }
+  if (remoteStream) {
+    remoteStream.getTracks().forEach(t=>t.stop());
+    remoteStream = null;
+  }
+
+  localVideo.src = "";
+  remoteVideo.src = "";
+
+  callingButton.disabled = false;
+  document.querySelector("#toCallArea").style.display = "";
+
+  document.querySelector("#callingArea").style.display = "none";
+  answerButton.disabled = true;
+  hangupButton.disabled = true;
+}
+
+
 function on_callee_ok() {
   createPeerConnection(pc=> {
     pc.addStream(localStream);
-    pc.createOffer(setLocalAndSendMessage, handleCreateOfferOrAnswerError);
-
-    // states.
-    cancelButton.disabled = true;
-    hangupButton.disabled = false;
+    pc.createOffer(offerOptions).then(setLocalAndSendMessage).catch(handleCreateOfferOrAnswerError);
   });
+}
+
+function on_caller_hangup(state, reason) {
+  end();
+}
+
+function on_callee_hangup(state, reason) {
+  end();
 }
 
 function on_candidate(candidate) {
@@ -163,43 +247,9 @@ function on_sdp_answer(sdp) {
 }
 
 
-function answer() {
-  navigator.mediaDevices.getUserMedia(constraints)
-    .then(function (stream) {
-      localVideo.srcObject = stream;
-      localStream = stream;
-      createPeerConnection(pc=> {
-        pc.addStream(localStream);
-        signalingChannel.ok(function () {
-          cancelButton.disabled = true;
-          answerButton.disabled = true;
-          hangupButton.disabled = false;
-        }, function () {
-        });
-      });
-    })
-    .catch(function (e) {
-      console.log('getUserMedia() error: ' + e.name);
-    });
-}
-
-
-function cancel() {
-}
-
-function hangup() {
-}
-
-
 function createPeerConnection(callback) {
-  axios.get('//t.xchat.engdd.com/xrtc/api/turn').then(res=> {
-    let iceServers = [{
-      url: 'stun:t.turn.engdd.com:3478'
-    }, {
-      username: res.data.username,
-      credential: res.data.password,
-      urls: res.data.uris
-    }];
+  axios.get('//t.xchat.engdd.com/xrtc/api/iceconfig').then(res=> {
+    let iceServers = res.data.iceServers;
     console.log("ice servers: ", iceServers);
     pc = doCreatePeerConnection({ iceServers: iceServers });
     callback(pc);
@@ -242,6 +292,7 @@ function handleIceCandidate(event) {
 function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
   remoteVideo.srcObject = event.stream;
+  remoteStream = event.stream;
 }
 
 function handleRemoteStreamRemoved(event) {

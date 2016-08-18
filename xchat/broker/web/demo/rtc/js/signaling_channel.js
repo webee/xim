@@ -19,6 +19,7 @@ export class SignalingChannel {
     this.onok = null;
     this.oncandidate = null;
     this.onsdp = null;
+    this.onhangup = null;
   }
 
   onMsg(msg) {
@@ -110,6 +111,9 @@ export class SignalingChannel {
     if (this.role === 'caller') {
     } else if (this.role === 'callee') {
     }
+    if (this.transfer_state(this.state, "end")) {
+      this.onhangup(this.state, reason);
+    }
   }
 
   // 呼叫
@@ -142,6 +146,38 @@ export class SignalingChannel {
       console.log("send msg error:", err);
       errCallback();
     }).bind(this));
+  }
+
+  hangup(reason) {
+    var reason = reason;
+    if (!reason) {
+      if (this.state === "init") {
+        reason = "busy";
+      } else if (this.state === "ready") {
+        reason = "hangup";
+      } else if (this.state === "calling") {
+        reason = "cancel";
+      } else if (this.state === "ringing") {
+        if (this.role === "caller") {
+          reason = "cancel";
+          for(let peer_id in this.ringing_peers) {
+            let hangup_msg = { type: 'hangup', peer_id: peer_id, id: this.id, reason: reason };
+            this.send_msg(hangup_msg);
+          }
+        } else {
+          reason = "refuse"
+        }
+      }
+    }
+
+    if (this.peer_id) {
+      let hangup_msg = { type: 'hangup', peer_id: this.peer_id, id: this.id, reason: reason };
+      this.send_msg(hangup_msg).then((res=> {
+        this.transfer_state(this.state, "end");
+      }).bind(this)).catch((err=> {
+        console.log("send msg error:", err);
+      }).bind(this));
+    }
   }
 
   // 发送ice candidate.

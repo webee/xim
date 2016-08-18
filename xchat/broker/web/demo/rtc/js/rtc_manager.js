@@ -20,6 +20,10 @@ export class RTCManager {
     return signaling_channel;
   }
 
+  removeSignalChannel(signalChannel) {
+    delete this.signaling_channels[signalChannel.id];
+  }
+
   // 呼叫
   calling(chat_id) {
     let signaling_channel = this.new_signal_channel("caller", chat_id);
