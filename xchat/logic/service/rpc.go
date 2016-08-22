@@ -164,6 +164,16 @@ func (r *RPCXChat) SendNotify(args *types.SendMsgArgs, reply *int64) (err error)
 	return nil
 }
 
+// SendUserNotify send notify to user.
+func (r *RPCXChat) SendUserNotify(args *types.SendUserMsgArgs, reply *int64) error {
+	ts, err := SendUserNotify(args.Source, args.User, args.Domain, args.Msg)
+	if err != nil {
+		return err
+	}
+	*reply = ts
+	return nil
+}
+
 // FetchNewRoomChatIDs fetch room's new chat ids.
 func (r *RPCXChat) FetchNewRoomChatIDs(args *types.FetchNewRoomChatIDs, reply *[]uint64) error {
 	ids, err := FetchNewRoomChatIDs(args.RoomID, args.ChatIDs)
@@ -183,16 +193,4 @@ func (r *RPCXChat) JoinChat(args *types.JoinExitChatArgs, reply *types.NoReply) 
 // ExitChat remove user from chat.
 func (r *RPCXChat) ExitChat(args *types.JoinExitChatArgs, reply *types.NoReply) error {
 	return ExitChat(args.ChatID, args.ChatType, args.User, args.Users)
-}
-
-// SendUserNotify send notify to user.
-func (r *RPCXChat) SendUserNotify(args *types.SendUserNotifyArgs, reply *types.SendUserNotifyReply) error {
-	ok, err := SendUserNotify(args.User, args.Domain, args.Msg)
-	if err != nil {
-		return err
-	}
-	*reply = types.SendUserNotifyReply{
-		Ok: ok,
-	}
-	return nil
 }

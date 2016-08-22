@@ -13,17 +13,21 @@ func handleMsg(ms <-chan interface{}) {
 			continue
 		}
 		src := xmsg.Source
-
 		switch msg := xmsg.Msg.(type) {
 		case pubtypes.ChatMessage:
 			if src != nil && src.InstanceID == instanceID {
 				continue
 			}
+
 			go push(src, &msg)
 		case pubtypes.ChatNotifyMessage:
 			go pushNotify(src, &msg)
 		case pubtypes.UserNotifyMessage:
-			go pushUserNotify(&msg)
+			if src != nil && src.InstanceID == instanceID {
+				continue
+			}
+
+			go pushUserNotify(src, &msg)
 		case pubtypes.SetAreaLimitCmd:
 			go setAreaLimit(&msg)
 		}
@@ -54,11 +58,15 @@ func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []
 	return
 }
 
-func pushUserNotify(msg *pubtypes.UserNotifyMessage) {
+func pushUserNotify(src *pubtypes.MsgSource, msg *pubtypes.UserNotifyMessage) {
 	sesses := GetUserSessions(msg.User)
 	toPushMsgs := []StatelessMsg{NewUserNotifyMessageFromPubMsg(msg)}
 
 	for _, s := range sesses {
+		if src != nil && src.InstanceID == uint64(instanceID) && src.SessionID == uint64(s.ID) {
+			// 不需要推送自己发送的消息
+			continue
+		}
 		s.taskChan.NewStatelessTask() <- toPushMsgs
 		tryPushing(s, s.taskChan)
 	}

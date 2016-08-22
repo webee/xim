@@ -18,6 +18,10 @@ const (
 	URIXChatSendNotify = "xchat.user.notify.send"
 	URIXChatPubNotify  = "xchat.user.notify.pub"
 
+	// 用户发送notify消息到用户
+	URIXChatSendUserNotify = "xchat.user.usernotify.send"
+	URIXChatPubUserNotify  = "xchat.user.usernotify.pub"
+
 	URIXChatNewChat          = "xchat.user.chat.new"
 	URIXChatFetchChat        = "xchat.user.chat.fetch"
 	URIXChatFetchChatList    = "xchat.user.chat.list"

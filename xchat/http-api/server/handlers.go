@@ -97,14 +97,14 @@ func sendUserNotify(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "msg excced size limit"})
 	}
 
-	var reply types.SendUserNotifyReply
-	if err := xchatLogic.Call(types.RPCXChatSendUserNotify, &types.SendUserNotifyArgs{
+	var ts int64
+	if err := xchatLogic.Call(types.RPCXChatSendUserNotify, &types.SendUserMsgArgs{
 		User:   user,
 		Domain: args.Domain,
 		Msg:    msg,
-	}, &reply); err != nil {
+	}, &ts); err != nil {
 		l.Warning("%s error: %s", types.RPCXChatSendUserNotify, err)
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "send msg failed"})
 	}
-	return c.JSON(http.StatusOK, map[string]interface{}{"ok": reply.Ok})
+	return c.JSON(http.StatusOK, map[string]interface{}{"ok": true, "ts": ts})
 }

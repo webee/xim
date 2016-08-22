@@ -116,7 +116,7 @@ const (
 )
 
 // SendUserNotify sends user notify.
-func SendUserNotify(user string, domain string, msg string) (bool, error) {
+func SendUserNotify(src *pubtypes.MsgSource, user string, domain string, msg string) (int64, error) {
 	ts := time.Now()
 	m := pubtypes.UserNotifyMessage{
 		User:   user,
@@ -126,15 +126,16 @@ func SendUserNotify(user string, domain string, msg string) (bool, error) {
 	}
 
 	if ok, err := cache.IsUserOnline(user); !ok {
-		return ok, err
+		return 0, err
 	}
 
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
-		Msg: m,
+		Source: src,
+		Msg:    m,
 	})
 
-	return true, nil
+	return m.Ts, nil
 }
 
 // SendChatMsg sends chat message.

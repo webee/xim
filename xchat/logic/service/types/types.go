@@ -46,6 +46,14 @@ type SendMsgArgs struct {
 	Msg      string
 }
 
+// SendUserMsgArgs is the arguments of SendUserMsg.
+type SendUserMsgArgs struct {
+	Source *pubtypes.MsgSource
+	User   string
+	Domain string
+	Msg    string
+}
+
 // FetchUserChatArgs is the arguments of FetchUserChat
 type FetchUserChatArgs struct {
 	User   string
@@ -140,18 +148,6 @@ type JoinExitChatArgs struct {
 type FetchNewRoomChatIDs struct {
 	RoomID  uint64
 	ChatIDs []uint64
-}
-
-// SendUserNotifyArgs is the arguments of SendUserNotify.
-type SendUserNotifyArgs struct {
-	User   string
-	Domain string
-	Msg    string
-}
-
-// SendUserNotifyReply is the reply of SendUserNotify.
-type SendUserNotifyReply struct {
-	Ok bool
 }
 
 // XChatService methods.

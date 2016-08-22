@@ -160,6 +160,42 @@ func bindSendMsgArgs(s *Session, args []interface{}) (sendMsgArgs *types.SendMsg
 	return
 }
 
+func bindSendUserMsgArgs(s *Session, args []interface{}, kwargs map[string]interface{}) (sendMsgArgs *types.SendUserMsgArgs, rerr APIError) {
+	user := args[0].(string)
+	isNsUser := false
+	if x, ok := kwargs["is_ns_user"]; ok {
+		isNsUser = x.(bool)
+	}
+
+	ns, _ := nsutils.DecodeNSUser(s.User)
+	if !isNsUser {
+		user = nsutils.EncodeNSUser(ns, user)
+	}
+
+	msg := args[1].(string)
+	if len(msg) > 64*1024 {
+		// NOTE: msg exceed size limit
+		return nil, MsgSizeExceedLimitError
+	}
+	domain := ""
+	if len(args) >= 3 {
+		domain = args[2].(string)
+	}
+
+	src := &pubtypes.MsgSource{
+		InstanceID: instanceID,
+		SessionID:  uint64(s.ID),
+	}
+
+	sendMsgArgs = &types.SendUserMsgArgs{
+		Source: src,
+		User:   user,
+		Domain: domain,
+		Msg:    msg,
+	}
+	return
+}
+
 // 用户发送消息, 会话消息
 func sendMsg(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	sendMsgArgs, rerr := bindSendMsgArgs(s, args)
@@ -210,6 +246,44 @@ func sendNotify(s *Session, args []interface{}, kwargs map[string]interface{}) (
 		rerr = newDefaultAPIError(err.Error())
 		return
 	}
+
+	return []interface{}{true, ts}, nil, nil
+}
+
+func onPubUserNotify(s *Session, args []interface{}, kwargs map[string]interface{}) {
+	sendUserMsgArgs, rerr := bindSendUserMsgArgs(s, args, kwargs)
+	if rerr != nil {
+		return
+	}
+
+	xchatLogic.AsyncCall(types.RPCXChatSendUserNotify, sendUserMsgArgs)
+	go pushUserNotify(sendUserMsgArgs.Source, &pubtypes.UserNotifyMessage{
+		User:   sendUserMsgArgs.User,
+		Domain: sendUserMsgArgs.Domain,
+		Ts:     time.Now().Unix(),
+		Msg:    sendUserMsgArgs.Msg,
+	})
+}
+
+func sendUserNotify(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	sendUserMsgArgs, rerr := bindSendUserMsgArgs(s, args, kwargs)
+	if rerr != nil {
+		return
+	}
+
+	var ts int64
+	if err := xchatLogic.Call(types.RPCXChatSendUserNotify, sendUserMsgArgs, &ts); err != nil {
+		l.Warning("%s error: %s", types.RPCXChatSendUserNotify, err)
+		rerr = newDefaultAPIError(err.Error())
+		return
+	}
+
+	go pushUserNotify(sendUserMsgArgs.Source, &pubtypes.UserNotifyMessage{
+		User:   sendUserMsgArgs.User,
+		Domain: sendUserMsgArgs.Domain,
+		Ts:     ts,
+		Msg:    sendUserMsgArgs.Msg,
+	})
 
 	return []interface{}{true, ts}, nil, nil
 }
