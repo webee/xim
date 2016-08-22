@@ -65,7 +65,7 @@ export class DemoUtils {
       return
     }
 
-    this.do_send_msg(chat_id, domain, content, true, this.clear_send_msg.bind(this), function (fail) {
+    this.do_send_msg(chat_id, domain, content, true, ::this.clear_send_msg, function (fail) {
       setTimeout(()=>alert("error:" + fail), 0);
     }, function (err) {
       setTimeout(()=>alert("send error:" + err), 0);

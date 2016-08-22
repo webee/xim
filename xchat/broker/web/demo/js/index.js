@@ -12,16 +12,13 @@ var sToken = document.location.search.substr(1);
 var wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" + document.location.host + "/ws";
 
 
-var xchatClient = new XChatClient(user, sToken, wsuri, anyUserkey);
-
-xchatClient.onready = function () {
-  window.demo = new DemoUtils(xchatClient);
-};
-
-xchatClient.onmsg = function (kind, msgs) {
-  for (let i = 0; i < msgs.length; i++) {
-    window.demo.newMsg(kind, msgs[i]);
+var xchatClient = new XChatClient({ user, sToken, wsuri,
+  key: anyUserkey,
+  debug_log: console.log,
+  onmsg: (kind, msg)=> {
+      window.demo.newMsg(kind, msg);
+  },
+  onready: (xchatClient)=> {
+    window.demo = new DemoUtils(xchatClient);
   }
-};
-
-xchatClient.open();
+});
