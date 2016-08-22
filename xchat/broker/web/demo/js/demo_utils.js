@@ -92,6 +92,17 @@ export class DemoUtils {
     }
   }
 
+  testSendUserNotify(user, domain, s, i, n, interval) {
+    if (i < n) {
+      var content = s + i;
+      this.xchatClient.publish('xchat.user.usernotify.pub', [user, content, domain]);
+      interval = interval || 100;
+      setTimeout((function () {
+        this.testSendUserNotify(user, domain, s, i + 1, n, interval);
+      }).bind(this), interval);
+    }
+  }
+
 
   testPing(...args) {
     if (args.length === 0) {
@@ -109,6 +120,10 @@ export class DemoUtils {
         p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user + "#" + msg.id + " 「" + msg.msg + "」";
       } else if (kind === "chat_notify") {
         p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user + " 「" + msg.msg + "」";
+      } else if (kind === "user_notify") {
+        p.innerHTML = msg.ts + ": [" + kind + "]" + " 「" + msg.msg + "」";
+      } else {
+        p.innerHTML = JSON.stringify(msg);
       }
       msg_div.insertBefore(p, msg_div.firstChild);
       if (msg_div.childElementCount > this.maxMsgCount) {
