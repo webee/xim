@@ -50,6 +50,10 @@ div.outputSelector {
   margin: -1.3em 0 2em 0;
 }
 
+span#xim_state {
+  float: right;
+}
+
 @media screen and (min-width: 1000px) {
   /* hack! to detect non-touch devices */
   div#links a {

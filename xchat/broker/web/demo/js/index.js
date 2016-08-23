@@ -1,11 +1,12 @@
+import './common';
 import {XChatClient, autobahn_debug} from './xchat_client';
 import {anyUserkey} from './configs';
 import {decode_ns_user} from './utils';
-import {trace, trace_objs} from './common';
 import {DemoUtils} from './demo_utils';
 
 // init.
 autobahn_debug(true);
+var xim_state = document.querySelector('#xim_state');
 
 var user = decode_ns_user(document.location.hash.substr(1) || "test:test");
 var sToken = document.location.search.substr(1);
@@ -20,5 +21,14 @@ var xchatClient = new XChatClient({ user, sToken, wsuri,
   },
   onready: (xchatClient)=> {
     window.demo = new DemoUtils(xchatClient);
+  },
+  onerror: err => {
+    alert("xim error: {}".format(err))
+  },
+  onstatechange: state => {
+    xim_state.innerText = state;
+  },
+  onclose: () => {
+    console.log("xim closed");
   }
 });
