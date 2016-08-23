@@ -20,6 +20,7 @@
 <div id="container">
   <div class="highlight">
     <a href="/demo/">demo</a> | <a href="/demo/rtc">rtc</a>
+    <span id="xim_state">...</span>
   </div>
 
   <h1>XChat WebRTC Demo</h1>
@@ -27,10 +28,12 @@
   <div id="toCallArea">
     <form onsubmit="return false">
       callee: <input id="callee" type="text" value="test:test">
-      <bold><span id="chat_id"></span></bold>
-      <input type="submit" hidden="hidden" onclick="fetchUserChat()" value="确定">
     </form>
     <button id="callingButton" disabled>呼叫</button>
+    <p>通话记录:</p>
+    <div id="history">
+      <!--通话记录-->
+    </div>
   </div>
 
   <div id="callingArea" style="display:none;">
