@@ -15,6 +15,10 @@ export class XChatClient {
     this.debug_log = config.debug_log;
 
     this.onready = config.onready || (()=> {});
+    this.onclose = config.onclose || (()=> {});
+    this.onerror = config.onerror || (()=> {});
+    this.onstatechange = config.onstatechange || (()=> {});
+    this.state = "";
 
     this.session = null;
     this.msg_subscribers = [];
@@ -26,12 +30,12 @@ export class XChatClient {
       url: this.wsuri,
       realm: "xchat",
       authmethods: ["xjwt"],
-      authid: this.on_challenge(null, "jwt", null),
-      //onchallenge: ::this.on_challenge,
+      authid: this._on_challenge(null, "jwt", null),
+      //onchallenge: ::this._on_challenge,
     });
 
-    this.connection.onopen = ::this.on_open;
-    this.connection.onclose = ::this.on_close;
+    this.connection.onopen = ::this._on_open;
+    this.connection.onclose = ::this._on_close;
 
     // open wamp connection.
     this.connection.open();
@@ -45,18 +49,18 @@ export class XChatClient {
     });
   }
 
-  sendMsg(chat_id, msg, domain) {
+  sendMsg(chat_id, msg, domain, kwargs) {
     if (domain) {
-      return this.session.call('xchat.user.msg.send', [chat_id, msg, domain]);
+      return this.session.call('xchat.user.msg.send', [chat_id, msg, domain], kwargs);
     }
-    return this.session.call('xchat.user.msg.send', [chat_id, msg]);
+    return this.session.call('xchat.user.msg.send', [chat_id, msg], kwargs);
   }
 
-  sendNotify(chat_id, msg, domain) {
+  sendNotify(chat_id, msg, domain, kwargs) {
     if (domain) {
-      return this.session.call('xchat.user.notify.send', [chat_id, msg, domain]);
+      return this.session.call('xchat.user.notify.send', [chat_id, msg, domain], kwargs);
     }
-    return this.session.call('xchat.user.notify.send', [chat_id, msg]);
+    return this.session.call('xchat.user.notify.send', [chat_id, msg], kwargs);
   }
 
   pubNotify(chat_id, msg, domain) {
@@ -64,22 +68,22 @@ export class XChatClient {
       this.session.publish('xchat.user.notify.pub', [chat_id, msg, domain]);
       return
     }
-    this.session.publish('xchat.user.notify.pub', [chat_id, msg]);
+    this.session.publish('xchat.user.notify.pub', [chat_id, msg], kwargs);
   }
 
-  sendUserNotify(user, msg, domain) {
+  sendUserNotify(user, msg, domain, kwargs) {
     if (domain) {
-      return this.session.call('xchat.user.usernotify.send', [user, msg, domain]);
+      return this.session.call('xchat.user.usernotify.send', [user, msg, domain], kwargs);
     }
-    return this.session.call('xchat.user.usernotify.send', [user, msg]);
+    return this.session.call('xchat.user.usernotify.send', [user, msg], kwargs);
   }
 
-  pubUserNotify(user, msg, domain) {
+  pubUserNotify(user, msg, domain, kwargs) {
     if (domain) {
-      this.session.publish('xchat.user.usernotify.pub', [user, msg, domain]);
+      this.session.publish('xchat.user.usernotify.pub', [user, msg, domain], kwargs);
       return
     }
-    this.session.publish('xchat.user.usernotify.pub', [user, msg]);
+    this.session.publish('xchat.user.usernotify.pub', [user, msg], kwargs);
   }
 
   call(method, args, kwargs) {
@@ -90,7 +94,7 @@ export class XChatClient {
     this.session.publish(topic, args, kwargs);
   }
 
-  on_challenge(session, method, extra) {
+  _on_challenge(session, method, extra) {
     this.debug_log("on_challenge>", method, extra);
     if (method === "jwt") {
       if (!!this.sToken) {
@@ -120,34 +124,31 @@ export class XChatClient {
     }
   }
 
-  on_open(session, details) {
+  _change_state(state) {
+    this.state = state;
+    this.onstatechange(this.state);
+  }
+
+  _on_open(session, details) {
+    this._change_state("opened");
     this.session = session;
-
-    this.debug_log("Connected");
-    this.debug_log("session>", session);
-    this.debug_log("details>", details);
-
-    this.session.subscribe('xchat.user.{}.msg'.format(this.session.id), ::this.on_msg).then(
-      ::this.on_msg_sub,
-      function (err) {
-        console.error('failed to subscribe to topic>', err);
-      }
+    this.session.subscribe('xchat.user.{}.msg'.format(this.session.id), ::this._on_msg).then(
+      ::this._on_msg_sub,
+      this.onerror
     );
 
     // publish client info.
     this.session.publish('xchat.user.info.pub', [""]);
-
   }
 
-  on_close(reason, details) {
-    this.debug_log("Connection lost");
-    this.debug_log("reason>", reason);
-    this.debug_log("details>", details);
+  _on_close(reason, details) {
+    this._change_state("closed.{}".format(reason));
 
     this.session = null;
+    this.onclose();
   }
 
-  on_msg(args, kwargs) {
+  _on_msg(args, kwargs) {
     var kind = args[0];
     var msgs = args[1];
 
@@ -166,10 +167,9 @@ export class XChatClient {
     );
   }
 
-  on_msg_sub(sub) {
-    this.debug_log('subscribed to msg topic');
-
+  _on_msg_sub(sub) {
     // ready.
     this.onready(this);
+    this._change_state("ready");
   }
 }
