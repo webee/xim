@@ -116,16 +116,18 @@ const (
 )
 
 // SendUserNotify sends user notify.
-func SendUserNotify(src *pubtypes.MsgSource, user string, domain string, msg string) (int64, error) {
+func SendUserNotify(src *pubtypes.MsgSource, toUser, domain, user, msg string) (int64, error) {
 	ts := time.Now()
 	m := pubtypes.UserNotifyMessage{
-		User:   user,
+		ToUser: toUser,
 		Domain: domain,
+		User:   user,
 		Ts:     ts.Unix(),
 		Msg:    msg,
 	}
 
-	if ok, err := cache.IsUserOnline(user); !ok {
+	// TODO: 解决呼叫信息的通知问题
+	if ok, err := cache.IsUserOnline(toUser); !ok {
 		return 0, err
 	}
 

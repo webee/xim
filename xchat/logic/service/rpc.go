@@ -166,7 +166,7 @@ func (r *RPCXChat) SendNotify(args *types.SendMsgArgs, reply *int64) (err error)
 
 // SendUserNotify send notify to user.
 func (r *RPCXChat) SendUserNotify(args *types.SendUserMsgArgs, reply *int64) error {
-	ts, err := SendUserNotify(args.Source, args.User, args.Domain, args.Msg)
+	ts, err := SendUserNotify(args.Source, args.ToUser, args.Domain, args.User, args.Msg)
 	if err != nil {
 		return err
 	}

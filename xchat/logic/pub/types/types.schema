@@ -4,8 +4,9 @@ struct MsgSource {
 }
 
 struct UserNotifyMessage {
-	User   string
+	ToUser string
 	Domain string
+	User   string
 	Ts     int64
 	Msg    string
 }

@@ -91,8 +91,9 @@ func (d *MsgSource) Unmarshal(buf []byte) (uint64, error) {
 }
 
 type UserNotifyMessage struct {
-	User   string
+	ToUser string
 	Domain string
+	User   string
 	Ts     int64
 	Msg    string
 }
@@ -100,7 +101,7 @@ type UserNotifyMessage struct {
 func (d *UserNotifyMessage) Size() (s uint64) {
 
 	{
-		l := uint64(len(d.User))
+		l := uint64(len(d.ToUser))
 
 		{
 
@@ -116,6 +117,21 @@ func (d *UserNotifyMessage) Size() (s uint64) {
 	}
 	{
 		l := uint64(len(d.Domain))
+
+		{
+
+			t := l
+			for t >= 0x80 {
+				t <<= 7
+				s++
+			}
+			s++
+
+		}
+		s += l
+	}
+	{
+		l := uint64(len(d.User))
 
 		{
 
@@ -159,7 +175,7 @@ func (d *UserNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 	i := uint64(0)
 
 	{
-		l := uint64(len(d.User))
+		l := uint64(len(d.ToUser))
 
 		{
 
@@ -174,7 +190,7 @@ func (d *UserNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 			i++
 
 		}
-		copy(buf[i+0:], d.User)
+		copy(buf[i+0:], d.ToUser)
 		i += l
 	}
 	{
@@ -194,6 +210,25 @@ func (d *UserNotifyMessage) Marshal(buf []byte) ([]byte, error) {
 
 		}
 		copy(buf[i+0:], d.Domain)
+		i += l
+	}
+	{
+		l := uint64(len(d.User))
+
+		{
+
+			t := uint64(l)
+
+			for t >= 0x80 {
+				buf[i+0] = byte(t) | 0x80
+				t >>= 7
+				i++
+			}
+			buf[i+0] = byte(t)
+			i++
+
+		}
+		copy(buf[i+0:], d.User)
 		i += l
 	}
 	{
@@ -257,7 +292,7 @@ func (d *UserNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 			l = t
 
 		}
-		d.User = string(buf[i+0 : i+0+l])
+		d.ToUser = string(buf[i+0 : i+0+l])
 		i += l
 	}
 	{
@@ -278,6 +313,26 @@ func (d *UserNotifyMessage) Unmarshal(buf []byte) (uint64, error) {
 
 		}
 		d.Domain = string(buf[i+0 : i+0+l])
+		i += l
+	}
+	{
+		l := uint64(0)
+
+		{
+
+			bs := uint8(7)
+			t := uint64(buf[i+0] & 0x7F)
+			for buf[i+0]&0x80 == 0x80 {
+				i++
+				t |= uint64(buf[i+0]&0x7F) << bs
+				bs += 7
+			}
+			i++
+
+			l = t
+
+		}
+		d.User = string(buf[i+0 : i+0+l])
 		i += l
 	}
 	{

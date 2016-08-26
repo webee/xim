@@ -82,6 +82,7 @@ func NewNotifyMessageFromPubMsg(msg *pubtypes.ChatNotifyMessage) *NotifyMessage 
 // UserNotifyMessage is a user notify message.
 type UserNotifyMessage struct {
 	Domain string `json:"domain,omitempty"`
+	User   string `json:"user,omitempty"`
 	Ts     int64  `json:"ts"`
 	Msg    string `json:"msg"`
 }
@@ -95,6 +96,7 @@ func (msg UserNotifyMessage) Kind() string {
 func NewUserNotifyMessageFromPubMsg(msg *pubtypes.UserNotifyMessage) *UserNotifyMessage {
 	return &UserNotifyMessage{
 		Domain: msg.Domain,
+		User:   msg.User,
 		Ts:     msg.Ts,
 		Msg:    msg.Msg,
 	}

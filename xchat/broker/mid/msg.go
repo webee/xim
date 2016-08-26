@@ -59,7 +59,7 @@ func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []
 }
 
 func pushUserNotify(src *pubtypes.MsgSource, msg *pubtypes.UserNotifyMessage) {
-	sesses := GetUserSessions(msg.User)
+	sesses := GetUserSessions(msg.ToUser)
 	toPushMsgs := []StatelessMsg{NewUserNotifyMessageFromPubMsg(msg)}
 
 	for _, s := range sesses {

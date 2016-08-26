@@ -161,7 +161,7 @@ func bindSendMsgArgs(s *Session, args []interface{}) (sendMsgArgs *types.SendMsg
 }
 
 func bindSendUserMsgArgs(s *Session, args []interface{}, kwargs map[string]interface{}) (sendMsgArgs *types.SendUserMsgArgs, rerr APIError) {
-	user := args[0].(string)
+	toUser := args[0].(string)
 	isNsUser := false
 	if x, ok := kwargs["is_ns_user"]; ok {
 		isNsUser = x.(bool)
@@ -169,7 +169,7 @@ func bindSendUserMsgArgs(s *Session, args []interface{}, kwargs map[string]inter
 
 	ns, _ := nsutils.DecodeNSUser(s.User)
 	if !isNsUser {
-		user = nsutils.EncodeNSUser(ns, user)
+		toUser = nsutils.EncodeNSUser(ns, toUser)
 	}
 
 	msg := args[1].(string)
@@ -189,8 +189,9 @@ func bindSendUserMsgArgs(s *Session, args []interface{}, kwargs map[string]inter
 
 	sendMsgArgs = &types.SendUserMsgArgs{
 		Source: src,
-		User:   user,
+		ToUser: toUser,
 		Domain: domain,
+		User:   s.User,
 		Msg:    msg,
 	}
 	return
@@ -250,6 +251,16 @@ func sendNotify(s *Session, args []interface{}, kwargs map[string]interface{}) (
 	return []interface{}{true, ts}, nil, nil
 }
 
+func doPushUserNotify(ts int64, sendUserMsgArgs *types.SendUserMsgArgs) {
+	pushUserNotify(sendUserMsgArgs.Source, &pubtypes.UserNotifyMessage{
+		ToUser: sendUserMsgArgs.ToUser,
+		Domain: sendUserMsgArgs.Domain,
+		User:   sendUserMsgArgs.User,
+		Ts:     ts,
+		Msg:    sendUserMsgArgs.Msg,
+	})
+}
+
 func onPubUserNotify(s *Session, args []interface{}, kwargs map[string]interface{}) {
 	sendUserMsgArgs, rerr := bindSendUserMsgArgs(s, args, kwargs)
 	if rerr != nil {
@@ -257,12 +268,8 @@ func onPubUserNotify(s *Session, args []interface{}, kwargs map[string]interface
 	}
 
 	xchatLogic.AsyncCall(types.RPCXChatSendUserNotify, sendUserMsgArgs)
-	go pushUserNotify(sendUserMsgArgs.Source, &pubtypes.UserNotifyMessage{
-		User:   sendUserMsgArgs.User,
-		Domain: sendUserMsgArgs.Domain,
-		Ts:     time.Now().Unix(),
-		Msg:    sendUserMsgArgs.Msg,
-	})
+
+	go doPushUserNotify(time.Now().Unix(), sendUserMsgArgs)
 }
 
 func sendUserNotify(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
@@ -278,12 +285,7 @@ func sendUserNotify(s *Session, args []interface{}, kwargs map[string]interface{
 		return
 	}
 
-	go pushUserNotify(sendUserMsgArgs.Source, &pubtypes.UserNotifyMessage{
-		User:   sendUserMsgArgs.User,
-		Domain: sendUserMsgArgs.Domain,
-		Ts:     ts,
-		Msg:    sendUserMsgArgs.Msg,
-	})
+	go doPushUserNotify(ts, sendUserMsgArgs)
 
 	return []interface{}{true, ts}, nil, nil
 }
