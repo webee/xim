@@ -145,7 +145,10 @@ export class XChatClient {
     this._change_state("closed.{}".format(reason));
 
     this.session = null;
-    this.onclose();
+    if (reason !== "lost") {
+      // 其它的会重连
+      this.onclose();
+    }
   }
 
   _on_msg(args, kwargs) {

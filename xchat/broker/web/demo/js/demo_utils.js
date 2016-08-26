@@ -117,13 +117,13 @@ export class DemoUtils {
       var msg_div = document.querySelector("#msg");
       var p = document.createElement("p");
       if (kind === "chat") {
-        p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user + "#" + msg.id + " 「" + msg.msg + "」";
+        p.innerText = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user + "#" + msg.id + " 「" + msg.msg + "」";
       } else if (kind === "chat_notify") {
-        p.innerHTML = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user + " 「" + msg.msg + "」";
+        p.innerText = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user + " 「" + msg.msg + "」";
       } else if (kind === "user_notify") {
-        p.innerHTML = msg.ts + ": [" + kind + "]" + " 「" + msg.msg + "」";
+        p.innerText = msg.ts + ": [" + kind + "]" + msg.user + " 「" + msg.msg + "」";
       } else {
-        p.innerHTML = JSON.stringify(msg);
+        p.innerText = JSON.stringify(msg);
       }
       msg_div.insertBefore(p, msg_div.firstChild);
       if (msg_div.childElementCount > this.maxMsgCount) {

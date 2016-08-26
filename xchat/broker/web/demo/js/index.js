@@ -20,6 +20,7 @@ var xchatClient = new XChatClient({ user, sToken, wsuri,
       window.demo.newMsg(kind, msg);
   },
   onready: (xchatClient)=> {
+    console.log("xim is ready");
     window.demo = new DemoUtils(xchatClient);
   },
   onerror: err => {
@@ -29,6 +30,6 @@ var xchatClient = new XChatClient({ user, sToken, wsuri,
     xim_state.innerText = state;
   },
   onclose: () => {
-    console.log("xim closed");
+    console.log("xim is closed");
   }
 });
