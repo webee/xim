@@ -5,14 +5,15 @@ function gen_random_id() {
 }
 
 export class CallSession {
-  constructor(config, send_msg) {
+  constructor(signaling_channel, config) {
     this.role = config.role;
-    this.user = config.user;
     this.stream = null;
     this.remoteStream = null;
     this.peer = config.peer;
 
-    this.send_msg = send_msg;
+    this.signaling_channel = signaling_channel;
+    this.signaling_channel.onrecv = ::this._on_msg;
+
     this.state = "init";
 
     this.id = gen_random_id();
@@ -23,8 +24,13 @@ export class CallSession {
     this.pc = null;
 
     // listeners.
+    // 响铃
+    this.onringing = config.onringing;
+    // 结束
     this.onhangup = config.onhangup;
+    // 收到远程流
     this.onaddstream = config.onaddstream;
+    this.onend = config.onend;
 
     this.onsignalingstatechange = ()=> {
     };
@@ -32,13 +38,17 @@ export class CallSession {
     };
   }
 
-  onMsg(msg) {
-    console.log("rtc msg:", msg);
+  send_msg(msg) {
+    return this.signaling_channel.send(JSON.stringify(msg));
+  }
+
+  _on_msg(msg) {
+    console.log("calling msg:", msg);
     switch (msg.type) {
       case "calling":
         // 呼叫: {type: "calling", id: 1234567890}
         // TODO: check message structure.
-        this.on_calling(msg.id);
+        this._on_calling(msg.id);
         break;
       case "ringing":
         // 响铃: {type: "ringing", peer_id: 1234567890, id: 9876543210}
@@ -85,14 +95,19 @@ export class CallSession {
     return false;
   }
 
-  on_calling(peer_id) {
-    if (this.role === "callee") {
-      // 接到呼叫: b:init->ringing, do=>回复ringing消息
-      if (this.transfer_state("init", "ringing")) {
-        this.peer_id = peer_id;
-        let ringing_msg = { type: "ringing", peer_id: peer_id, id: this.id };
-        this.send_msg(ringing_msg);
-      }
+  _on_calling(peer_id) {
+    // 接到呼叫: b:init->called, do=>回复ringing消息
+    let session = this;
+    if (this.transfer_state("init", "called")) {
+      this.peer_id = peer_id;
+      let ringing_msg = { type: "ringing", peer_id: peer_id, id: this.id };
+      this.send_msg(ringing_msg).then(res=> {
+        if (session.transfer_state("called", "ringing")) {
+          session.onringing(session);
+        }
+      }).catch(err => {
+        console.log("send msg error:", err);
+      });
     }
   }
 
@@ -170,7 +185,7 @@ export class CallSession {
     }
 
     let session = this;
-    let calling_msg = { type: 'calling', user: this.user, id: this.id };
+    let calling_msg = { type: 'calling', id: this.id };
     this.send_msg(calling_msg).then(res=> {
       session.transfer_state("init", "calling");
     }).catch(err=> {

@@ -4,10 +4,14 @@ import {XChatClient, autobahn_debug} from '../../js/xchat_client';
 import {anyUserkey} from '../../js/configs';
 import {decode_ns_user} from '../../js/utils';
 import {CallManager} from './call_manager';
+import {XChatMsgChannel} from './message_channel';
 
 // init.
 autobahn_debug(true);
 var xim_state = document.querySelector('#xim_state');
+var callingButton = document.querySelector('#callingButton');
+callingButton.onclick = calling;
+
 
 var user = decode_ns_user(document.location.hash.substr(1) || "test:test");
 var sToken = document.location.search.substr(1);
@@ -19,6 +23,7 @@ var xchatClient = new XChatClient({
   key: anyUserkey,
   debug_log: console.log,
   onready: xchatClient => {
+    console.log("xim is ready");
     // 可以开始呼叫了!!
     callingButton.disabled = false;
   },
@@ -29,15 +34,12 @@ var xchatClient = new XChatClient({
     xim_state.innerText = state;
   },
   onclose: () => {
-    console.log("xim closed");
+    console.log("xim is closed");
   }
 });
 
-var callManager = new CallManager(xchatClient, { oncalling });
+var callManager = new CallManager(new XChatMsgChannel(xchatClient), { onringing });
 
-
-var callingButton = document.querySelector('#callingButton');
-callingButton.onclick = calling;
 
 var answerButton = document.querySelector('#answerButton');
 var hangupButton = document.querySelector('#hangupButton');
@@ -45,7 +47,7 @@ answerButton.onclick = answer;
 hangupButton.onclick = hangup;
 
 
-function oncalling(sess) {
+function onringing(sess) {
   if (session !== null) {
     console.log("another call coming");
     sess.hangup("busy");
