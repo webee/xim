@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
@@ -15,6 +16,7 @@ import (
 type SendMsgArgs struct {
 	ChatID    string `json:"chat_id"`
 	User      string `json:"user"`
+	Domain    string `json:"domain"`
 	Msg       string `json:"msg"`
 	Kind      string `json:"kind"`
 	PermCheck bool   `json:"perm_check"`
@@ -50,6 +52,7 @@ func sendMsg(c echo.Context) error {
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
+	domain := args.Domain
 
 	user := getNsUser(c, args.User)
 	msg := args.Msg
@@ -60,6 +63,7 @@ func sendMsg(c echo.Context) error {
 	sendMsgArgs := &types.SendMsgArgs{
 		ChatID:   chatID,
 		ChatType: chatType,
+		Domain:   domain,
 		User:     user,
 		Msg:      msg,
 		Options: &types.SendMsgOptions{
@@ -89,11 +93,24 @@ func sendUserNotify(c echo.Context) error {
 	}
 
 	ns := getNs(c)
-	user := nsutils.EncodeNSUser(ns, args.User)
-	toUser := nsutils.EncodeNSUser(ns, args.ToUser)
-	if ns == "notify" {
-		// notify 可以发送给任何人，其它ns则只能给自己的ns用户发送, 当然空ns也可以给任何人发送
-		toUser = args.ToUser
+	user := args.User
+	toUser := args.ToUser
+	if toUser == "" && user != "" {
+		// TODO: remove
+		// 兼容老接口
+		user = nsutils.EncodeNSUser(ns, "")
+		toUser = nsutils.EncodeNSUser(ns, args.User)
+		if ns == "notify" {
+			// notify 可以发送给任何人，其它ns则只能给自己的ns用户发送, 当然空ns也可以给任何人发送
+			toUser = args.User
+		}
+	} else {
+		user = nsutils.EncodeNSUser(ns, user)
+		toUser = nsutils.EncodeNSUser(ns, toUser)
+		if ns == "notify" {
+			// notify 可以发送给任何人，其它ns则只能给自己的ns用户发送, 当然空ns也可以给任何人发送
+			toUser = args.ToUser
+		}
 	}
 
 	msg := args.Msg
@@ -112,8 +129,9 @@ func sendUserNotify(c echo.Context) error {
 			IgnorePermCheck: ignorePermCheck,
 		},
 	}, &ts); err != nil {
-		l.Warning("%s error: %s", types.RPCXChatSendUserNotify, err)
-		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "send msg failed"})
+		errMsg := fmt.Sprintf("send msg failed: %s", err)
+		l.Warning("%s, %s", types.RPCXChatSendUserNotify, errMsg)
+		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": errMsg})
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{"ok": true, "ts": ts})
 }

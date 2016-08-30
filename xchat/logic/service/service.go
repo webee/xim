@@ -129,6 +129,15 @@ func SendUserNotify(src *pubtypes.MsgSource, toUser, domain, user, msg string, o
 		}
 	}
 
+	// TODO: 解决呼叫信息的通知问题
+	ok, err := cache.IsUserOnline(toUser)
+	if err != nil {
+		return 0, err
+	}
+	if !ok {
+		return 0, fmt.Errorf("user is offline")
+	}
+
 	ts := time.Now()
 	m := pubtypes.UserNotifyMessage{
 		ToUser: toUser,
@@ -136,11 +145,6 @@ func SendUserNotify(src *pubtypes.MsgSource, toUser, domain, user, msg string, o
 		User:   user,
 		Ts:     ts.Unix(),
 		Msg:    msg,
-	}
-
-	// TODO: 解决呼叫信息的通知问题
-	if ok, err := cache.IsUserOnline(toUser); !ok {
-		return 0, err
 	}
 
 	// FIXME: goroutine pool?
