@@ -85,6 +85,11 @@ func IsRoomChat(roomID, chatID uint64) (t bool, err error) {
 	return t, db.Get(&t, `SELECT EXISTS(SELECT 1 FROM xchat_chat where room_id=$1 and id=$2)`, roomID, chatID)
 }
 
+// IsHaveUserChat check if user1 and user2 have user chat.
+func IsHaveUserChat(user1, user2 string) (t bool, err error) {
+	return t, db.Get(&t, `SELECT EXISTS(select 1 from xchat_chat c where c.type='user' and exists (select 1 from xchat_member m where m.chat_id=c.id and m."user"=$1) and exists (select 1 from xchat_member m where m.chat_id=c.id and m."user"=$2))`, user1, user2)
+}
+
 // IsChatMember judges whether user in a chat member.
 func IsChatMember(chatID uint64, user string) (t bool, err error) {
 	return t, db.Get(&t, `SELECT EXISTS(SELECT 1 FROM xchat_member where chat_id=$1 and "user"=$2)`, chatID, user)

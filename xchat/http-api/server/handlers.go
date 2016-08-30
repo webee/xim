@@ -13,17 +13,20 @@ import (
 
 // SendMsgArgs is arguments of sendMsg.
 type SendMsgArgs struct {
-	ChatID string `json:"chat_id"`
-	User   string `json:"user"`
-	Msg    string `json:"msg"`
-	Kind   string `json:"kind"`
+	ChatID    string `json:"chat_id"`
+	User      string `json:"user"`
+	Msg       string `json:"msg"`
+	Kind      string `json:"kind"`
+	PermCheck bool   `json:"perm_check"`
 }
 
 // SendUserNotifyArgs is arguments of sendUserNotify.
 type SendUserNotifyArgs struct {
-	User   string `json:"user"`
-	Domain string `json:"domain"`
-	Msg    string `json:"msg"`
+	User      string `json:"user"`
+	ToUser    string `json:"to_user"`
+	Domain    string `json:"domain"`
+	Msg       string `json:"msg"`
+	PermCheck bool   `json:"perm_check"`
 }
 
 func getNs(c echo.Context) string {
@@ -53,26 +56,26 @@ func sendMsg(c echo.Context) error {
 	if len(msg) > 64*1024 {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "msg excced size limit"})
 	}
+	ignorePermCheck := !args.PermCheck
+	sendMsgArgs := &types.SendMsgArgs{
+		ChatID:   chatID,
+		ChatType: chatType,
+		User:     user,
+		Msg:      msg,
+		Options: &types.SendMsgOptions{
+			IgnorePermCheck: ignorePermCheck,
+		},
+	}
 
 	switch args.Kind {
 	case "", types.MsgKindChat:
 		var message pubtypes.ChatMessage
-		if err := xchatLogic.Call(types.RPCXChatSendMsg, &types.SendMsgArgs{
-			ChatID:   chatID,
-			ChatType: chatType,
-			User:     user,
-			Msg:      msg,
-		}, &message); err != nil {
+		if err := xchatLogic.Call(types.RPCXChatSendMsg, sendMsgArgs, &message); err != nil {
 			l.Warning("%s error: %s", types.RPCXChatSendMsg, err)
 			return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "send msg failed"})
 		}
 	case types.MsgKindChatNotify:
-		xchatLogic.AsyncCall(types.RPCXChatSendNotify, &types.SendMsgArgs{
-			ChatID:   chatID,
-			ChatType: chatType,
-			User:     user,
-			Msg:      msg,
-		})
+		xchatLogic.AsyncCall(types.RPCXChatSendNotify, sendMsgArgs)
 	default:
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "invalid msg kind"})
 	}
@@ -87,9 +90,10 @@ func sendUserNotify(c echo.Context) error {
 
 	ns := getNs(c)
 	user := nsutils.EncodeNSUser(ns, args.User)
+	toUser := nsutils.EncodeNSUser(ns, args.ToUser)
 	if ns == "notify" {
-		// notify 可以发送给任何人，其它ns则只能给自己的ns用户发送
-		user = args.User
+		// notify 可以发送给任何人，其它ns则只能给自己的ns用户发送, 当然空ns也可以给任何人发送
+		toUser = args.ToUser
 	}
 
 	msg := args.Msg
@@ -98,10 +102,15 @@ func sendUserNotify(c echo.Context) error {
 	}
 
 	var ts int64
+	ignorePermCheck := !args.PermCheck
 	if err := xchatLogic.Call(types.RPCXChatSendUserNotify, &types.SendUserMsgArgs{
+		ToUser: toUser,
 		User:   user,
 		Domain: args.Domain,
 		Msg:    msg,
+		Options: &types.SendMsgOptions{
+			IgnorePermCheck: ignorePermCheck,
+		},
 	}, &ts); err != nil {
 		l.Warning("%s error: %s", types.RPCXChatSendUserNotify, err)
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "send msg failed"})

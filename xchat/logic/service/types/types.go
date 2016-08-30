@@ -36,6 +36,11 @@ type PingArgs struct {
 	Payload string
 }
 
+// SendMsgOptions is options for send msgs.
+type SendMsgOptions struct {
+	IgnorePermCheck bool
+}
+
 // SendMsgArgs is the arguments of SendMsg.
 type SendMsgArgs struct {
 	Source   *pubtypes.MsgSource
@@ -44,15 +49,17 @@ type SendMsgArgs struct {
 	Domain   string
 	User     string
 	Msg      string
+	Options  *SendMsgOptions
 }
 
 // SendUserMsgArgs is the arguments of SendUserMsg.
 type SendUserMsgArgs struct {
-	Source *pubtypes.MsgSource
-	ToUser string
-	Domain string
-	User   string
-	Msg    string
+	Source  *pubtypes.MsgSource
+	ToUser  string
+	Domain  string
+	User    string
+	Msg     string
+	Options *SendMsgOptions
 }
 
 // FetchUserChatArgs is the arguments of FetchUserChat
