@@ -116,14 +116,18 @@ export class DemoUtils {
     if (this.do_update) {
       var msg_div = document.querySelector("#msg");
       var p = document.createElement("p");
+      var kt = kind;
+      if (msg.domain) {
+        kt = kt + "." + msg.domain;
+      }
       if (kind === "chat") {
-        p.innerText = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user + "#" + msg.id + " 「" + msg.msg + "」";
+        p.innerText = msg.ts + ": [" + kt + "]" + msg.chat_id + "@" + msg.user + "#" + msg.id + " 「" + msg.msg + "」";
       } else if (kind === "chat_notify") {
-        p.innerText = msg.ts + ": [" + kind + "]" + msg.chat_id + "@" + msg.user + " 「" + msg.msg + "」";
+        p.innerText = msg.ts + ": [" + kt + "]" + msg.chat_id + "@" + msg.user + " 「" + msg.msg + "」";
       } else if (kind === "user_notify") {
-        p.innerText = msg.ts + ": [" + kind + "]" + msg.user + " 「" + msg.msg + "」";
+        p.innerText = msg.ts + ": [" + kt + "]" + msg.user + " 「" + msg.msg + "」";
       } else {
-        p.innerText = JSON.stringify(msg);
+        p.innerText = "[" + kt + "]" + JSON.stringify(msg);
       }
       msg_div.insertBefore(p, msg_div.firstChild);
       if (msg_div.childElementCount > this.maxMsgCount) {

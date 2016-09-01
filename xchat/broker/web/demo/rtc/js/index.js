@@ -38,7 +38,7 @@ var xchatClient = new XChatClient({
   }
 });
 
-var callManager = new CallManager(new XChatMsgChannel(xchatClient), { onringing });
+var callManager = new CallManager(new XChatMsgChannel(xchatClient, "xrtc"), { onringing });
 
 
 var answerButton = document.querySelector('#answerButton');

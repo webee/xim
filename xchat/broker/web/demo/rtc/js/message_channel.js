@@ -1,6 +1,6 @@
 export class XChatMsgChannel {
   constructor(xchatClient, domain) {
-    this.domain = domain || "rtc";
+    this.domain = domain;
     this.xchatClient = xchatClient;
     this.xchatClient.subscribeMsg(::this._on_msg, "user_notify", this.domain);
 
