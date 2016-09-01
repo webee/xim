@@ -1,7 +1,13 @@
 import axios from 'axios';
 
-function gen_random_id() {
-  return Math.random() * 2**53;
+function gen_random_id(length) {
+  length = length || 12;
+  var text = "";
+  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for(var i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
 }
 
 export class CallSession {
