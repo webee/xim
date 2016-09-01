@@ -71,8 +71,10 @@ function onringing(sess) {
   document.querySelector("#callingArea").style.display = "";
 };
 
-// caller perspective.
-var cur_callee = document.querySelector("#callee").value;
+function cur_callee() {
+  // caller perspective.
+  return document.querySelector("#callee").value;
+}
 
 var session = null;
 var localVideo = document.getElementById('localVideo');
@@ -96,7 +98,7 @@ function calling() {
   // states.
   callingButton.disabled = true;
 
-  callManager.calling(cur_callee, { onhangup: on_hangup, onaddstream: on_add_stream }).then(s=> {
+  callManager.calling(cur_callee(), { onhangup: on_hangup, onaddstream: on_add_stream }).then(s=> {
     session = s;
     localVideo.srcObject = session.stream;
 
