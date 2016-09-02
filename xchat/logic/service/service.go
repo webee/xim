@@ -184,6 +184,9 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 // SendChatMsg sends chat message.
 func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string, options *types.SendMsgOptions) (*pubtypes.ChatMessage, error) {
 	updated, err := checkSendPermissions(chatID, chatType, user, options)
+	if err != nil {
+		return nil, err
+	}
 
 	message, err := db.NewMsg(chatID, chatType, domain, user, msg)
 	if err != nil {
