@@ -135,6 +135,7 @@ export class CallSession {
         // send ok
         this.peer_id = peer_id;
         let ok_msg = { type: "ok", peer_id: peer_id, id: this.id };
+        // TODO: do on success.
         this.send_msg(ok_msg);
 
         this.createPeerConnection().then(pc=> {
@@ -287,13 +288,13 @@ export class CallSession {
 
   // 发送ice candidate.
   sendIceCandidate(candidate) {
-    let msg = { type: 'rtc', sub_type: 'candidate', peer_id: this.peer_id, msg: candidate };
+    let msg = { type: 'rtc', sub_type: 'candidate', peer_id: this.peer_id, msg: JSON.stringify(candidate) };
     this.send_msg(msg);
   }
 
   // 发送session description.
   sendSdp(sdp) {
-    let sdp_msg = { type: 'rtc', sub_type: 'sdp', peer_id: this.peer_id, msg: sdp };
+    let sdp_msg = { type: 'rtc', sub_type: 'sdp', peer_id: this.peer_id, msg: JSON.stringify(sdp) };
     this.send_msg(sdp_msg);
   }
 
@@ -377,11 +378,13 @@ export class CallSession {
     console.log('create offer or answer error: ', err);
   }
 
-  _on_candidate(candidate) {
+  _on_candidate(msg) {
+    let candidate = JSON.parse(msg);
     this.pc.addIceCandidate(new RTCIceCandidate(candidate));
   }
 
-  _on_sdp(sdp) {
+  _on_sdp(msg) {
+    let sdp = JSON.parse(msg);
     if (sdp.type === "offer") {
       this.pc.setRemoteDescription(new RTCSessionDescription(sdp));
       console.log('Sending answer to peer.');

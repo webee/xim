@@ -61,7 +61,7 @@ export class CallManager {
     var session;
     if (msg.type === 'calling') {
       // {type: "calling", id: 1234567890}
-      if (!this.sessions[msg.id]) {
+      if (!this.sessions[msg.peer_id]) {
         session = this.new_session("callee", user, { peer_id: msg.id });
       }
     } else {
