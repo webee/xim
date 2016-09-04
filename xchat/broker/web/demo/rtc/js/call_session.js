@@ -67,7 +67,7 @@ export class CallSession {
         break;
       case "hangup":
         // 错误: {type: "hangup", peer_id: 12345, id: 67890, reason: "error"}
-        // 拒接: {type: "hangup", peer_id: 12345, id: 67890, reason: "refuse"}
+        // 拒接: {type: "hangup", peer_id: 12345, id: 67890, reason: "reject"}
         // 繁忙: {type: "hangup", peer_id: 12345, id: 67890, reason: "busy"}
         // 取消: {type: "hangup", peer_id: 12345, id: 67890, reason: "cancel"}
         // 挂断: {type: "hangup", peer_id: 12345, id: 67890, reason: "hangup"}
@@ -167,7 +167,7 @@ export class CallSession {
     // 3. 挂断: x:ready->end
     var do_end = false;
     if (this.role === 'caller') {
-      if (reason === "busy" || reason === "refuse") {
+      if (reason === "busy" || reason === "reject") {
         delete this.ringing_peers[peer_id];
         if (Object.keys(this.ringing_peers).length === 0) {
           do_end = true;
@@ -255,7 +255,7 @@ export class CallSession {
             this.send_msg(hangup_msg);
           }
         } else {
-          reason = "refuse"
+          reason = "reject"
         }
       }
     }
