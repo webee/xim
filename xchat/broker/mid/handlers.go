@@ -187,12 +187,24 @@ func bindSendUserMsgArgs(s *Session, args []interface{}, kwargs map[string]inter
 		SessionID:  uint64(s.ID),
 	}
 
+	var options *types.SendMsgOptions
+	if ns == "test" && isNsUser {
+		toNs, _ := nsutils.DecodeNSUser(toUser)
+		if toNs == "test" {
+			// test user to test user, ignore perm check.
+			options = &types.SendMsgOptions{
+				IgnorePermCheck: true,
+			}
+		}
+	}
+
 	sendMsgArgs = &types.SendUserMsgArgs{
-		Source: src,
-		ToUser: toUser,
-		Domain: domain,
-		User:   s.User,
-		Msg:    msg,
+		Source:  src,
+		ToUser:  toUser,
+		Domain:  domain,
+		User:    s.User,
+		Msg:     msg,
+		Options: options,
 	}
 	return
 }
