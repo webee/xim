@@ -119,7 +119,7 @@ func sendUserNotify(c echo.Context) error {
 	}
 
 	var ts int64
-	ignorePermCheck := !args.PermCheck
+	ignorePermCheck := user == "" || !args.PermCheck
 	if err := xchatLogic.Call(types.RPCXChatSendUserNotify, &types.SendUserMsgArgs{
 		ToUser: toUser,
 		User:   user,

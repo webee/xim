@@ -55,9 +55,9 @@ type SendMsgArgs struct {
 // SendUserMsgArgs is the arguments of SendUserMsg.
 type SendUserMsgArgs struct {
 	Source  *pubtypes.MsgSource
+	User    string
 	ToUser  string
 	Domain  string
-	User    string
 	Msg     string
 	Options *SendMsgOptions
 }
