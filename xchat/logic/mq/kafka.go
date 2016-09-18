@@ -35,11 +35,11 @@ func handling() {
 		select {
 		case pm := <-successes:
 			if pm != nil {
-				l.Debug("pub msg success, partition:%d offset:%d key:%v valus:%s", pm.Partition, pm.Offset, pm.Key, pm.Value)
+				l.Debug("pub msg success, partition:%d offset:%d key:%v values:%s", pm.Partition, pm.Offset, pm.Key, pm.Value)
 			}
 		case err := <-errors:
 			if err != nil {
-				l.Warning("pub msg error, partition:%d offset:%d key:%v valus:%s error(%v)", err.Msg.Partition, err.Msg.Offset, err.Msg.Key, err.Msg.Value, err.Err)
+				l.Warning("pub msg error, partition:%d offset:%d key:%v values:%s error(%v)", err.Msg.Partition, err.Msg.Offset, err.Msg.Key, err.Msg.Value, err.Err)
 			}
 		}
 	}

@@ -15,15 +15,17 @@ var (
 
 // InitMQ init message queues.
 func InitMQ(kafkaAddrs []string) (close func()) {
-	if err := initKafka(kafkaAddrs); err != nil {
-		l.Warning("init kafka failed:", err.Error())
-	} else {
-		Publish = publishToKafka
+	if len(kafkaAddrs) > 0 {
+		if err := initKafka(kafkaAddrs); err != nil {
+			l.Warning("init kafka failed:", err.Error())
+		} else {
+			Publish = publishToKafka
+			return func() {
+				kafkaProducer.Close()
+			}
+		}
 	}
-
-	return func() {
-		kafkaProducer.Close()
-	}
+	return func() {}
 }
 
 func nilPublish(topic string, msg string) error {
