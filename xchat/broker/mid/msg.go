@@ -137,7 +137,6 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 	pushing := t.pushing
 	tasks := t.tasks
 	statelessTasks := t.statelessTasks
-	rawTasks := t.rawTasks
 
 	var accMsgs []*Message
 	var accStatelessMsgs []StatelessMsg
@@ -163,12 +162,6 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				doPush(s.msgTopic, types.MsgKindChat, accMsgs)
 				accMsgs = []*Message{}
 			}
-		case task := <-rawTasks:
-			msg, ok := <-task
-			if !ok {
-				continue
-			}
-			doPush(s.msgTopic, msg.Kind, msg.Msgs)
 		case <-time.After(18 * time.Millisecond):
 			if len(accStatelessMsgs) > 0 {
 				if len(accStatelessMsgs) == 1 {
@@ -199,12 +192,6 @@ func xpushChatUserMsgs(s *Session, t *TaskChan, clear bool) {
 				if ok {
 					accMsgs = append(accMsgs, msgs...)
 				}
-			case task := <-rawTasks:
-				msg, ok := <-task
-				if !ok {
-					continue
-				}
-				doPush(s.msgTopic, msg.Kind, msg.Msgs)
 			// TODO 根据消息发送状况确定等待时间
 			case <-time.After(3 * time.Second):
 				// 让下一位进入
@@ -231,17 +218,9 @@ func doPushStatelessMsgs(topic string, msgs []StatelessMsg) {
 }
 
 func doPush(topic string, kind string, payload interface{}) {
+	l.Debug("publish <%s> msg to <%s>: <%#v>", kind, topic, payload)
 	err := xchat.Publish(topic, []interface{}{kind, payload}, emptyKwargs)
 	if err != nil {
 		l.Warning("publish msg error:", err)
-	}
-}
-
-func pushRawMsg(user string, msg *RawMessage) {
-	sesses := GetUserSessions(user)
-
-	for _, s := range sesses {
-		s.taskChan.NewRawTask() <- msg
-		tryPushing(s, s.taskChan)
 	}
 }

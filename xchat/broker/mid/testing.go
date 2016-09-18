@@ -100,20 +100,9 @@ func fetchInfo(info string, args []interface{}) (interface{}, error) {
 
 func doCmd(cmd string, args []interface{}) error {
 	switch cmd {
-	case "send_msg":
-		user := args[0].(string)
-		kind := args[1].(string)
-		messages := []interface{}{}
-		for _, message := range args[2:] {
-			messages = append(messages, message)
-		}
-
-		msg := &RawMessage{
-			Kind: kind,
-			Msgs: messages,
-		}
-
-		pushRawMsg(user, msg)
+	case "send_user_sys_req":
+		//user := args[0].(string)
+		// TODO: system request user messages.
 		return nil
 	case "debug_on":
 		turnpike.Debug()

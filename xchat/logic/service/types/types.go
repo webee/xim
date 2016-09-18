@@ -19,7 +19,7 @@ const (
 	MsgKindChat       = "chat"
 	MsgKindChatNotify = "chat_notify"
 	MsgKindUserNotify = "user_notify"
-	MsgKindSys        = "sys"
+	MsgKindUserSysReq = "user_sys_req"
 )
 
 // NoArgs used by rpc with no args.

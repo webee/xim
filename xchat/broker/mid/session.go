@@ -23,7 +23,6 @@ type SessionID uint64
 type TaskChan struct {
 	tasks          chan chan []*Message
 	statelessTasks chan chan []StatelessMsg
-	rawTasks       chan chan *RawMessage
 	pushing        chan struct{}
 	pushingMutex   chan struct{}
 }
@@ -32,7 +31,6 @@ func newTaskChan() *TaskChan {
 	t := &TaskChan{
 		tasks:          make(chan chan []*Message, 64),
 		statelessTasks: make(chan chan []StatelessMsg, 32),
-		rawTasks:       make(chan chan *RawMessage, 2),
 		pushing:        make(chan struct{}, 1),
 		pushingMutex:   make(chan struct{}, 1),
 	}
@@ -52,13 +50,6 @@ func (t *TaskChan) NewTask() (task chan []*Message) {
 func (t *TaskChan) NewStatelessTask() (task chan []StatelessMsg) {
 	task = make(chan []StatelessMsg, 1)
 	t.statelessTasks <- task
-	return
-}
-
-// NewRawTask append a new raw message push task.
-func (t *TaskChan) NewRawTask() (task chan *RawMessage) {
-	task = make(chan *RawMessage, 1)
-	t.rawTasks <- task
 	return
 }
 

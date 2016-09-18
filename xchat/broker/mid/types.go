@@ -102,8 +102,25 @@ func NewUserNotifyMessageFromPubMsg(msg *pubtypes.UserNotifyMessage) *UserNotify
 	}
 }
 
-// RawMessage is a raw message.
-type RawMessage struct {
-	Kind string
-	Msgs []interface{}
+// UserSystemRequestMessage is a system request user message.
+type UserSystemRequestMessage struct {
+	User   string `json:"user,omitempty"`
+	Domain string `json:"domain,omitempty"`
+	Ts     int64  `json:"ts"`
+	Msg    string `json:"msg"`
+}
+
+// Kind returns the message kind.
+func (msg UserSystemRequestMessage) Kind() string {
+	return types.MsgKindUserSysReq
+}
+
+// NewUserSystemRequestMessage creates a UserSystemRequestMessage
+func NewUserSystemRequestMessage(user, domain string, ts int64, msg string) *UserSystemRequestMessage {
+	return &UserSystemRequestMessage{
+		User:   user,
+		Domain: domain,
+		Ts:     ts,
+		Msg:    msg,
+	}
 }
