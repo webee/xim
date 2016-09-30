@@ -20,13 +20,11 @@ func RequireIsAdminUser(tokenKey string) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			claims := c.Get(tokenKey).(jwt.MapClaims)
 			x := claims["is_admin"]
-			if x == nil {
+			xb, ok := x.(bool)
+			if !ok || !xb {
 				return echo.ErrUnauthorized
 			}
-			if x.(bool) {
-				return next(c)
-			}
-			return echo.ErrUnauthorized
+			return next(c)
 		}
 	}
 }
