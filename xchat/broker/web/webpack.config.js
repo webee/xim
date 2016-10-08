@@ -15,7 +15,7 @@ config = {
     publicPath: '/demo/dist/'
   },
   module: {
-    noParse: /node_modules\/autobahn\/autobahn.js/,
+    noParse: /node_modules\/bindings\/bindings.js/,
     loaders: [
       { test: /\.js$/, exclude: /node_modules/, loader: 'babel' },
       { test: /\.json$/, loader: 'json' }
@@ -32,7 +32,7 @@ if (env === "production") {
     new webpack.optimize.OccurenceOrderPlugin(),
     new webpack.DefinePlugin({
       'process.env': {
-        'NODE_ENV': JSON.stringify(env)
+        'NODE_ENV': JSON.stringify(env),
       }
     }),
     new webpack.optimize.UglifyJsPlugin({
