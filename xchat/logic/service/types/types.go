@@ -135,7 +135,12 @@ type PubUserStatusArgs struct {
 	SessionID  uint64
 	User       string
 	Status     string
-	Info       string
+}
+
+// PubUserInfoArgs is the arguments of PubUserInfo
+type PubUserInfoArgs struct {
+	PubUserStatusArgs
+	Info string
 }
 
 // SyncOnlineUsersArgs is the arguments of SyncOnlineUsers
@@ -162,6 +167,7 @@ type FetchNewRoomChatIDs struct {
 const (
 	RPCXChatPing                   = "RPCXChat.Ping"
 	RPCXChatPubUserStatus          = "RPCXChat.PubUserStatus"
+	RPCXChatPubUserInfo            = "RPCXChat.PubUserInfo"
 	RPCXChatSyncOnlineUsers        = "RPCXChat.SyncOnlineUsers"
 	RPCXChatSendMsg                = "RPCXChat.SendMsg"
 	RPCXChatSendNotify             = "RPCXChat.SendNotify"

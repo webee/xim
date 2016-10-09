@@ -19,7 +19,12 @@ func (r *RPCXChat) Ping(args *types.PingArgs, reply *string) (err error) {
 
 // PubUserStatus publish user's status.
 func (r *RPCXChat) PubUserStatus(args *types.PubUserStatusArgs, reply *types.NoReply) error {
-	return PubUserStatus(args.InstanceID, args.SessionID, args.User, args.Status, args.Info)
+	return PubUserStatus(args.InstanceID, args.SessionID, args.User, args.Status)
+}
+
+// PubUserInfo publish user's info.
+func (r *RPCXChat) PubUserInfo(args *types.PubUserInfoArgs, reply *types.NoReply) error {
+	return PubUserInfo(args.InstanceID, args.SessionID, args.User, args.Status, args.Info)
 }
 
 // SyncOnlineUsers update online users.

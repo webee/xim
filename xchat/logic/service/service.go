@@ -258,17 +258,26 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain,
 }
 
 // PubUserStatus publish user's status msg.
-func PubUserStatus(instanceID, sessionID uint64, user string, status string, info string) error {
-	l.Debug("instance:%d, session:%d, user:%s, status:%s, info:%s", instanceID, sessionID, user, status, info)
+func PubUserStatus(instanceID, sessionID uint64, user string, status string) error {
+	l.Debug("instance:%d, session:%d, user:%s, status:%s", instanceID, sessionID, user, status)
 	// 记录用户在线状态
 	if err := UpdateUserStatus(instanceID, sessionID, user, status); err != nil {
 		return err
 	}
 
 	t := time.Now()
+	// 发送上下线日志
 	publishUserStatus(user, status, t)
 
-	// 发送上下线日志
+	return nil
+}
+
+// PubUserInfo publish user's status info.
+func PubUserInfo(instanceID, sessionID uint64, user string, status string, info string) error {
+	l.Debug("instance:%d, session:%d, user:%s, status:%s, info:%s", instanceID, sessionID, user, status, info)
+
+	t := time.Now()
+	// 发送用户信息
 	if info != "*" && info != "" {
 		msg := make(map[string]string)
 		msg["user"] = user

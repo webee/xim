@@ -2,10 +2,10 @@ package mq
 
 // topics
 const (
+	XChatUserStatuses  = "xchat_user_statuses"
 	XChatLogsTopic     = "xchat_logs"
 	XChatUserMsgsTopic = "xchat_user_msgs"
 	XChatCSReqs        = "xchat_cs_reqs"
-	XChatUserStatuses  = "xchat_user_statuses"
 )
 
 // Publish publish msg to topic.

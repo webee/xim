@@ -49,7 +49,7 @@ func onJoin(args []interface{}, kwargs map[string]interface{}) {
 	AddSession(s)
 	l.Debug("join: %s", s)
 	// 上线状态
-	doPubUserStatusInfo(s, types.UserStatusOnline)
+	doPubUserStatus(s, types.UserStatusOnline)
 }
 
 // 处理用户断开注销
@@ -62,11 +62,12 @@ func onLeave(args []interface{}, kwargs map[string]interface{}) {
 		l.Debug("left: %s", s)
 
 		// 离线状态
-		doPubUserStatusInfo(s, types.UserStatusOffline)
+		doPubUserStatus(s, types.UserStatusOffline)
+		doPubUserInfo(s, types.UserStatusOffline, s.GetClientInfo())
 	}
 }
 
-func doPubUserStatusInfo(s *Session, infox interface{}) {
+func doPubUserStatus(s *Session, infox interface{}) {
 	switch x := infox.(type) {
 	case string:
 		// set status
@@ -75,22 +76,21 @@ func doPubUserStatusInfo(s *Session, infox interface{}) {
 			SessionID:  uint64(s.ID),
 			User:       s.User,
 			Status:     x,
-			Info:       s.GetClientInfo(),
 		}
 		xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
 	}
 }
 
 func pubUserStatusInfo(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	doPubUserStatusInfo(s, args[0])
+	doPubUserStatus(s, args[0])
 	return []interface{}{true}, nil, nil
 }
 
 func onPubUserStatusInfo(s *Session, args []interface{}, kwargs map[string]interface{}) {
-	doPubUserStatusInfo(s, args[0])
+	doPubUserStatus(s, args[0])
 }
 
-func doPubUserInfo(s *Session, infox interface{}) {
+func doPubUserInfo(s *Session, status string, infox interface{}) {
 	info := ""
 	switch x := infox.(type) {
 	case string:
@@ -107,23 +107,25 @@ func doPubUserInfo(s *Session, infox interface{}) {
 	}
 	s.SetClientInfo(info)
 
-	arguments := &types.PubUserStatusArgs{
-		InstanceID: instanceID,
-		SessionID:  uint64(s.ID),
-		User:       s.User,
-		Status:     types.UserStatusOnline,
-		Info:       info,
+	arguments := &types.PubUserInfoArgs{
+		PubUserStatusArgs: types.PubUserStatusArgs{
+			InstanceID: instanceID,
+			SessionID:  uint64(s.ID),
+			User:       s.User,
+			Status:     status,
+		},
+		Info: info,
 	}
-	xchatLogic.AsyncCall(types.RPCXChatPubUserStatus, arguments)
+	xchatLogic.AsyncCall(types.RPCXChatPubUserInfo, arguments)
 }
 
 func pubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	doPubUserInfo(s, args[0])
+	doPubUserInfo(s, types.UserStatusOnline, args[0])
 	return []interface{}{true}, nil, nil
 }
 
 func onPubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}) {
-	doPubUserInfo(s, args[0])
+	doPubUserInfo(s, types.UserStatusOnline, args[0])
 }
 
 func bindSendMsgArgs(s *Session, args []interface{}) (sendMsgArgs *types.SendMsgArgs, rerr APIError) {
