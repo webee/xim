@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"xim/utils/nanorpc"
 	"xim/xchat/logic/logger"
+	"xim/xchat/xchat-http-client"
 
 	ol "github.com/go-ozzo/ozzo-log"
 	"github.com/labstack/echo"
@@ -22,23 +23,20 @@ var (
 )
 
 var (
-	config     *Config
-	xchatLogic *nanorpc.Client
+	config          *Config
+	xchatLogic      *nanorpc.Client
+	xchatHTTPClient *xchathttpclient.XChatHTTPClient
 )
 
 func init() {
 	l = logger.Logger.GetLogger("server")
 }
 
-// Setup initialze mid.
-func Setup(config *Config) {
-	xchatLogic = nanorpc.NewClient(config.LogicRPCAddr, config.RPCCallTimeout)
-}
-
 // Start run the http server.
 func Start(c *Config) {
 	config = c
 	xchatLogic = nanorpc.NewClient(config.LogicRPCAddr, config.RPCCallTimeout)
+	xchatHTTPClient = xchathttpclient.NewXChatHTTPClient(config.Key, config.XChatHostURL)
 
 	e := echo.New()
 	e.SetDebug(config.Debug)
@@ -63,6 +61,7 @@ func setup(e *echo.Echo) {
 	gXChatAPI.GET("/test/", test)
 
 	gXChatAPI.Post("/user/msg/send/", sendMsg)
+	gXChatAPI.Post("/user/msg/send/unique/chat/", sendUniqueChatMsg)
 	gXChatAPI.Post("/user/notify/send/", sendUserNotify)
 }
 

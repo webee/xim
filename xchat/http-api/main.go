@@ -37,10 +37,12 @@ func main() {
 	server.Start(&server.Config{
 		Debug:           args.debug,
 		Testing:         args.testing,
+		Key:             userKey,
 		Keys:            userKeys,
 		Addr:            args.addr,
 		LogicRPCAddr:    args.logicRPCAddr,
 		RPCCallTimeout:  args.rpcCallTimeout,
+		XChatHostURL:    args.xchatHostURL,
 		TurnUser:        args.turnUser,
 		TurnSecret:      args.turnSecret,
 		TurnPasswordTTL: args.turnPasswordTTL,

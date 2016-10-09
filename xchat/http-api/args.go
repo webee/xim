@@ -18,6 +18,7 @@ type Args struct {
 	csUserKeyPath     string
 	notifyUserKeyPath string
 	logicRPCAddr      string
+	xchatHostURL      string
 	rpcCallTimeout    time.Duration
 	turnUser          string
 	turnSecret        string
@@ -40,6 +41,7 @@ func init() {
 	flag.StringVar(&args.notifyUserKeyPath, "notify-user-key-path", path.Join("conf", env, "xchat/notify_user_key.txt"), "notify user key file path.")
 	flag.StringVar(&args.addr, "addr", "127.0.0.1:9981", "http api server listen addr.")
 	flag.StringVar(&args.logicRPCAddr, "logic-rpc-addr", "tcp://:16787", "logic rpc addresses.")
+	flag.StringVar(&args.xchatHostURL, "xchat-host-url", "http://localhost:9980", "xchat api host url.")
 	flag.DurationVar(&args.rpcCallTimeout, "rpc-timeout", 5*time.Second, "call rpc timeout.")
 	flag.StringVar(&args.turnUser, "turn-user", "qqwj", "turn server user")
 	flag.StringVar(&args.turnSecret, "turn-secret", "qqwj", "turn server secret")

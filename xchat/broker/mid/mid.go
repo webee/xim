@@ -9,6 +9,7 @@ import (
 	"xim/xchat/broker/logger"
 	"xim/xchat/broker/router"
 	"xim/xchat/logic/pub"
+	"xim/xchat/xchat-http-client"
 
 	ol "github.com/go-ozzo/ozzo-log"
 	"gopkg.in/webee/turnpike.v2"
@@ -19,13 +20,14 @@ var (
 )
 
 var (
-	instanceID  uint64
-	xchatLogic  *nanorpc.Client
-	xchatSub    *pub.Subscriber
-	xchat       *turnpike.Client
-	realm       *turnpike.Realm
-	emptyArgs   = []interface{}{}
-	emptyKwargs = make(map[string]interface{})
+	instanceID      uint64
+	xchatHTTPClient *xchathttpclient.XChatHTTPClient
+	xchatLogic      *nanorpc.Client
+	xchatSub        *pub.Subscriber
+	xchat           *turnpike.Client
+	realm           *turnpike.Realm
+	emptyArgs       = []interface{}{}
+	emptyKwargs     = make(map[string]interface{})
 )
 
 func init() {
@@ -37,7 +39,7 @@ func init() {
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
 	instanceID = uint64(rand.Int63n(math.MaxInt64))
 
-	initXChatHTTPClient(config.Key, config.XChatHostURL)
+	xchatHTTPClient = xchathttpclient.NewXChatHTTPClient(config.Key, config.XChatHostURL)
 
 	var (
 		err error

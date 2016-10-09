@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"xim/xchat/logic/db"
@@ -22,6 +23,16 @@ type SendMsgArgs struct {
 	PermCheck bool   `json:"perm_check"`
 }
 
+// SendUniqueChatMsgArgs is arguments of sendUniqueChatMsg.
+type SendUniqueChatMsgArgs struct {
+	ChatType string   `json:"chat_type"`
+	User     string   `json:"user"`
+	ToUsers  []string `json:"to_users"`
+	Domain   string   `json:"domain"`
+	Msg      string   `json:"msg"`
+	Kind     string   `json:"kind"`
+}
+
 // SendUserNotifyArgs is arguments of sendUserNotify.
 type SendUserNotifyArgs struct {
 	User      string `json:"user"`
@@ -36,30 +47,25 @@ func getNs(c echo.Context) string {
 }
 
 func getNsUser(c echo.Context, u string) string {
+	if u == "" {
+		return u
+	}
 	ns := getNs(c)
 	return nsutils.EncodeNSUser(ns, u)
 }
 
-func sendMsg(c echo.Context) error {
-	args := &SendMsgArgs{}
-	if err := c.Bind(args); err != nil {
-		return err
+func doSendMsg(kind, domain, xchatID, msg, user string, permCheck bool) error {
+	if len(msg) > 64*1024 {
+		return errors.New("msg excced size limit")
 	}
 
-	chatIdentity, err := db.ParseChatIdentity(args.ChatID)
+	chatIdentity, err := db.ParseChatIdentity(xchatID)
 	if err != nil {
 		return err
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
-	domain := args.Domain
-
-	user := getNsUser(c, args.User)
-	msg := args.Msg
-	if len(msg) > 64*1024 {
-		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "msg excced size limit"})
-	}
-	ignorePermCheck := !args.PermCheck
+	ignorePermCheck := !permCheck
 	sendMsgArgs := &types.SendMsgArgs{
 		ChatID:   chatID,
 		ChatType: chatType,
@@ -71,17 +77,72 @@ func sendMsg(c echo.Context) error {
 		},
 	}
 
-	switch args.Kind {
+	switch kind {
 	case "", types.MsgKindChat:
 		var message pubtypes.ChatMessage
 		if err := xchatLogic.Call(types.RPCXChatSendMsg, sendMsgArgs, &message); err != nil {
 			l.Warning("%s error: %s", types.RPCXChatSendMsg, err)
-			return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "send msg failed"})
+			return errors.New("send msg failed")
 		}
 	case types.MsgKindChatNotify:
 		xchatLogic.AsyncCall(types.RPCXChatSendNotify, sendMsgArgs)
 	default:
-		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "invalid msg kind"})
+		return errors.New("invalid msg kind")
+	}
+	return nil
+}
+
+func sendMsg(c echo.Context) error {
+	args := &SendMsgArgs{}
+	if err := c.Bind(args); err != nil {
+		return err
+	}
+
+	user := getNsUser(c, args.User)
+	if err := doSendMsg(args.Kind, args.Domain, args.ChatID, args.Msg, user, args.PermCheck); err != nil {
+		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+func sendUniqueChatMsg(c echo.Context) error {
+	args := &SendUniqueChatMsgArgs{}
+	if err := c.Bind(args); err != nil {
+		return err
+	}
+	ns := getNs(c)
+	user := nsutils.EncodeNSUser(ns, args.User)
+	// 判断chatType
+	users := []string{user}
+	chatType := ""
+	if args.ToUsers == nil {
+		chatType = "self"
+	} else {
+		switch len(args.ToUsers) {
+		case 1:
+			if args.ToUsers[0] == "cs:*" {
+				chatType = "cs"
+			} else {
+				chatType = "user"
+				users = append(users, nsutils.EncodeNSUser(ns, args.ToUsers[0]))
+			}
+		case 0:
+			chatType = "self"
+		default:
+			return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "bad param: to_users"})
+		}
+	}
+	if args.ChatType != "" && args.ChatType != chatType {
+		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": "bad param: chat_type"})
+	}
+
+	xchatID, err := xchatHTTPClient.NewChat(chatType, users, "", "user", "")
+	if err != nil {
+		return err
+	}
+
+	if err := doSendMsg(args.Kind, args.Domain, xchatID, args.Msg, user, false); err != nil {
+		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{"ok": true})
 }
