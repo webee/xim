@@ -26,6 +26,9 @@ func authenticate(keys map[string][]byte, signature string) (map[string]interfac
 	if err != nil {
 		return nil, fmt.Errorf("parse token error: %s", err)
 	}
+	if claims["user"] == nil {
+		return nil, fmt.Errorf("bad token")
+	}
 	return map[string]interface{}{"ns": ns, "user": claims["user"].(string), "role": "user"}, nil
 }
 
