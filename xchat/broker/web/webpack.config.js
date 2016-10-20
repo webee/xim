@@ -15,7 +15,6 @@ config = {
     publicPath: '/demo/dist/'
   },
   module: {
-    noParse: /node_modules\/bindings\/bindings.js/,
     loaders: [
       { test: /\.js$/, exclude: /node_modules/, loader: 'babel' },
       { test: /\.json$/, loader: 'json' }

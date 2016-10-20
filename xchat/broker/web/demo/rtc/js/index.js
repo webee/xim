@@ -1,13 +1,14 @@
 import 'webrtc-adapter';
 import '../../js/common';
-import {XChatClient, autobahn_debug} from '../../js/xchat_client';
+import {XChatClient, wampDebug} from '../../js/xchat_client';
 import {anyUserkey} from '../../js/configs';
 import {decode_ns_user} from '../../js/utils';
 import {CallManager} from './call_manager';
 import {XChatMsgChannel} from './message_channel';
 
+window.wampDebug = wampDebug;
 // init.
-autobahn_debug(true);
+wampDebug(true);
 var xim_state = document.querySelector('#xim_state');
 var callingButton = document.querySelector('#callingButton');
 callingButton.onclick = calling;

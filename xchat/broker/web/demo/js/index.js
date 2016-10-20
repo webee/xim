@@ -1,11 +1,12 @@
 import './common';
-import {XChatClient, autobahn_debug} from './xchat_client';
+import {XChatClient, wampDebug} from './xchat_client';
 import {anyUserkey} from './configs';
 import {decode_ns_user} from './utils';
 import {DemoUtils} from './demo_utils';
 
+window.wampDebug = wampDebug;
 // init.
-autobahn_debug(true);
+wampDebug(true);
 var xim_state = document.querySelector('#xim_state');
 
 var user = decode_ns_user(document.location.hash.substr(1) || "test:test");

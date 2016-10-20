@@ -16,6 +16,7 @@
     "axios": "^0.13.1",
     "jsrsasign": "^5.0.13",
     "string-format": "^0.5.0",
+    "wamp.js": "^0.1.1",
     "webrtc-adapter": "^2.0.2"
   },
   "devDependencies": {
