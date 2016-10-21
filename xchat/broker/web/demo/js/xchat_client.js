@@ -10,6 +10,13 @@ export function wampDebug(debug) {
 	}
 }
 
+export const XIM_STATUS = {
+	DISCONNECTED: 'DISCONNECTED',
+	CONNECTING: 'CONNECTING',
+	CONNECTED: 'CONNECTED',
+	CLOSED: 'CLOSED'
+};
+
 export class XChatClient {
 	constructor(config) {
 		this.user = config.user;
@@ -20,13 +27,11 @@ export class XChatClient {
 
 		this.onready = config.onready || (()=> {
 			});
-		this.onclose = config.onclose || (()=> {
-			});
 		this.onerror = config.onerror || (()=> {
 			});
-		this.onstatechange = config.onstatechange || (()=> {
+		this.onstatuschange = config.onstatuschange || (()=> {
 			});
-		this.state = "";
+		this._status = XIM_STATUS.DISCONNECTED;
 
 		this.session = null;
 		this.msg_subscribers = [];
@@ -43,11 +48,19 @@ export class XChatClient {
 			//onchallenge: ::this._on_challenge,
 		});
 
-		this.connection.onopen = ::this._on_open;
-		this.connection.onclose = ::this._on_close;
+		this.connection.onstatuschange = ::this._on_status_change;
 
 		// open wamp connection.
 		this.connection.open();
+	}
+
+	get status() {
+		return this._status;
+	}
+
+	_change_status(status) {
+		this._status = status;
+		this.onstatuschange(status);
 	}
 
 	subscribeMsg(fn, kind, domain) {
@@ -133,13 +146,28 @@ export class XChatClient {
 		}
 	}
 
-	_change_state(state) {
-		this.state = state;
-		this.onstatechange(this.state);
+	_on_status_change(status, details) {
+		var self = this;
+		switch (status) {
+			case wamp.STATUS.CONNECTED:
+				this._on_open(self.connection.session);
+				this._change_status(XIM_STATUS.CONNECTED);
+				break;
+			case wamp.STATUS.CLOSED:
+				this._on_close(details.close_reason, details);
+				this._change_status(XIM_STATUS.CLOSED);
+				break;
+			case wamp.STATUS.DISCONNECTED:
+				this.debug_log("wamp disconnected:", details.close_reason);
+				this._change_status(XIM_STATUS.DISCONNECTED);
+				break;
+			case wamp.STATUS.CONNECTING:
+				this._change_status(XIM_STATUS.CONNECTING);
+				break;
+		}
 	}
 
-	_on_open(session, details) {
-		this._change_state("opened");
+	_on_open(session) {
 		this.session = session;
 		this.session.subscribe(`xchat.user.${this.session.id}.msg`, ::this._on_msg).then(
 			::this._on_msg_sub,
@@ -151,13 +179,8 @@ export class XChatClient {
 	}
 
 	_on_close(reason, details) {
-		this._change_state(`closed.${reason}`);
-
+		this.debug_log("wamp close:", reason);
 		this.session = null;
-		if (reason !== "lost") {
-			// 其它的会重连
-			this.onclose();
-		}
 	}
 
 	_on_msg(args, kwargs) {
@@ -182,6 +205,5 @@ export class XChatClient {
 	_on_msg_sub(sub) {
 		// ready.
 		this.onready(this);
-		this._change_state("ready");
 	}
 }
