@@ -39,8 +39,7 @@ export class XChatClient {
 			this.subscribeMsg(config.onmsg);
 		}
 
-		//this.connection = new autobahn.Connection({
-		this.connection = new wamp.Connection({
+		this._connection = new wamp.Connection({
 			url: this.wsuri,
 			realm: "xchat",
 			authmethods: ["xjwt"],
@@ -48,10 +47,14 @@ export class XChatClient {
 			//onchallenge: ::this._on_challenge,
 		});
 
-		this.connection.onstatuschange = ::this._on_status_change;
+		this._connection.onstatuschange = ::this._on_status_change;
 
 		// open wamp connection.
-		this.connection.open();
+		this._connection.open();
+	}
+
+	get conn() {
+		return this._connection;
 	}
 
 	get status() {
@@ -150,7 +153,7 @@ export class XChatClient {
 		var self = this;
 		switch (status) {
 			case wamp.STATUS.CONNECTED:
-				this._on_open(self.connection.session);
+				this._on_open(self._connection.session);
 				this._change_status(XIM_STATUS.CONNECTED);
 				break;
 			case wamp.STATUS.CLOSED:

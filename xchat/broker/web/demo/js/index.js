@@ -35,3 +35,14 @@ var xchatClient = new XChatClient({
 		console.log("xim is closed");
 	}
 });
+
+// network
+// online/offline detect
+if (addEventListener) {
+	addEventListener('online', () => {
+		xchatClient.conn.retry();
+	});
+	addEventListener('offline', () => {
+		xchatClient.conn.networkOffline();
+	});
+}
