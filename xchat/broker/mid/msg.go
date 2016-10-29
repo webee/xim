@@ -100,8 +100,16 @@ func push(src *pubtypes.MsgSource, msg *pubtypes.ChatMessage) {
 
 	msgs := pushState.FetchMsgs(msg.ID)
 	toPushMsgs := []*Message{}
-	for _, msg := range msgs {
-		toPushMsgs = append(toPushMsgs, NewMessageFromPubMsg(msg))
+	for i, m := range msgs {
+		if m == nil {
+			// NOTE: 没有查询到发送的消息，理论不可能, 除非数据存储或rpc出问题了
+			m = &pubtypes.ChatMessage{
+				ChatID:   msg.ChatID,
+				ChatType: msg.ChatType,
+				ID:       pushState.pushedMsgID + uint64(i) + 1,
+			}
+		}
+		toPushMsgs = append(toPushMsgs, NewMessageFromPubMsg(m))
 	}
 
 	for _, s := range sessions {

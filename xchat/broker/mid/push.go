@@ -1,7 +1,6 @@
 package mid
 
 import (
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -14,13 +13,6 @@ import (
 var (
 	pushStatesCache = cache.New(10*time.Minute, 10*time.Minute)
 )
-
-// ByMsgID implements sort.Interface for []*pubtypes.ChatMessage by msg id desc.
-type ByMsgID []*pubtypes.ChatMessage
-
-func (a ByMsgID) Len() int           { return len(a) }
-func (a ByMsgID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByMsgID) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
 // PushState is chat's push state.
 type PushState struct {
@@ -69,26 +61,26 @@ func (p *PushState) Pending(msg *pubtypes.ChatMessage) bool {
 // FetchMsgs fetch to push messages.
 func (p *PushState) FetchMsgs(msgID uint64) []*pubtypes.ChatMessage {
 	p.RLock()
-	msgs := []*pubtypes.ChatMessage{}
+	pushedMsgID := p.pushedMsgID
+	count := 0
+	msgCount := int(msgID - pushedMsgID)
+	msgs := make([]*pubtypes.ChatMessage, msgCount)
 	for _, msg := range p.msgs {
 		if msg.ID <= msgID {
-			msgs = append(msgs, msg)
+			idx := msg.ID - pushedMsgID - 1
+			if msgs[idx] == nil {
+				msgs[idx] = msg
+				count++
+			}
 		}
 	}
 	defer p.RUnlock()
 
-	if uint64(len(msgs)) < msgID-p.pushedMsgID {
+	if count < msgCount {
 		missedIDs := []uint64{}
-		for i := p.pushedMsgID + 1; i <= msgID; i++ {
-			missed := true
-			for _, msg := range msgs {
-				if msg.ID == i {
-					missed = false
-					break
-				}
-			}
-			if missed {
-				missedIDs = append(missedIDs, i)
+		for i, msg := range msgs {
+			if msg == nil {
+				missedIDs = append(missedIDs, uint64(i)+pushedMsgID+1)
 			}
 		}
 
@@ -98,15 +90,14 @@ func (p *PushState) FetchMsgs(msgID uint64) []*pubtypes.ChatMessage {
 			ChatType: p.chatType,
 			MsgIDs:   missedIDs,
 		}
-		if err := xchatLogic.Call(types.RPCXChatFetchChatMessagesByIDs, args, &msgs); err != nil {
+		if err := xchatLogic.Call(types.RPCXChatFetchChatMessagesByIDs, args, &missedMsgs); err != nil {
 			l.Warning("fetch chat[%d] messages by ids error: %+v, %s", p.chatID, args, err.Error())
 		}
 		for _, msg := range missedMsgs {
-			msgs = append(msgs, &msg)
+			msgs[msg.ID-pushedMsgID-1] = &msg
 		}
 	}
 
-	sort.Sort(ByMsgID(msgs))
 	return msgs
 }
 
