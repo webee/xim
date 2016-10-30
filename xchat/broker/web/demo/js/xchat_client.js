@@ -161,7 +161,7 @@ export class XChatClient {
 				this._change_status(XIM_STATUS.CLOSED);
 				break;
 			case wamp.STATUS.DISCONNECTED:
-				this.debug_log("wamp disconnected:", details.close_reason);
+				this.debug_log("wamp disconnected:", details);
 				this._change_status(XIM_STATUS.DISCONNECTED);
 				break;
 			case wamp.STATUS.CONNECTING:
@@ -182,7 +182,7 @@ export class XChatClient {
 	}
 
 	_on_close(reason, details) {
-		this.debug_log("wamp close:", reason);
+		this.debug_log("wamp close:", reason, details);
 		this.session = null;
 	}
 
