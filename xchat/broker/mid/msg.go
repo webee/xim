@@ -60,6 +60,10 @@ func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []
 
 func pushUserNotify(src *pubtypes.MsgSource, msg *pubtypes.UserNotifyMessage) {
 	sesses := GetUserSessions(msg.ToUser)
+	if len(sessions) == 0 {
+		return
+	}
+
 	toPushMsgs := []StatelessMsg{NewUserNotifyMessageFromPubMsg(msg)}
 
 	for _, s := range sesses {
@@ -74,6 +78,10 @@ func pushUserNotify(src *pubtypes.MsgSource, msg *pubtypes.UserNotifyMessage) {
 
 func pushNotify(src *pubtypes.MsgSource, msg *pubtypes.ChatNotifyMessage) {
 	sesses := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
+	if len(sessions) == 0 {
+		return
+	}
+
 	toPushMsgs := []StatelessMsg{NewNotifyMessageFromPubMsg(msg)}
 
 	for _, s := range sesses {
@@ -87,16 +95,16 @@ func pushNotify(src *pubtypes.MsgSource, msg *pubtypes.ChatNotifyMessage) {
 }
 
 func push(src *pubtypes.MsgSource, msg *pubtypes.ChatMessage) {
-	sessions := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
-	if len(sessions) == 0 {
-		return
-	}
-
 	pushState := GetChatPushState(msg.ChatID, msg.ChatType)
 	if !pushState.Pending(msg) {
 		return
 	}
 	defer pushState.Done(msg.ID)
+
+	sessions := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
+	if len(sessions) == 0 {
+		return
+	}
 
 	msgs := pushState.FetchMsgs(msg.ID)
 	toPushMsgs := []*Message{}

@@ -567,8 +567,8 @@ func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}
 	}
 
 	toPushMsgs := []*Message{}
-	for _, msg := range msgs {
-		toPushMsgs = append(toPushMsgs, NewMessageFromPubMsg(&msg))
+	for i := range msgs {
+		toPushMsgs = append(toPushMsgs, NewMessageFromPubMsg(&msgs[i]))
 	}
 	return []interface{}{true, toPushMsgs}, nil, nil
 }

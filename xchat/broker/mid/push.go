@@ -40,11 +40,6 @@ func (p *PushState) Pending(msg *pubtypes.ChatMessage) bool {
 	}
 	p.msgs = append(p.msgs, msg)
 
-	if p.pushedMsgID == 0 {
-		// 初始状态
-		p.pushedMsgID = msg.ID - 1
-	}
-
 	p.pendingMsgID = msg.ID
 	close(p.replace)
 	p.replace = make(chan struct{})
@@ -60,8 +55,23 @@ func (p *PushState) Pending(msg *pubtypes.ChatMessage) bool {
 
 // FetchMsgs fetch to push messages.
 func (p *PushState) FetchMsgs(msgID uint64) []*pubtypes.ChatMessage {
-	p.RLock()
 	pushedMsgID := p.pushedMsgID
+
+	if pushedMsgID == 0 {
+		// 初始状态, 等待一会儿，防止#n+m比#n先到的情况, 会错过m条消息
+		time.Sleep(10 * time.Millisecond)
+		// 选择所有缓存消息中最小id的确定pushedMsgID
+		pushedMsgID = msgID - 1
+		if len(p.msgs) > 1 {
+			for _, msg := range p.msgs {
+				if msg.ID <= pushedMsgID {
+					pushedMsgID = msg.ID - 1
+				}
+			}
+		}
+	}
+
+	p.RLock()
 	count := 0
 	msgCount := int(msgID - pushedMsgID)
 	msgs := make([]*pubtypes.ChatMessage, msgCount)
@@ -84,7 +94,7 @@ func (p *PushState) FetchMsgs(msgID uint64) []*pubtypes.ChatMessage {
 			}
 		}
 
-		var missedMsgs []pubtypes.ChatMessage
+		missedMsgs := []pubtypes.ChatMessage{}
 		args := &types.FetchChatMessagesByIDsArgs{
 			ChatID:   p.chatID,
 			ChatType: p.chatType,
@@ -93,8 +103,9 @@ func (p *PushState) FetchMsgs(msgID uint64) []*pubtypes.ChatMessage {
 		if err := xchatLogic.Call(types.RPCXChatFetchChatMessagesByIDs, args, &missedMsgs); err != nil {
 			l.Warning("fetch chat[%d] messages by ids error: %+v, %s", p.chatID, args, err.Error())
 		}
-		for _, msg := range missedMsgs {
-			msgs[msg.ID-pushedMsgID-1] = &msg
+		for i := range missedMsgs {
+			msg := &missedMsgs[i]
+			msgs[msg.ID-pushedMsgID-1] = msg
 		}
 	}
 
