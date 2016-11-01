@@ -1,3 +1,7 @@
 [submodule "submods/xim-configs"]
 	path = submods/xim-configs
 	url = git@gitlab.ddcard.com.cn:im/xim-configs.git
+[submodule "xchat/broker/web"]
+	path = xchat/broker/web
+	url = git@gitlab.ddcard.com.cn:web/XChatDemo.git
+	branch = master
