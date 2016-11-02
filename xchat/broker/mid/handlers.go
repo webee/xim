@@ -525,6 +525,7 @@ func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}
 	chatType := chatIdentity.Type
 
 	var lid, rid uint64
+	var originLimit int
 	var limit int
 	var desc bool
 	if kwargs["lid"] != nil {
@@ -537,8 +538,8 @@ func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}
 		rid = uint64(kwargs["rid"].(float64))
 	}
 
-	if lid > 0 && lid+1 >= rid {
-		return []interface{}{true, []interface{}{}}, nil, nil
+	if lid > 0 && rid > 0 && lid+1 >= rid {
+		return []interface{}{true, []interface{}{}, false}, nil, nil
 	}
 
 	if kwargs["desc"] != nil {
@@ -548,6 +549,11 @@ func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}
 	if kwargs["limit"] != nil {
 		limit = int(kwargs["limit"].(float64))
 	}
+	originLimit = limit
+	if lid > 0 && rid > 0 {
+		originLimit = int(rid - lid - 1)
+	}
+
 	if limit <= 0 {
 		limit = 150
 	} else if limit > 1000 {
@@ -574,7 +580,12 @@ func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}
 	for i := range msgs {
 		toPushMsgs = append(toPushMsgs, NewMessageFromPubMsg(&msgs[i]))
 	}
-	return []interface{}{true, toPushMsgs}, nil, nil
+	// 判断是否还有更多数据
+	hasMore := false
+	if originLimit <= 0 || originLimit > 1000 {
+		hasMore = len(toPushMsgs) >= limit
+	}
+	return []interface{}{true, toPushMsgs, hasMore}, nil, nil
 }
 
 // helplers
