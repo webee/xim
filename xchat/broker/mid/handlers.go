@@ -541,6 +541,10 @@ func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}
 		return []interface{}{true, []interface{}{}}, nil, nil
 	}
 
+	if kwargs["desc"] != nil {
+		desc = kwargs["desc"].(bool)
+	}
+
 	if kwargs["limit"] != nil {
 		limit = int(kwargs["limit"].(float64))
 	}
