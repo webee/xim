@@ -251,10 +251,10 @@ func NewMsg(chatID uint64, chatType, domain string, user string, msg string) (me
 			Msg:      msg,
 		}
 
-		if err = tx.Get(message, `UPDATE xchat_chat SET msg_id=msg_id+1 where id=$1 and type=$2 RETURNING msg_id as id`, chatID, chatType); err != nil {
+		if err = tx.Get(message, `UPDATE xchat_chat SET msg_id=msg_id+1, last_msg_ts=now() where id=$1 and type=$2 RETURNING msg_id as id, last_msg_ts as ts`, chatID, chatType); err != nil {
 			return err
 		}
-		if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, chat_type, id, uid, ts, msg, domain) values($1, $2, $3, $4, now(), $5, $6) RETURNING ts`, chatID, chatType, message.ID, user, msg, domain); err != nil {
+		if err = tx.Get(message, `INSERT INTO xchat_message(chat_id, chat_type, id, uid, ts, msg, domain) values($1, $2, $3, $4, $5, $6, $7) RETURNING ts`, chatID, chatType, message.ID, user, message.Ts, msg, domain); err != nil {
 			return err
 		}
 		return nil
