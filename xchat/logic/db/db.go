@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	// use pg driver
@@ -174,11 +175,19 @@ func GetUserChatWithType(user string, chatID uint64, chatType string) (userChat 
 }
 
 // GetUserChatList returns user's chat list.
-func GetUserChatList(user string, onlyUnsync bool) (userChats []UserChat, err error) {
-	if onlyUnsync {
-		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
+func GetUserChatList(user string, onlyUnsync bool, lastMsgTs int64) (userChats []UserChat, err error) {
+	if lastMsgTs <= 0 {
+		if onlyUnsync {
+			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
+		} else {
+			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
+		}
 	} else {
-		err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
+		if onlyUnsync {
+			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id and c.last_msg_ts >= $2`, user, time.Unix(lastMsgTs+1, 0))
+		} else {
+			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.last_msg_ts >= $2`, user, time.Unix(lastMsgTs+1, 0))
+		}
 	}
 	return
 }

@@ -72,6 +72,7 @@ type FetchUserChatArgs struct {
 type FetchUserChatListArgs struct {
 	User       string
 	OnlyUnsync bool
+	LastMsgTs  int64
 }
 
 // SetUserChatArgs is the arguments of SetUserChat.

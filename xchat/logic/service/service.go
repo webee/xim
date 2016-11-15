@@ -51,8 +51,8 @@ func FetchUserChat(user string, chatID uint64) (*db.UserChat, error) {
 }
 
 // FetchUserChatList fetch user's chat list.
-func FetchUserChatList(user string, onlyUnsync bool) ([]db.UserChat, error) {
-	return db.GetUserChatList(user, onlyUnsync)
+func FetchUserChatList(user string, onlyUnsync bool, lastMsgTs int64) ([]db.UserChat, error) {
+	return db.GetUserChatList(user, onlyUnsync, lastMsgTs)
 }
 
 // SetUserChat set user's chat attribute.

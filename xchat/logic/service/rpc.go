@@ -57,7 +57,7 @@ func (r *RPCXChat) FetchUserChat(args *types.FetchUserChatArgs, reply *db.UserCh
 
 // FetchUserChatList fetch user's chat list.
 func (r *RPCXChat) FetchUserChatList(args *types.FetchUserChatListArgs, reply *[]db.UserChat) (err error) {
-	userChats, err := FetchUserChatList(args.User, args.OnlyUnsync)
+	userChats, err := FetchUserChatList(args.User, args.OnlyUnsync, args.LastMsgTs)
 	if err != nil {
 		return err
 	}
