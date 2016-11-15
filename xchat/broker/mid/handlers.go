@@ -418,9 +418,15 @@ func fetchChatMembers(s *Session, args []interface{}, kwargs map[string]interfac
 // 获取会话列表
 func fetchChatList(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	// params
-	var onlyUnsync bool
+	var (
+		onlyUnsync bool
+		lastMsgTs  int64
+	)
 	if x, ok := kwargs["only_unsync"]; ok {
 		onlyUnsync = x.(bool)
+	}
+	if x, ok := kwargs["last_msg_ts"]; ok {
+		lastMsgTs = int64(x.(float64))
 	}
 
 	// fetch chat.
@@ -428,6 +434,7 @@ func fetchChatList(s *Session, args []interface{}, kwargs map[string]interface{}
 	if err := xchatLogic.Call(types.RPCXChatFetchUserChatList, &types.FetchUserChatListArgs{
 		User:       s.User,
 		OnlyUnsync: onlyUnsync,
+		LastMsgTs:  lastMsgTs,
 	}, &userChats); err != nil {
 		rerr = newDefaultAPIError(err.Error())
 		return
@@ -473,7 +480,12 @@ func setChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 			}
 		case "cur_id":
 			if val, ok := x.(float64); ok {
-				if err := doSetUserChat(s.User, chatID, key, uint64(val)); err != nil {
+				// sync chat recv.
+				if err := xchatLogic.Call(types.RPCXChatSyncUserChatRecv, &types.SyncUserChatRecvArgs{
+					User:   s.User,
+					ChatID: chatID,
+					MsgID:  uint64(val),
+				}, nil); err != nil {
 					rerr = newDefaultAPIError(err.Error())
 					return
 				}
