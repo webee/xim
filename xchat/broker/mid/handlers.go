@@ -567,9 +567,9 @@ func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}
 	}
 
 	if limit <= 0 {
-		limit = 150
-	} else if limit > 1000 {
-		limit = 1000
+		limit = 256
+	} else if limit > 3000 {
+		limit = 3000
 	}
 
 	var msgs []pubtypes.ChatMessage
@@ -594,7 +594,7 @@ func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}
 	}
 	// 判断是否还有更多数据
 	hasMore := false
-	if originLimit <= 0 || originLimit > 1000 {
+	if originLimit <= 0 || originLimit > 3000 {
 		hasMore = len(toPushMsgs) >= limit
 	}
 	return []interface{}{true, toPushMsgs, hasMore}, nil, nil
