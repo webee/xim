@@ -46,7 +46,7 @@ type UserChat struct {
 	User      string    `json:"user"`
 	CurID     uint64    `db:"cur_id" json:"cur_id"`
 	Joined    time.Time `json:"joined"`
-	ExiTMsgID uint64    `db:"exit_msg_id" json:"exit_msg_id"`
+	ExitMsgID uint64    `db:"exit_msg_id" json:"exit_msg_id"`
 	IsExited  bool      `db:"is_exited" json:"is_exited"`
 	Dnd       bool      `json:"dnd"`
 }
