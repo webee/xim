@@ -616,12 +616,26 @@ func chatToUserChat(user string, chat *db.Chat) *db.UserChat {
 	}
 }
 
+func parseRoomID(i interface{}) (uint64, error) {
+	switch x := i.(type) {
+	case string:
+		roomID, err := strconv.ParseUint(x, 10, 64)
+		if err != nil {
+			return 0, InvalidArgumentError
+		}
+		return roomID, nil
+	case float64:
+		return uint64(x), nil
+	}
+	return 0, InvalidArgumentError
+}
+
 // 房间
 // 进入房间
 func enterRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	roomID, err := strconv.ParseUint(args[0].(string), 10, 64)
+	roomID, err := parseRoomID(args[0])
 	if err != nil {
-		rerr = InvalidArgumentError
+		rerr = newDefaultAPIError(err.Error())
 		return
 	}
 
@@ -644,9 +658,9 @@ func enterRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (r
 
 // 离开房间
 func exitRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	roomID, err := strconv.ParseUint(args[0].(string), 10, 64)
+	roomID, err := parseRoomID(args[0])
 	if err != nil {
-		rerr = InvalidArgumentError
+		rerr = newDefaultAPIError(err.Error())
 		return
 	}
 
