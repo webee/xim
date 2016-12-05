@@ -327,6 +327,8 @@ func JoinChat(chatID uint64, chatType string, user string, users []string) error
 		if len(users) == 0 {
 			return nil
 		}
+		// 限制users会话成员99人
+		limit = 99 - len(users)
 	default:
 		return ErrNoPermission
 	}
