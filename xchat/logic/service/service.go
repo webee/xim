@@ -339,6 +339,11 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) error
 	ns, _ := nsutils.DecodeNSUser(user)
 	// 退出规则
 	// 只有cs和users会话可以退出
+	// 必须是会话成员
+	if _, err := db.GetUserChatWithType(user, chatID, chatType); err != nil {
+		return ErrNoPermission
+	}
+
 	switch chatType {
 	case types.ChatTypeCS:
 		if ns != NSCs {
@@ -346,10 +351,6 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) error
 		}
 		users = []string{user}
 	case types.ChatTypeUsers:
-		// 必须是会话成员
-		if _, err := db.GetUserChatWithType(user, chatID, chatType); err != nil {
-			return ErrNoPermission
-		}
 		// 当有users的时候则是请出成员, 否则为自己离开
 		if len(users) == 0 {
 			users = []string{user}
