@@ -179,14 +179,14 @@ func (r *RPCXChat) SendUserNotify(args *types.SendUserMsgArgs, reply *int64) err
 	return nil
 }
 
-// FetchNewRoomChatIDs fetch room's new chat ids.
-func (r *RPCXChat) FetchNewRoomChatIDs(args *types.FetchNewRoomChatIDs, reply *[]uint64) error {
-	ids, err := FetchNewRoomChatIDs(args.RoomID, args.ChatIDs)
+// FetchNewRoomChats fetch room's new chats.
+func (r *RPCXChat) FetchNewRoomChats(args *types.FetchNewRoomChatsArgs, reply *[]db.RoomChat) error {
+	roomChats, err := FetchNewRoomChats(args.RoomID, args.ChatIDs)
 	if err != nil {
 		return err
 	}
 
-	*reply = ids
+	*reply = roomChats
 	return nil
 }
 

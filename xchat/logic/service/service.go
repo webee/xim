@@ -295,9 +295,9 @@ func PubUserInfo(instanceID, sessionID uint64, user string, status string, info 
 	return nil
 }
 
-// FetchNewRoomChatIDs fetch room chats' ids.
-func FetchNewRoomChatIDs(roomID uint64, chatIDs []uint64) ([]uint64, error) {
-	return db.GetOrCreateNewRoomChatIDs(roomID, chatIDs)
+// FetchNewRoomChats fetch room chats' ids.
+func FetchNewRoomChats(roomID uint64, chatIDs []uint64) ([]db.RoomChat, error) {
+	return db.GetOrCreateNewRoomChats(roomID, chatIDs)
 }
 
 // JoinChat add user to chat.

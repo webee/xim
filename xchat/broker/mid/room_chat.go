@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"xim/xchat/logic/db"
 	"xim/xchat/logic/service/types"
 )
 
@@ -11,6 +12,7 @@ import (
 
 // Chat is a chat.
 type Chat struct {
+	area    uint32
 	chatID  uint64
 	members map[SessionID]struct{}
 }
@@ -60,7 +62,7 @@ func NewRoomChats(roomID uint64) *RoomChats {
 }
 
 // Add add session to room chat.
-func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
+func (rc *RoomChats) Add(id SessionID) (area uint32, chatID uint64, err error) {
 	rc.Lock()
 	defer rc.Unlock()
 
@@ -74,12 +76,12 @@ func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
 	for _, chat := range chats {
 		if _, ok := chat.members[id]; ok {
 			// 已经加入
-			return chat.chatID, nil
+			return chat.area, chat.chatID, nil
 		}
 
 		if len(chat.members) < areaLimit {
 			chat.members[id] = struct{}{}
-			return chat.chatID, nil
+			return chat.area, chat.chatID, nil
 		}
 	}
 	// 都满了, 从服务器获取所有会话
@@ -88,23 +90,24 @@ func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
 		ids = append(ids, chat.chatID)
 	}
 
-	chatIDs := []uint64{}
-	if err := xchatLogic.Call(types.RPCXChatFetchNewRoomChatIDs, &types.FetchNewRoomChatIDs{
+	roomChats := []db.RoomChat{}
+	if err := xchatLogic.Call(types.RPCXChatFetchNewRoomChats, &types.FetchNewRoomChatsArgs{
 		RoomID:  rc.roomID,
 		ChatIDs: ids,
-	}, &chatIDs); err != nil {
-		return 0, err
+	}, &roomChats); err != nil {
+		return 0, 0, err
 	}
 
 	var newChat *Chat
-	for _, chatID := range chatIDs {
-		_, ok := rc.chats[chatID]
+	for _, roomChat := range roomChats {
+		_, ok := rc.chats[roomChat.ChatID]
 		if !ok {
 			chat := &Chat{
-				chatID:  chatID,
+				area:    roomChat.Area,
+				chatID:  roomChat.ChatID,
 				members: make(map[SessionID]struct{}, 32),
 			}
-			rc.chats[chatID] = chat
+			rc.chats[roomChat.ChatID] = chat
 			if newChat == nil {
 				newChat = chat
 			}
@@ -113,10 +116,10 @@ func (rc *RoomChats) Add(id SessionID) (chatID uint64, err error) {
 
 	if newChat != nil {
 		newChat.members[id] = struct{}{}
-		return newChat.chatID, nil
+		return newChat.area, newChat.chatID, nil
 	}
 
-	return 0, fmt.Errorf("add to room failed")
+	return 0, 0, fmt.Errorf("add to room failed")
 }
 
 // Remove remove session from room chat.
@@ -166,7 +169,7 @@ func (rm *Rooms) SetAreaLimit(limit uint32) {
 }
 
 // Enter adds session to room's chat members.
-func (rm *Rooms) Enter(roomID uint64, id SessionID) (chatID uint64, err error) {
+func (rm *Rooms) Enter(roomID uint64, id SessionID) (area uint32, chatID uint64, err error) {
 	rm.Lock()
 	defer rm.Unlock()
 

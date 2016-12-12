@@ -192,35 +192,35 @@ func GetUserChatList(user string, onlyUnsync bool, lastMsgTs int64) (userChats [
 	return
 }
 
-// GetOrCreateNewRoomChatIDs gets room or craete new chats.
-func GetOrCreateNewRoomChatIDs(roomID uint64, chatIDs []uint64) (ids []uint64, err error) {
+// GetOrCreateNewRoomChats gets room or craete new chats.
+func GetOrCreateNewRoomChats(roomID uint64, chatIDs []uint64) (roomChats []RoomChat, err error) {
 	if len(chatIDs) == 0 {
 		chatIDs = append(chatIDs, 0)
 	}
 
-	query, args, err := sqlx.In("SELECT rc.chat_id FROM xchat_roomchat rc left join xchat_chat c on rc.chat_id=c.id WHERE rc.room_id=? and c.is_deleted=false and rc.chat_id NOT IN (?) ORDER BY rc.chat_id", roomID, chatIDs)
+	query, args, err := sqlx.In("SELECT rc.area, rc.chat_id FROM xchat_roomchat rc left join xchat_chat c on rc.chat_id=c.id WHERE rc.room_id=? and c.is_deleted=false and rc.chat_id NOT IN (?) ORDER BY rc.chat_id", roomID, chatIDs)
 	if err != nil {
 		return nil, err
 	}
 
 	query = db.Rebind(query)
 
-	err = db.Select(&ids, query, args...)
+	err = db.Select(&roomChats, query, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(ids) > 0 {
+	if len(roomChats) > 0 {
 		return
 	}
 
 	// new chat.
 	var chatID uint64
+	var area uint32
 	err = Transaction(db, func(tx *sqlx.Tx) (err error) {
 		if err = tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, is_deleted, created, updated) VALUES('room', $1, '_room', 0, false, now(), now()) RETURNING id`, roomID); err != nil {
 			return err
 		}
-		var area uint32
 		if err = tx.Get(&area, `SELECT count(area) FROM xchat_roomchat WHERE room_id=$1`, roomID); err != nil {
 			return err
 		}
@@ -232,7 +232,7 @@ func GetOrCreateNewRoomChatIDs(roomID uint64, chatIDs []uint64) (ids []uint64, e
 	if err != nil {
 		return nil, err
 	}
-	ids = append(ids, chatID)
+	roomChats = append(roomChats, RoomChat{area, chatID})
 	return
 }
 

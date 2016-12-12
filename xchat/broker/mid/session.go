@@ -53,6 +53,12 @@ func (t *TaskChan) NewStatelessTask() (task chan []StatelessMsg) {
 	return
 }
 
+// RoomChat is a room chat.
+type RoomChat struct {
+	area   uint32
+	chatID uint64
+}
+
 // Session is a user connection.
 type Session struct {
 	sync.Mutex
@@ -64,7 +70,7 @@ type Session struct {
 	clientInfo string
 	// roomID->chatID
 	roomsLock sync.RWMutex
-	rooms     map[uint64]uint64
+	rooms     map[uint64]RoomChat
 }
 
 func (s *Session) String() string {
@@ -79,7 +85,7 @@ func newSession(id SessionID, User string) *Session {
 		taskChan:   newTaskChan(),
 		msgTopic:   fmt.Sprintf(URIXChatUserMsg, id),
 		clientInfo: InitialClientInfo,
-		rooms:      make(map[uint64]uint64),
+		rooms:      make(map[uint64]RoomChat),
 	}
 }
 
@@ -98,21 +104,21 @@ func (s *Session) GetClientInfo() string {
 }
 
 // EnterRoom enter to room.
-func (s *Session) EnterRoom(roomID uint64) (chatID uint64, err error) {
+func (s *Session) EnterRoom(roomID uint64) (area uint32, chatID uint64, err error) {
 	s.roomsLock.Lock()
 	defer s.roomsLock.Unlock()
 
-	chatID, ok := s.rooms[roomID]
+	rc, ok := s.rooms[roomID]
 	if ok {
 		// 已经加入
-		return chatID, nil
+		return rc.area, rc.chatID, nil
 	}
 
-	chatID, err = rooms.Enter(roomID, s.ID)
+	area, chatID, err = rooms.Enter(roomID, s.ID)
 	if err != nil {
 		return
 	}
-	s.rooms[roomID] = chatID
+	s.rooms[roomID] = RoomChat{area, chatID}
 	return
 }
 
@@ -121,8 +127,8 @@ func (s *Session) ExitRoom(roomID, chatID uint64) {
 	s.roomsLock.Lock()
 	defer s.roomsLock.Unlock()
 
-	cid, ok := s.rooms[roomID]
-	if ok && cid == chatID {
+	rc, ok := s.rooms[roomID]
+	if ok && rc.chatID == chatID {
 		rooms.Exit(roomID, chatID, s.ID)
 		delete(s.rooms, roomID)
 	}
@@ -134,8 +140,8 @@ func (s *Session) ExitAllRooms() {
 	s.roomsLock.Lock()
 	defer s.roomsLock.Unlock()
 
-	for roomID, chatID := range s.rooms {
-		rooms.Exit(roomID, chatID, s.ID)
+	for roomID, rc := range s.rooms {
+		rooms.Exit(roomID, rc.chatID, s.ID)
 		delete(s.rooms, roomID)
 	}
 	return

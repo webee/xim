@@ -639,7 +639,7 @@ func enterRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (r
 		return
 	}
 
-	chatID, err := s.EnterRoom(roomID)
+	area, chatID, err := s.EnterRoom(roomID)
 	if err != nil {
 		rerr = newDefaultAPIError(err.Error())
 		return
@@ -653,7 +653,7 @@ func enterRoom(s *Session, args []interface{}, kwargs map[string]interface{}) (r
 	}
 
 	userChat := chatToUserChat(s.User, &chat)
-	return []interface{}{true, userChat}, nil, nil
+	return []interface{}{true, userChat, area}, nil, nil
 }
 
 // 离开房间

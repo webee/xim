@@ -158,8 +158,8 @@ type JoinExitChatArgs struct {
 	Users    []string
 }
 
-// FetchNewRoomChatIDs is the arguments of FetchNewRoomChatIDs
-type FetchNewRoomChatIDs struct {
+// FetchNewRoomChatsArgs is the arguments of FetchNewRoomChatIDs
+type FetchNewRoomChatsArgs struct {
 	RoomID  uint64
 	ChatIDs []uint64
 }
@@ -182,7 +182,7 @@ const (
 	RPCXChatSyncUserChatRecv       = "RPCXChat.SyncUserChatRecv"
 	RPCXChatFetchChatMembers       = "RPCXChat.FetchChatMembers"
 	RPCXChatFetchUserChatMembers   = "RPCXChat.FetchUserChatMembers"
-	RPCXChatFetchNewRoomChatIDs    = "RPCXChat.FetchNewRoomChatIDs"
+	RPCXChatFetchNewRoomChats      = "RPCXChat.FetchNewRoomChats"
 	RPCXChatJoinChat               = "RPCXChat.JoinChat"
 	RPCXChatExitChat               = "RPCXChat.ExitChat"
 

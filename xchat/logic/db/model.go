@@ -33,6 +33,12 @@ func (d *Chat) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// RoomChat is a room conversation.
+type RoomChat struct {
+	Area   uint32 `db:"area" json:"area"`
+	ChatID uint64 `db:"chat_id" json:"chat_id"`
+}
+
 // UserChat is a user's conversation.
 type UserChat struct {
 	ID        uint64    `db:"id" json:"id"`
