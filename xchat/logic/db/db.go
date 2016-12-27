@@ -245,7 +245,7 @@ func SetUserChat(user string, chatID uint64, key string, value interface{}) (err
 
 // SyncUserChatRecv set user's current recv msg id.
 func SyncUserChatRecv(user string, chatID uint64, msgID uint64) (err error) {
-	_, err = db.Exec(`UPDATE xchat_member SET cur_id=$1 WHERE "user"=$2 and chat_id=$3 and cur_id<$4`, msgID, user, chatID, msgID)
+	_, err = db.Exec(`UPDATE xchat_member SET cur_id=$1 WHERE "user"=$2 and chat_id=$3 and cur_id<$4 and exists (select 1 from xchat_chat where id=$5 and msg_id >= $6)`, msgID, user, chatID, msgID, chatID, msgID)
 	return
 }
 
