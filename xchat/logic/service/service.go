@@ -35,6 +35,11 @@ func Ping(sleep int64, payload string) string {
 	return "RPC:" + payload
 }
 
+// RoomExists judges whether room exists.
+func RoomExists(roomID uint64) (bool, error) {
+	return db.RoomExists(roomID)
+}
+
 // FetchChatMembers fetch chat's members.
 func FetchChatMembers(chatID uint64) ([]db.Member, error) {
 	return db.GetChatMembers(chatID)

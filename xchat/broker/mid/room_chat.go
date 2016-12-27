@@ -1,6 +1,7 @@
 package mid
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -175,6 +176,15 @@ func (rm *Rooms) Enter(roomID uint64, id SessionID) (area uint32, chatID uint64,
 
 	room, ok := rm.rooms[roomID]
 	if !ok {
+		var t bool
+		if err = xchatLogic.Call(types.RPCXChatRoomExists, roomID, &t); err != nil {
+			return
+		}
+		if !t {
+			err = errors.New("room not exists")
+			return
+		}
+
 		room = NewRoomChats(roomID)
 		rm.rooms[roomID] = room
 	}

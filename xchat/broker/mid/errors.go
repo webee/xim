@@ -30,6 +30,7 @@ func newDefaultAPIError(msg string) *defaultAPIError {
 
 // errors.
 var (
+	// return errors.
 	InvalidArgumentError    = &defaultAPIError{1, "invalid argument"}
 	SessionExceptionError   = &defaultAPIError{2, "session exception"}
 	MsgSizeExceedLimitError = &defaultAPIError{3, "msg size exceed limit"}

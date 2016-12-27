@@ -86,6 +86,11 @@ func IsRoomChat(roomID, chatID uint64) (t bool, err error) {
 	return t, db.Get(&t, `SELECT EXISTS(SELECT 1 FROM xchat_chat where room_id=$1 and id=$2)`, roomID, chatID)
 }
 
+// RoomExists judges whether the room exists.
+func RoomExists(roomID uint64) (t bool, err error) {
+	return t, db.Get(&t, `SELECT EXISTS(SELECT 1 FROM xchat_room where id=$1)`, roomID)
+}
+
 // IsHaveUserChat check if user1 and user2 have user chat.
 func IsHaveUserChat(user1, user2 string) (t bool, err error) {
 	return t, db.Get(&t, `SELECT EXISTS(select 1 from xchat_chat c where c.type='user' and exists (select 1 from xchat_member m where m.chat_id=c.id and m."user"=$1) and exists (select 1 from xchat_member m where m.chat_id=c.id and m."user"=$2))`, user1, user2)
@@ -218,7 +223,15 @@ func GetOrCreateNewRoomChats(roomID uint64, chatIDs []uint64) (roomChats []RoomC
 	var chatID uint64
 	var area uint32
 	err = Transaction(db, func(tx *sqlx.Tx) (err error) {
-		if err = tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, is_deleted, created, updated) VALUES('room', $1, '_room', 0, false, now(), now()) RETURNING id`, roomID); err != nil {
+		var t bool
+		if err = db.Get(&t, `SELECT EXISTS(SELECT 1 FROM xchat_room where id=$1)`, roomID); err != nil {
+			return err
+		}
+		if !t {
+			return errors.New("room not exists")
+		}
+
+		if err = tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, last_msg_ts, ext, is_deleted, created, updated) VALUES('room', '$1', '_room', 0, '1970-01-01'::date, '', false, now(), now()) RETURNING id`, roomID); err != nil {
 			return err
 		}
 		if err = tx.Get(&area, `SELECT count(area) FROM xchat_roomchat WHERE room_id=$1`, roomID); err != nil {

@@ -175,6 +175,7 @@ const (
 	RPCXChatFetchChatMessages      = "RPCXChat.FetchChatMessages"
 	RPCXChatFetchChatMessagesByIDs = "RPCXChat.FetchChatMessagesByIDs"
 	RPCXChatFetchUserChatMessages  = "RPCXChat.FetchUserChatMessages"
+	RPCXChatRoomExists             = "RPCXChat.RoomExists"
 	RPCXChatFetchChat              = "RPCXChat.FetchChat"
 	RPCXChatFetchUserChat          = "RPCXChat.FetchUserChat"
 	RPCXChatFetchUserChatList      = "RPCXChat.FetchUserChatList"

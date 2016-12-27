@@ -35,6 +35,15 @@ func (r *RPCXChat) SyncOnlineUsers(args *types.SyncOnlineUsersArgs, reply *types
 	return nil
 }
 
+// RoomExists judges whether room exists.
+func (r *RPCXChat) RoomExists(roomID uint64, t *bool) (err error) {
+	*t, err = RoomExists(roomID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // FetchChat fetch chat.
 func (r *RPCXChat) FetchChat(chatID uint64, reply *db.Chat) (err error) {
 	chat, err := FetchChat(chatID)
