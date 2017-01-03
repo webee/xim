@@ -49,7 +49,7 @@ func (a ByCountDesc) Less(i, j int) bool {
 
 var (
 	rooms = &Rooms{
-		areaLimit: 1000,
+		areaLimit: 3000,
 		rooms:     make(map[uint64]*RoomChats, 4),
 	}
 )
