@@ -9,6 +9,8 @@ type MessageType int
 
 func (mt MessageType) New() Message {
 	switch mt {
+	case PING_PONG:
+		return new(PingPong)
 	case HELLO:
 		return new(Hello)
 	case WELCOME:
@@ -71,6 +73,8 @@ func (mt MessageType) New() Message {
 
 func (mt MessageType) String() string {
 	switch mt {
+	case PING_PONG:
+		return "PING_PONG"
 	case HELLO:
 		return "HELLO"
 	case WELCOME:
@@ -132,6 +136,7 @@ func (mt MessageType) String() string {
 }
 
 const (
+	PING_PONG    MessageType = 0
 	HELLO        MessageType = 1
 	WELCOME      MessageType = 2
 	ABORT        MessageType = 3
@@ -170,6 +175,14 @@ type URI string
 
 // An ID is a unique, non-negative number. Different uses may have additional restrictions.
 type ID uint64
+
+// PING_PONG
+type PingPong struct {
+}
+
+func (msg *PingPong) MessageType() MessageType {
+	return PING_PONG
+}
 
 // [HELLO, Realm|uri, Details|dict]
 type Hello struct {

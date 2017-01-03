@@ -17,6 +17,11 @@ var (
 	ErrWSIsClosed    = errors.New("ws peer is closed")
 )
 
+// const msgs
+var (
+	MsgPingPong = PING_PONG.New()
+)
+
 type websocketPeer struct {
 	sync.Mutex
 	conn        *websocket.Conn
@@ -173,12 +178,17 @@ func (ep *websocketPeer) run() {
 			close(ep.messages)
 			break
 		} else {
-			msg, err := ep.serializer.Deserialize(b)
-			if err != nil {
-				tlog.Println("error deserializing peer message:", err)
-				// TODO: handle error
+			if len(b) == 0 {
+				// zero length msg as ping/pong
+				ep.Send(MsgPingPong)
 			} else {
-				ep.messages <- msg
+				msg, err := ep.serializer.Deserialize(b)
+				if err != nil {
+					tlog.Println("error deserializing peer message:", err)
+					// TODO: handle error
+				} else {
+					ep.messages <- msg
+				}
 			}
 		}
 	}
@@ -202,7 +212,13 @@ func (ep *websocketPeer) sending() {
 	for {
 		select {
 		case msg := <-ep.sendMsgs:
-			if closed, _ := ep.doSend(msg); closed {
+			var closed bool
+			if msg.MessageType() == PING_PONG {
+				closed, _ = ep.doSendBytes([]byte{})
+			} else {
+				closed, _ = ep.doSend(msg)
+			}
+			if closed {
 				return
 			}
 		case <-ticker.C:
@@ -233,6 +249,10 @@ func (ep *websocketPeer) doSend(msg Message) (closed bool, err error) {
 		log.Printf("error serializing peer message: %s, %+v", err, msg)
 		return true, err
 	}
+	return ep.doSendBytes(b)
+}
+
+func (ep *websocketPeer) doSendBytes(b []byte) (closed bool, err error) {
 	if ep.WriteTimeout > 0 {
 		ep.conn.SetWriteDeadline(time.Now().Add(ep.WriteTimeout))
 	}
