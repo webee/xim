@@ -22,3 +22,4 @@ ALTER TABLE xchat_message
 
 CREATE INDEX xchat_message_chat_id ON xchat_message USING btree(chat_id, chat_type);
 CREATE INDEX xchat_message_ts ON xchat_message USING btree(ts);
+CREATE INDEX xchat_message_id ON xchat_message USING btree(id);
