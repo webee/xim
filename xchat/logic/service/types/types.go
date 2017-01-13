@@ -38,7 +38,8 @@ type PingArgs struct {
 
 // SendMsgOptions is options for send msgs.
 type SendMsgOptions struct {
-	IgnorePermCheck bool
+	IgnorePermCheck     bool
+	IgnoreNotifyOffline bool
 }
 
 // SendMsgArgs is the arguments of SendMsg.
@@ -81,6 +82,14 @@ type SetUserChatArgs struct {
 	ChatID uint64
 	Key    string
 	Value  interface{}
+}
+
+// SetChatTitleArgs is the arguments of SetChatTitle.
+type SetChatTitleArgs struct {
+	User     string
+	ChatID   uint64
+	ChatType string
+	Title    string
 }
 
 // SyncUserChatRecvArgs is the arguments of SyncUserChatRecv.
@@ -186,6 +195,9 @@ const (
 	RPCXChatFetchNewRoomChats      = "RPCXChat.FetchNewRoomChats"
 	RPCXChatJoinChat               = "RPCXChat.JoinChat"
 	RPCXChatExitChat               = "RPCXChat.ExitChat"
+
+	// set chat
+	RPCXChatSetChatTitle = "RPCXChat.SetChatTitle"
 
 	// notify
 	RPCXChatSendUserNotify = "RPCXChat.SendUserNotify"

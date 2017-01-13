@@ -358,6 +358,31 @@ func newChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 	return []interface{}{true, &userChat}, nil, nil
 }
 
+// 设置会话标题
+func setChatTitle(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
+	if err != nil {
+		rerr = InvalidArgumentError
+		return
+	}
+
+	chatID := chatIdentity.ID
+	chatType := chatIdentity.Type
+	title := args[1].(string)
+
+	// sync chat recv.
+	if err := xchatLogic.Call(types.RPCXChatSetChatTitle, &types.SetChatTitleArgs{
+		User:     s.User,
+		ChatID:   chatID,
+		ChatType: chatType,
+		Title:    title,
+	}, nil); err != nil {
+		rerr = newDefaultAPIError(err.Error())
+		return
+	}
+	return []interface{}{true}, nil, nil
+}
+
 // 获取会话信息
 func fetchChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
 	chatIdentity, err := db.ParseChatIdentity(args[0].(string))

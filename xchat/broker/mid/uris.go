@@ -34,6 +34,8 @@ const (
 	URIXChatJoinChat = "xchat.user.chat.join"
 	URIXChatExitChat = "xchat.user.chat.exit"
 
+	URIXChatSetChatTitle = "xchat.user.chat.title.set"
+
 	// 用户接收消息
 	URIXChatUserMsg = "xchat.user.%d.msg"
 

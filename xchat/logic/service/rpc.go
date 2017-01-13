@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
@@ -102,7 +101,7 @@ func (r *RPCXChat) FetchUserChatMembers(args *types.FetchUserChatMembersArgs, re
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("no permission")
+		return ErrNoPermission
 	}
 
 	members, err := FetchChatMembers(args.ChatID)
@@ -126,7 +125,7 @@ func (r *RPCXChat) FetchUserChatMessages(args *types.FetchUserChatMessagesArgs, 
 		}
 
 		if !ok {
-			return fmt.Errorf("no permission")
+			return ErrNoPermission
 		}
 	}
 
@@ -207,4 +206,23 @@ func (r *RPCXChat) JoinChat(args *types.JoinExitChatArgs, reply *types.NoReply) 
 // ExitChat remove user from chat.
 func (r *RPCXChat) ExitChat(args *types.JoinExitChatArgs, reply *types.NoReply) error {
 	return ExitChat(args.ChatID, args.ChatType, args.User, args.Users)
+}
+
+// SetChatTitle set chat's title.
+func (r *RPCXChat) SetChatTitle(args *types.SetChatTitleArgs, reply *types.NoReply) error {
+	// 只有users会话可以设置标题
+	if args.ChatType != types.ChatTypeUsers {
+		return ErrNoPermission
+	}
+
+	// 只有会话成员可以设置标题
+	ok, err := IsChatMember(args.ChatID, args.User)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrNoPermission
+	}
+
+	return SetChatTitle(args.User, args.ChatID, args.ChatType, args.Title)
 }

@@ -59,7 +59,7 @@ func AddChatMembers(chatID uint64, users []string, limit int) (err error) {
 				return err
 			}
 		}
-		if _, err := tx.Exec(`UPDATE xchat_chat SET updated=now() WHERE id=$1`, chatID); err != nil {
+		if _, err := tx.Exec(`UPDATE xchat_chat SET updated=now(),members_updated=now() WHERE id=$1`, chatID); err != nil {
 			return err
 		}
 		return nil
@@ -74,7 +74,7 @@ func RemoveChatMembers(chatID uint64, users []string) (err error) {
 				return err
 			}
 		}
-		if _, err := tx.Exec(`UPDATE xchat_chat SET updated=now() WHERE id=$1`, chatID); err != nil {
+		if _, err := tx.Exec(`UPDATE xchat_chat SET updated=now(),members_updated=now() WHERE id=$1`, chatID); err != nil {
 			return err
 		}
 		return nil
@@ -156,26 +156,26 @@ func GetChatMessagesByIDs(chatID uint64, chatType string, msgIDs []uint64) (msgs
 // GetChat returns chat.
 func GetChat(chatID uint64) (chat *Chat, err error) {
 	chat = &Chat{}
-	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, ext, created, updated FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
+	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, ext, created, updated, members_updated FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
 }
 
 // GetChatWithType returns chat.
 func GetChatWithType(chatID uint64, chatType string) (chat *Chat, err error) {
 	chat = &Chat{}
-	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, ext, created, updated FROM xchat_chat where id=$1 and type=$2 and is_deleted=false`, chatID, chatType)
+	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, ext, created, updated, members_updated FROM xchat_chat where id=$1 and type=$2 and is_deleted=false`, chatID, chatType)
 }
 
 // GetUserChat returns user's chat.
 func GetUserChat(user string, chatID uint64) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
+	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
 	return
 }
 
 // GetUserChatWithType returns user's chat.
 func GetUserChatWithType(user string, chatID uint64, chatType string) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`, user, chatID, chatType)
+	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`, user, chatID, chatType)
 	return
 }
 
@@ -183,15 +183,15 @@ func GetUserChatWithType(user string, chatID uint64, chatType string) (userChat 
 func GetUserChatList(user string, onlyUnsync bool, lastMsgTs int64) (userChats []UserChat, err error) {
 	if lastMsgTs <= 0 {
 		if onlyUnsync {
-			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
+			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
 		} else {
-			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
+			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
 		}
 	} else {
 		if onlyUnsync {
-			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id and c.last_msg_ts >= $2`, user, time.Unix(lastMsgTs+1, 0))
+			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id and c.last_msg_ts >= $2`, user, time.Unix(lastMsgTs+1, 0))
 		} else {
-			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.last_msg_ts >= $2`, user, time.Unix(lastMsgTs+1, 0))
+			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.last_msg_ts >= $2`, user, time.Unix(lastMsgTs+1, 0))
 		}
 	}
 	return
@@ -231,7 +231,7 @@ func GetOrCreateNewRoomChats(roomID uint64, chatIDs []uint64) (roomChats []RoomC
 			return errors.New("room not exists")
 		}
 
-		if err = tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, last_msg_ts, ext, is_deleted, created, updated) VALUES('room', '$1', '_room', 0, '1970-01-01'::date, '', false, now(), now()) RETURNING id`, roomID); err != nil {
+		if err = tx.Get(&chatID, `INSERT INTO xchat_chat("type", title, tag, msg_id, last_msg_ts, ext, is_deleted, created, updated, members_updated) VALUES('room', '$1', '_room', 0, '1970-01-01'::date, '', false, now(), now(), now()) RETURNING id`, roomID); err != nil {
 			return err
 		}
 		if err = tx.Get(&area, `SELECT count(area) FROM xchat_roomchat WHERE room_id=$1`, roomID); err != nil {
@@ -246,6 +246,12 @@ func GetOrCreateNewRoomChats(roomID uint64, chatIDs []uint64) (roomChats []RoomC
 		return nil, err
 	}
 	roomChats = append(roomChats, RoomChat{area, chatID})
+	return
+}
+
+// SetUserChatTitle set chat's title.
+func SetUserChatTitle(user string, chatID uint64, chatType string, title string) (err error) {
+	_, err = db.Exec(`UPDATE xchat_chat SET title=$1, updated=now() WHERE id=$2 AND type=$3 AND EXISTS(SELECT 1 FROM xchat_member WHERE chat_id=$4 AND "user"=$5)`, title, chatID, chatType, chatID, user)
 	return
 }
 

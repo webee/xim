@@ -29,6 +29,22 @@ var (
 	ErrIllegalOperation = errors.New("illegal operation")
 )
 
+// msg
+const (
+	// domain
+	XChatDomain = "__xchat__"
+	// xchat msgs
+	XChatDomainChatUpdatedMsg = "$CHAT_UPDATED"
+)
+
+// options
+var (
+	XChatDomainSendMsgOptions = &types.SendMsgOptions{
+		IgnorePermCheck:     true,
+		IgnoreNotifyOffline: true,
+	}
+)
+
 // Ping is a test service.
 func Ping(sleep int64, payload string) string {
 	time.Sleep(time.Duration(sleep) * time.Millisecond)
@@ -162,13 +178,13 @@ func SendUserNotify(src *pubtypes.MsgSource, toUser, domain, user, msg string, o
 }
 
 func checkSendPermissions(chatID uint64, chatType, user string, options *types.SendMsgOptions) (int64, error) {
-	var updated int64
+	var membersUpdated int64
 	if options != nil && options.IgnorePermCheck {
 		chat, err2 := db.GetChatWithType(chatID, chatType)
 		if err2 != nil {
 			return 0, fmt.Errorf("no permission: %s", err2.Error())
 		}
-		updated = chat.Updated.Unix()
+		membersUpdated = chat.MembersUpdated.Unix()
 	} else {
 		userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 		if err != nil {
@@ -176,19 +192,19 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 			if err2 != nil {
 				return 0, fmt.Errorf("no permission: %s", err2.Error())
 			}
-			if chat.Type != "room" && user != CSUser {
+			if chat.Type != types.ChatTypeRoom && user != CSUser {
 				return 0, fmt.Errorf("no permission: %s", err.Error())
 			}
 		} else {
-			updated = userChat.Updated.Unix()
+			membersUpdated = userChat.MembersUpdated.Unix()
 		}
 	}
-	return updated, nil
+	return membersUpdated, nil
 }
 
 // SendChatMsg sends chat message.
 func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string, options *types.SendMsgOptions) (*pubtypes.ChatMessage, error) {
-	updated, err := checkSendPermissions(chatID, chatType, user, options)
+	membersUpdated, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
 		return nil, err
 	}
@@ -198,16 +214,16 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 		return nil, err
 	}
 
-	// NOTE: updated 为会话更新时间, 用来判断是否更新members缓存
+	// NOTE: members_updated 为会话更新时间, 用来判断是否更新members缓存
 	m := pubtypes.ChatMessage{
-		ChatID:   message.ChatID,
-		ChatType: message.ChatType,
-		Domain:   message.Domain,
-		ID:       message.ID,
-		User:     message.User,
-		Ts:       message.Ts.Unix(),
-		Msg:      message.Msg,
-		Updated:  updated,
+		ChatID:         message.ChatID,
+		ChatType:       message.ChatType,
+		Domain:         message.Domain,
+		ID:             message.ID,
+		User:           message.User,
+		Ts:             message.Ts.Unix(),
+		Msg:            message.Msg,
+		MembersUpdated: membersUpdated,
 	}
 	// FIXME: implement custom service.
 	if m.ChatType == "cs" {
@@ -230,27 +246,30 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 		Source: src,
 		Msg:    m,
 	})
-	go notifyOfflineUsers(message.User, chatID, types.MsgKindChat, chatType, domain, message.Msg, message.Ts)
+
+	if options != nil && !options.IgnoreNotifyOffline {
+		go notifyOfflineUsers(message.User, chatID, types.MsgKindChat, chatType, domain, message.Msg, message.Ts)
+	}
 
 	return &m, err
 }
 
 // SendChatNotifyMsg sends chat notify message.
 func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string, options *types.SendMsgOptions) (int64, error) {
-	updated, err := checkSendPermissions(chatID, chatType, user, options)
+	membersUpdated, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
 		return 0, nil
 	}
 
 	ts := time.Now()
 	m := pubtypes.ChatNotifyMessage{
-		ChatID:   chatID,
-		ChatType: chatType,
-		Domain:   domain,
-		User:     user,
-		Ts:       ts.Unix(),
-		Msg:      msg,
-		Updated:  updated,
+		ChatID:         chatID,
+		ChatType:       chatType,
+		Domain:         domain,
+		User:           user,
+		Ts:             ts.Unix(),
+		Msg:            msg,
+		MembersUpdated: membersUpdated,
 	}
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
@@ -366,4 +385,12 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) error
 		return ErrIllegalOperation
 	}
 	return db.RemoveChatMembers(chatID, users)
+}
+
+// SetChatTitle set chat's title.
+func SetChatTitle(user string, chatID uint64, chatType string, title string) (err error) {
+	if err = db.SetUserChatTitle(user, chatID, chatType, title); err == nil {
+		SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatUpdatedMsg, XChatDomainSendMsgOptions)
+	}
+	return
 }

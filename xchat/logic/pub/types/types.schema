@@ -19,7 +19,7 @@ struct ChatMessage {
 	User   string
 	Ts     int64
 	Msg    string
-	Updated int64
+	MembersUpdated int64
 }
 
 struct ChatNotifyMessage {
@@ -29,7 +29,7 @@ struct ChatNotifyMessage {
 	User   string
 	Ts     int64
 	Msg    string
-	Updated int64
+	MembersUpdated int64
 }
 
 struct SetAreaLimitCmd {

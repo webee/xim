@@ -38,7 +38,7 @@ func setAreaLimit(cmd *pubtypes.SetAreaLimitCmd) {
 	rooms.SetAreaLimit(cmd.Limit)
 }
 
-func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []*Session) {
+func getChatSessions(chatType string, chatID uint64, membersUpdated int64) (sessions []*Session) {
 	if chatType == types.ChatTypeRoom {
 		ids := rooms.ChatMembers(chatID)
 		for _, id := range ids {
@@ -48,7 +48,7 @@ func getChatSessions(chatType string, chatID uint64, updated int64) (sessions []
 			}
 		}
 	} else {
-		members := getChatMembers(chatID, updated)
+		members := getChatMembers(chatID, membersUpdated)
 
 		for _, member := range members {
 			sessions = append(sessions, GetUserSessions(member.User)...)
@@ -77,7 +77,7 @@ func pushUserNotify(src *pubtypes.MsgSource, msg *pubtypes.UserNotifyMessage) {
 }
 
 func pushNotify(src *pubtypes.MsgSource, msg *pubtypes.ChatNotifyMessage) {
-	sesses := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
+	sesses := getChatSessions(msg.ChatType, msg.ChatID, msg.MembersUpdated)
 	if len(sessions) == 0 {
 		return
 	}
@@ -101,7 +101,7 @@ func push(src *pubtypes.MsgSource, msg *pubtypes.ChatMessage) {
 	}
 	defer pushState.Done(msg.ID)
 
-	sessions := getChatSessions(msg.ChatType, msg.ChatID, msg.Updated)
+	sessions := getChatSessions(msg.ChatType, msg.ChatID, msg.MembersUpdated)
 	if len(sessions) == 0 {
 		return
 	}
