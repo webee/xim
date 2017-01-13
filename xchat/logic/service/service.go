@@ -111,6 +111,35 @@ func FetchChatMessages(chatID uint64, chatType string, lID, rID uint64, limit in
 	return ms, nil
 }
 
+// FetchUserChatMessages fetch chat's messages between lID and rID.
+func FetchUserChatMessages(user string, chatID uint64, chatType string, lID, rID uint64, limit int, desc bool) ([]pubtypes.ChatMessage, error) {
+	ns, _ := nsutils.DecodeNSUser(user)
+	// 客服可以拿任意消息
+	if ns != NSCs {
+		userChat, err := db.GetUserChatWithType(user, chatID, chatType)
+		if err != nil {
+			if chatType != types.ChatTypeRoom {
+				return nil, ErrNoPermission
+			}
+
+			// 房间会话最多拿最近100条消息
+			chat, err2 := db.GetChatWithType(chatID, chatType)
+			if err2 != nil {
+				return nil, ErrNoPermission
+			}
+
+			if chat.MsgID-100 > lID {
+				lID = chat.MsgID - 100
+			}
+		} else {
+			if userChat.JoinMsgID > lID {
+				lID = userChat.JoinMsgID
+			}
+		}
+	}
+	return FetchChatMessages(chatID, chatType, lID, rID, limit, desc)
+}
+
 // FetchChatMessagesByIDs fetch chat's messages by ids.
 func FetchChatMessagesByIDs(chatID uint64, chatType string, msgIDs []uint64) ([]pubtypes.ChatMessage, error) {
 	msgs, err := db.GetChatMessagesByIDs(chatID, chatType, msgIDs)
@@ -188,13 +217,16 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 	} else {
 		userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 		if err != nil {
+			// FIXME: 目前房间和客服可以随意发消息
+			if chatType != types.ChatTypeRoom && user != CSUser {
+				return 0, fmt.Errorf("no permission: %s", err.Error())
+			}
+
 			chat, err2 := db.GetChatWithType(chatID, chatType)
 			if err2 != nil {
 				return 0, fmt.Errorf("no permission: %s", err2.Error())
 			}
-			if chat.Type != types.ChatTypeRoom && user != CSUser {
-				return 0, fmt.Errorf("no permission: %s", err.Error())
-			}
+			membersUpdated = chat.MembersUpdated.Unix()
 		} else {
 			membersUpdated = userChat.MembersUpdated.Unix()
 		}

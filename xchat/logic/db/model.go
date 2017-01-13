@@ -15,7 +15,7 @@ type Chat struct {
 	Ext            string    `db:"ext" json:"ext"`
 	Created        time.Time `json:"created"`
 	Updated        time.Time `json:"updated"`
-	MembersUpdated time.Time `db:"members_updated" json:"members_updated"`
+	MembersUpdated time.Time `db:"members_updated" json:"-"`
 }
 
 // MarshalJSON encoding this to json.
@@ -23,16 +23,14 @@ func (d *Chat) MarshalJSON() ([]byte, error) {
 	type Alias Chat
 	return json.Marshal(&struct {
 		*Alias
-		ID             string `json:"id"`
-		Created        int64  `json:"created"`
-		Updated        int64  `json:"updated"`
-		MembersUpdated int64  `json:"members_updated"`
+		ID      string `json:"id"`
+		Created int64  `json:"created"`
+		Updated int64  `json:"updated"`
 	}{
-		Alias:          (*Alias)(d),
-		ID:             EncodeChatIdentity(d.Type, d.ID),
-		Created:        d.Created.Unix(),
-		Updated:        d.Updated.Unix(),
-		MembersUpdated: d.MembersUpdated.Unix(),
+		Alias:   (*Alias)(d),
+		ID:      EncodeChatIdentity(d.Type, d.ID),
+		Created: d.Created.Unix(),
+		Updated: d.Updated.Unix(),
 	})
 }
 
@@ -52,13 +50,14 @@ type UserChat struct {
 	Ext            string    `db:"ext" json:"ext"`
 	Created        time.Time `json:"created"`
 	Updated        time.Time `json:"updated"`
-	MembersUpdated time.Time `db:"members_updated" json:"members_updated"`
+	MembersUpdated time.Time `db:"members_updated" json:"-"`
 	User           string    `json:"user"`
 	CurID          uint64    `db:"cur_id" json:"cur_id"`
 	Joined         time.Time `json:"joined"`
 	ExitMsgID      uint64    `db:"exit_msg_id" json:"exit_msg_id"`
 	IsExited       bool      `db:"is_exited" json:"is_exited"`
 	Dnd            bool      `json:"dnd"`
+	JoinMsgID      uint64    `db:"join_msg_id" json:"join_msg_id"`
 }
 
 // MarshalJSON encoding this to json.
@@ -66,18 +65,16 @@ func (d *UserChat) MarshalJSON() ([]byte, error) {
 	type Alias UserChat
 	return json.Marshal(&struct {
 		*Alias
-		ID             string `json:"id"`
-		Created        int64  `json:"created"`
-		Updated        int64  `json:"updated"`
-		MembersUpdated int64  `json:"members_updated"`
-		Joined         int64  `json:"joined"`
+		ID      string `json:"id"`
+		Created int64  `json:"created"`
+		Updated int64  `json:"updated"`
+		Joined  int64  `json:"joined"`
 	}{
-		Alias:          (*Alias)(d),
-		ID:             EncodeChatIdentity(d.Type, d.ID),
-		Created:        d.Created.Unix(),
-		Updated:        d.Updated.Unix(),
-		MembersUpdated: d.MembersUpdated.Unix(),
-		Joined:         d.Joined.Unix(),
+		Alias:   (*Alias)(d),
+		ID:      EncodeChatIdentity(d.Type, d.ID),
+		Created: d.Created.Unix(),
+		Updated: d.Updated.Unix(),
+		Joined:  d.Joined.Unix(),
 	})
 }
 

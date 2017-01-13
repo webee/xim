@@ -55,7 +55,7 @@ func AddChatMembers(chatID uint64, users []string, limit int) (err error) {
 		}
 
 		for _, user := range users {
-			if _, err := tx.Exec(`INSERT INTO xchat_member(chat_id, "user", joined, cur_id) VALUES($1, $2, now(), $3)`, chatID, user, chat.MsgID); err != nil {
+			if _, err := tx.Exec(`INSERT INTO xchat_member(chat_id, "user", joined, cur_id, join_msg_id) VALUES($1, $2, now(), $3, $4)`, chatID, user, chat.MsgID, chat.MsgID); err != nil {
 				return err
 			}
 		}
@@ -175,7 +175,7 @@ func GetUserChat(user string, chatID uint64) (userChat *UserChat, err error) {
 // GetUserChatWithType returns user's chat.
 func GetUserChatWithType(user string, chatID uint64, chatType string) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`, user, chatID, chatType)
+	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.join_msg_id FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`, user, chatID, chatType)
 	return
 }
 

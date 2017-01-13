@@ -115,21 +115,7 @@ func (r *RPCXChat) FetchUserChatMembers(args *types.FetchUserChatMembersArgs, re
 
 // FetchUserChatMessages fetch chat's messages between sID and eID.
 func (r *RPCXChat) FetchUserChatMessages(args *types.FetchUserChatMessagesArgs, reply *[]pubtypes.ChatMessage) (err error) {
-	var ok bool
-
-	if args.ChatType != types.ChatTypeRoom {
-		// 房间会话不用检查
-		ok, err = IsChatMember(args.ChatID, args.User)
-		if err != nil {
-			return err
-		}
-
-		if !ok {
-			return ErrNoPermission
-		}
-	}
-
-	msgs, err := FetchChatMessages(args.ChatID, args.ChatType, args.LID, args.RID, args.Limit, args.Desc)
+	msgs, err := FetchUserChatMessages(args.User, args.ChatID, args.ChatType, args.LID, args.RID, args.Limit, args.Desc)
 	if err != nil {
 		return err
 	}
