@@ -32,9 +32,10 @@ var (
 // msg
 const (
 	// domain
-	XChatDomain = "__xchat__"
+	XChatDomain = "_"
 	// xchat msgs
-	XChatDomainChatUpdatedMsg = "$CHAT_UPDATED"
+	XChatDomainChatInfoUpdatedMsg    = "$CHAT_INFO_UPDATED"
+	XChatDomainChatMembersUpdatedMsg = "$CHAT_MEMBERS_UPDATED"
 )
 
 // options
@@ -357,7 +358,7 @@ func FetchNewRoomChats(roomID uint64, chatIDs []uint64) ([]db.RoomChat, error) {
 }
 
 // JoinChat add user to chat.
-func JoinChat(chatID uint64, chatType string, user string, users []string) error {
+func JoinChat(chatID uint64, chatType string, user string, users []string) (err error) {
 	var limit int
 	ns, _ := nsutils.DecodeNSUser(user)
 	// 加入规则
@@ -376,7 +377,7 @@ func JoinChat(chatID uint64, chatType string, user string, users []string) error
 			return ErrNoPermission
 		}
 		// 必须是会话成员
-		if _, err := db.GetUserChatWithType(user, chatID, chatType); err != nil {
+		if _, err = db.GetUserChatWithType(user, chatID, chatType); err != nil {
 			return ErrNoPermission
 		}
 		// 只能邀请
@@ -389,16 +390,21 @@ func JoinChat(chatID uint64, chatType string, user string, users []string) error
 		return ErrNoPermission
 	}
 
-	return db.AddChatMembers(chatID, users, limit)
+	if err = db.AddChatMembers(chatID, users, limit); err == nil {
+		if chatType == types.ChatTypeUsers {
+			SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatMembersUpdatedMsg, XChatDomainSendMsgOptions)
+		}
+	}
+	return
 }
 
 // ExitChat remove user from chat.
-func ExitChat(chatID uint64, chatType string, user string, users []string) error {
+func ExitChat(chatID uint64, chatType string, user string, users []string) (err error) {
 	ns, _ := nsutils.DecodeNSUser(user)
 	// 退出规则
 	// 只有cs和users会话可以退出
 	// 必须是会话成员
-	if _, err := db.GetUserChatWithType(user, chatID, chatType); err != nil {
+	if _, err = db.GetUserChatWithType(user, chatID, chatType); err != nil {
 		return ErrNoPermission
 	}
 
@@ -416,13 +422,18 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) error
 	default:
 		return ErrIllegalOperation
 	}
-	return db.RemoveChatMembers(chatID, users)
+	if err = db.RemoveChatMembers(chatID, users); err == nil {
+		if chatType == types.ChatTypeUsers {
+			SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatMembersUpdatedMsg, XChatDomainSendMsgOptions)
+		}
+	}
+	return
 }
 
 // SetChatTitle set chat's title.
 func SetChatTitle(user string, chatID uint64, chatType string, title string) (err error) {
 	if err = db.SetUserChatTitle(user, chatID, chatType, title); err == nil {
-		SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatUpdatedMsg, XChatDomainSendMsgOptions)
+		SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatInfoUpdatedMsg, XChatDomainSendMsgOptions)
 	}
 	return
 }
