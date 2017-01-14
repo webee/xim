@@ -92,24 +92,35 @@ func IsChatMember(chatID uint64, user string) (bool, error) {
 	return db.IsChatMember(chatID, user)
 }
 
+func msgToChatMsg(msg *db.Message, membersUpdated int64) *pubtypes.ChatMessage {
+	return &pubtypes.ChatMessage{
+		ChatID:         msg.ChatID,
+		ChatType:       msg.ChatType,
+		Domain:         msg.Domain,
+		ID:             msg.ID,
+		User:           msg.User,
+		Ts:             msg.Ts.Unix(),
+		Msg:            msg.Msg,
+		MembersUpdated: membersUpdated,
+	}
+}
+
+func msgsToChatMsgs(msgs []db.Message) []pubtypes.ChatMessage {
+	ms := []pubtypes.ChatMessage{}
+	for _, msg := range msgs {
+		ms = append(ms, *msgToChatMsg(&msg, 0))
+	}
+	return ms
+}
+
 // FetchChatMessages fetch chat's messages between lID and rID.
 func FetchChatMessages(chatID uint64, chatType string, lID, rID uint64, limit int, desc bool) ([]pubtypes.ChatMessage, error) {
 	msgs, err := db.GetChatMessages(chatID, chatType, lID, rID, limit, desc)
 	if err != nil {
 		return nil, err
 	}
-	ms := []pubtypes.ChatMessage{}
-	for _, msg := range msgs {
-		ms = append(ms, pubtypes.ChatMessage{
-			ChatID:   msg.ChatID,
-			ChatType: msg.ChatType,
-			ID:       msg.ID,
-			User:     msg.User,
-			Ts:       msg.Ts.Unix(),
-			Msg:      msg.Msg,
-		})
-	}
-	return ms, nil
+
+	return msgsToChatMsgs(msgs), nil
 }
 
 // FetchUserChatMessages fetch chat's messages between lID and rID.
@@ -147,18 +158,8 @@ func FetchChatMessagesByIDs(chatID uint64, chatType string, msgIDs []uint64) ([]
 	if err != nil {
 		return nil, err
 	}
-	ms := []pubtypes.ChatMessage{}
-	for _, msg := range msgs {
-		ms = append(ms, pubtypes.ChatMessage{
-			ChatID:   msg.ChatID,
-			ChatType: msg.ChatType,
-			ID:       msg.ID,
-			User:     msg.User,
-			Ts:       msg.Ts.Unix(),
-			Msg:      msg.Msg,
-		})
-	}
-	return ms, nil
+
+	return msgsToChatMsgs(msgs), nil
 }
 
 // default users.
@@ -248,16 +249,8 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 	}
 
 	// NOTE: members_updated 为会话更新时间, 用来判断是否更新members缓存
-	m := pubtypes.ChatMessage{
-		ChatID:         message.ChatID,
-		ChatType:       message.ChatType,
-		Domain:         message.Domain,
-		ID:             message.ID,
-		User:           message.User,
-		Ts:             message.Ts.Unix(),
-		Msg:            message.Msg,
-		MembersUpdated: membersUpdated,
-	}
+	m := *msgToChatMsg(message, membersUpdated)
+
 	// FIXME: implement custom service.
 	if m.ChatType == "cs" {
 		if !strings.HasPrefix(m.User, "cs:") {
