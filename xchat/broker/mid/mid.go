@@ -2,7 +2,6 @@ package mid
 
 import (
 	"log"
-	"math"
 	"math/rand"
 	"time"
 	"xim/utils/nanorpc"
@@ -13,6 +12,10 @@ import (
 
 	ol "github.com/go-ozzo/ozzo-log"
 	"gopkg.in/webee/turnpike.v2"
+)
+
+const (
+	maxInstanceID int64 = 1 << 53
 )
 
 var (
@@ -37,7 +40,7 @@ func init() {
 
 // Setup initialze mid.
 func Setup(config *Config, xchatRouter *router.XChatRouter) {
-	instanceID = uint64(rand.Int63n(math.MaxInt64))
+	instanceID = uint64(rand.Int63n(maxInstanceID))
 
 	xchatHTTPClient = xchathttpclient.NewXChatHTTPClient(config.Key, config.XChatHostURL)
 

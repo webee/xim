@@ -273,7 +273,7 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 		Msg:    m,
 	})
 
-	if options != nil && !options.IgnoreNotifyOffline {
+	if options == nil || !options.IgnoreNotifyOffline {
 		go notifyOfflineUsers(message.User, chatID, types.MsgKindChat, chatType, domain, message.Msg, message.Ts)
 	}
 
