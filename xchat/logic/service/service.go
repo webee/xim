@@ -140,7 +140,7 @@ func FetchUserChatMessages(user string, chatID uint64, chatType string, lID, rID
 				return nil, ErrNoPermission
 			}
 
-			if chat.MsgID-100 > lID {
+			if chat.MsgID > lID+100 {
 				lID = chat.MsgID - 100
 			}
 		} else {
