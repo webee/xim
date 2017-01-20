@@ -336,7 +336,7 @@ func newChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 	// NOTE: 利用了ns=""的情况可以添加任何ns的用户
 	xchatID, err := xchatHTTPClient.NewChat(chatType, users, title, "user", ext)
 	if err != nil {
-		rerr = newDefaultAPIError(err.Error())
+		rerr = newDefaultAPIError("create chat failed")
 		return
 	}
 
