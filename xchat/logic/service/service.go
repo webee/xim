@@ -25,8 +25,9 @@ const (
 
 // errors
 var (
-	ErrNoPermission     = errors.New("no permission")
-	ErrIllegalOperation = errors.New("illegal operation")
+	ErrNoPermission    = errors.New("no permission")
+	ErrOperationFailed = errors.New("operation failed")
+	ErrIllegalRequest  = errors.New("illegal request")
 )
 
 // msg
@@ -36,6 +37,7 @@ const (
 	// xchat msgs
 	XChatDomainChatInfoUpdatedMsg    = "$CHAT_INFO_UPDATED"
 	XChatDomainChatMembersUpdatedMsg = "$CHAT_MEMBERS_UPDATED"
+	XChatDomainBeRemovedFromChatMsg  = "$BE_REMOVED"
 )
 
 // options
@@ -173,10 +175,12 @@ func SendUserNotify(src *pubtypes.MsgSource, toUser, domain, user, msg string, o
 		if user != toUser {
 			t, err := db.IsHaveUserChat(user, toUser)
 			if err != nil {
-				return 0, err
+				//return 0, err
+				return 0, ErrNoPermission
 			}
 			if !t {
-				return 0, fmt.Errorf("no user chat between %s and %s", user, toUser)
+				//return 0, fmt.Errorf("no user chat between %s and %s", user, toUser)
+				return 0, ErrNoPermission
 			}
 		}
 	}
@@ -213,7 +217,8 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 	if options != nil && options.IgnorePermCheck {
 		chat, err2 := db.GetChatWithType(chatID, chatType)
 		if err2 != nil {
-			return 0, fmt.Errorf("no permission: %s", err2.Error())
+			//return 0, fmt.Errorf("no permission: %s", err2.Error())
+			return 0, ErrNoPermission
 		}
 		membersUpdated = chat.MembersUpdated.Unix()
 	} else {
@@ -221,12 +226,14 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 		if err != nil {
 			// FIXME: 目前房间和客服可以随意发消息
 			if chatType != types.ChatTypeRoom && user != CSUser {
-				return 0, fmt.Errorf("no permission: %s", err.Error())
+				//return 0, fmt.Errorf("no permission: %s", err.Error())
+				return 0, ErrNoPermission
 			}
 
 			chat, err2 := db.GetChatWithType(chatID, chatType)
 			if err2 != nil {
-				return 0, fmt.Errorf("no permission: %s", err2.Error())
+				//return 0, fmt.Errorf("no permission: %s", err2.Error())
+				return 0, ErrNoPermission
 			}
 			membersUpdated = chat.MembersUpdated.Unix()
 		} else {
@@ -284,7 +291,7 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string, options *types.SendMsgOptions) (int64, error) {
 	membersUpdated, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 
 	ts := time.Now()
@@ -387,6 +394,8 @@ func JoinChat(chatID uint64, chatType string, user string, users []string) (err 
 		if chatType == types.ChatTypeUsers {
 			SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatMembersUpdatedMsg, XChatDomainSendMsgOptions)
 		}
+	} else {
+		err = ErrOperationFailed
 	}
 	return
 }
@@ -401,10 +410,16 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) (err 
 		return ErrNoPermission
 	}
 
+	// 删除的用户
+	var (
+		c                     *db.Chat
+		deletedUsersSelfChats []*db.Chat
+	)
+
 	switch chatType {
 	case types.ChatTypeCS:
 		if ns != NSCs {
-			return ErrIllegalOperation
+			return ErrIllegalRequest
 		}
 		users = []string{user}
 	case types.ChatTypeUsers:
@@ -412,12 +427,26 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) (err 
 		if len(users) == 0 {
 			users = []string{user}
 		}
+		// 获取所有用户的self chats.
+		for _, u := range users {
+			c, err = db.GetOrCreateSelfChat(u)
+			if err != nil {
+				return ErrOperationFailed
+			}
+			deletedUsersSelfChats = append(deletedUsersSelfChats, c)
+		}
 	default:
-		return ErrIllegalOperation
+		return ErrIllegalRequest
 	}
 	if err = db.RemoveChatMembers(chatID, users); err == nil {
 		if chatType == types.ChatTypeUsers {
+			// 通知成员变化
 			SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatMembersUpdatedMsg, XChatDomainSendMsgOptions)
+			// 通知被删除的用户自己被从该会话删除
+			beRemovedMsg := fmt.Sprintf(`%s,%s.%d`, XChatDomainBeRemovedFromChatMsg, chatType, chatID)
+			for _, c := range deletedUsersSelfChats {
+				SendChatMsg(nil, c.ID, c.Type, XChatDomain, c.Owner.String, beRemovedMsg, XChatDomainSendMsgOptions)
+			}
 		}
 	}
 	return
@@ -427,6 +456,8 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) (err 
 func SetChatTitle(user string, chatID uint64, chatType string, title string) (err error) {
 	if err = db.SetUserChatTitle(user, chatID, chatType, title); err == nil {
 		SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatInfoUpdatedMsg, XChatDomainSendMsgOptions)
+	} else {
+		err = ErrNoPermission
 	}
 	return
 }

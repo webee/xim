@@ -1,21 +1,23 @@
 package db
 
 import (
+	"database/sql"
 	"encoding/json"
 	"time"
 )
 
 // Chat is a conversation.
 type Chat struct {
-	ID             uint64    `db:"id" json:"id"`
-	Type           string    `json:"type"`
-	Title          string    `json:"title"`
-	Tag            string    `json:"tag"`
-	MsgID          uint64    `db:"msg_id" json:"msg_id"`
-	Ext            string    `db:"ext" json:"ext"`
-	Created        time.Time `json:"created"`
-	Updated        time.Time `json:"updated"`
-	MembersUpdated time.Time `db:"members_updated" json:"-"`
+	ID             uint64         `db:"id" json:"id"`
+	Type           string         `json:"type"`
+	Owner          sql.NullString `json:"-"`
+	Title          string         `json:"title"`
+	Tag            string         `json:"tag"`
+	MsgID          uint64         `db:"msg_id" json:"msg_id"`
+	Ext            string         `db:"ext" json:"ext"`
+	Created        time.Time      `json:"created"`
+	Updated        time.Time      `json:"updated"`
+	MembersUpdated time.Time      `db:"members_updated" json:"-"`
 }
 
 // MarshalJSON encoding this to json.
@@ -24,11 +26,13 @@ func (d *Chat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		*Alias
 		ID      string `json:"id"`
+		Owner   string `json:"owner,omitempty"`
 		Created int64  `json:"created"`
 		Updated int64  `json:"updated"`
 	}{
 		Alias:   (*Alias)(d),
 		ID:      EncodeChatIdentity(d.Type, d.ID),
+		Owner:   d.Owner.String,
 		Created: d.Created.Unix(),
 		Updated: d.Updated.Unix(),
 	})

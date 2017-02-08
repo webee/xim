@@ -93,6 +93,7 @@ func RoomExists(roomID uint64) (t bool, err error) {
 
 // IsHaveUserChat check if user1 and user2 have user chat.
 func IsHaveUserChat(user1, user2 string) (t bool, err error) {
+	// FIXME: use type&key to judge.
 	return t, db.Get(&t, `SELECT EXISTS(select 1 from xchat_chat c where c.type='user' and exists (select 1 from xchat_member m where m.chat_id=c.id and m."user"=$1) and exists (select 1 from xchat_member m where m.chat_id=c.id and m."user"=$2))`, user1, user2)
 }
 
@@ -153,16 +154,46 @@ func GetChatMessagesByIDs(chatID uint64, chatType string, msgIDs []uint64) (msgs
 	return
 }
 
+// GetSelfChat get user's self chat.
+func GetSelfChat(user string) (*Chat, error) {
+	chat := &Chat{}
+	return chat, db.Get(chat, `SELECT id, type, owner, tag, title, msg_id, ext, created, updated, members_updated FROM xchat_chat where type=$1 AND key=$2`, "self", user)
+}
+
+// GetOrCreateSelfChat get or craete self chat.
+func GetOrCreateSelfChat(user string) (chat *Chat, err error) {
+	chat, err = GetSelfChat(user)
+	if err == nil {
+		return
+	}
+
+	// new self chat.
+	err = Transaction(db, func(tx *sqlx.Tx) (err error) {
+		var chatID uint64
+		if err = tx.Get(&chatID, `INSERT INTO xchat_chat("type", key, owner, title, tag, msg_id, last_msg_ts, ext, is_deleted, created, updated, members_updated) VALUES('self', $1, $2, '', 'user', 0, '1970-01-01'::date, '', false, now(), now(), now()) RETURNING id`, user, user); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`INSERT INTO xchat_member(chat_id, "user", joined, cur_id) VALUES($1, $2, now(), 0)`, chatID, user); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return GetSelfChat(user)
+}
+
 // GetChat returns chat.
 func GetChat(chatID uint64) (chat *Chat, err error) {
 	chat = &Chat{}
-	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, ext, created, updated, members_updated FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
+	return chat, db.Get(chat, `SELECT id, type, owner, tag, title, msg_id, ext, created, updated, members_updated FROM xchat_chat where id=$1 and is_deleted=false`, chatID)
 }
 
 // GetChatWithType returns chat.
 func GetChatWithType(chatID uint64, chatType string) (chat *Chat, err error) {
 	chat = &Chat{}
-	return chat, db.Get(chat, `SELECT id, type, tag, title, msg_id, ext, created, updated, members_updated FROM xchat_chat where id=$1 and type=$2 and is_deleted=false`, chatID, chatType)
+	return chat, db.Get(chat, `SELECT id, type, owner, tag, title, msg_id, ext, created, updated, members_updated FROM xchat_chat where id=$1 and type=$2 and is_deleted=false`, chatID, chatType)
 }
 
 // GetUserChat returns user's chat.
