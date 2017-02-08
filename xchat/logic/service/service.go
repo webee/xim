@@ -440,6 +440,7 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) (err 
 	}
 	if err = db.RemoveChatMembers(chatID, users); err == nil {
 		if chatType == types.ChatTypeUsers {
+			// FIXME && TODO: 要保证一定发送成功
 			// 通知成员变化
 			SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatMembersUpdatedMsg, XChatDomainSendMsgOptions)
 			// 通知被删除的用户自己被从该会话删除
