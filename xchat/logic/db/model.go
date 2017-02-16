@@ -64,6 +64,7 @@ type UserChat struct {
 	Label          string    `json:"label"`
 	JoinMsgID      uint64    `db:"join_msg_id" json:"join_msg_id"`
 	LastMsgTs      time.Time `db:"last_msg_ts" json:"last_msg_ts"`
+	UserUpdated    time.Time `db:"user_updated" json:"user_updated"`
 }
 
 // MarshalJSON encoding this to json.
@@ -71,18 +72,20 @@ func (d *UserChat) MarshalJSON() ([]byte, error) {
 	type Alias UserChat
 	return json.Marshal(&struct {
 		*Alias
-		ID        string `json:"id"`
-		Created   int64  `json:"created"`
-		Updated   int64  `json:"updated"`
-		Joined    int64  `json:"joined"`
-		LastMsgTs int64  `json:"last_msg_ts"`
+		ID          string `json:"id"`
+		Created     int64  `json:"created"`
+		Updated     int64  `json:"updated"`
+		Joined      int64  `json:"joined"`
+		LastMsgTs   int64  `json:"last_msg_ts"`
+		UserUpdated int64  `json:"user_updated"`
 	}{
-		Alias:     (*Alias)(d),
-		ID:        EncodeChatIdentity(d.Type, d.ID),
-		Created:   d.Created.Unix(),
-		Updated:   d.Updated.Unix(),
-		Joined:    d.Joined.Unix(),
-		LastMsgTs: d.LastMsgTs.Unix(),
+		Alias:       (*Alias)(d),
+		ID:          EncodeChatIdentity(d.Type, d.ID),
+		Created:     d.Created.Unix(),
+		Updated:     d.Updated.Unix(),
+		UserUpdated: d.UserUpdated.Unix(),
+		Joined:      d.Joined.Unix(),
+		LastMsgTs:   d.LastMsgTs.Unix(),
 	})
 }
 
@@ -95,6 +98,7 @@ type FullMember struct {
 	IsExited  bool      `db:"is_exited"`
 	Dnd       bool      `db:"dnd"`
 	Label     string    `db:"label"`
+	Updated   time.Time `db:"updated"`
 }
 
 // Member is a chat member.
