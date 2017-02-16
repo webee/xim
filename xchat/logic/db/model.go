@@ -17,7 +17,7 @@ type Chat struct {
 	Ext            string         `db:"ext" json:"ext"`
 	Created        time.Time      `json:"created"`
 	Updated        time.Time      `json:"updated"`
-	MembersUpdated time.Time      `db:"members_updated" json:"-"`
+	MembersUpdated time.Time      `db:"members_updated" json:"members_updated"`
 }
 
 // MarshalJSON encoding this to json.
@@ -54,7 +54,7 @@ type UserChat struct {
 	Ext            string    `db:"ext" json:"ext"`
 	Created        time.Time `json:"created"`
 	Updated        time.Time `json:"updated"`
-	MembersUpdated time.Time `db:"members_updated" json:"-"`
+	MembersUpdated time.Time `db:"members_updated" json:"members_updated"`
 	User           string    `json:"user"`
 	CurID          uint64    `db:"cur_id" json:"cur_id"`
 	Joined         time.Time `json:"joined"`
@@ -72,20 +72,22 @@ func (d *UserChat) MarshalJSON() ([]byte, error) {
 	type Alias UserChat
 	return json.Marshal(&struct {
 		*Alias
-		ID          string `json:"id"`
-		Created     int64  `json:"created"`
-		Updated     int64  `json:"updated"`
-		Joined      int64  `json:"joined"`
-		LastMsgTs   int64  `json:"last_msg_ts"`
-		UserUpdated int64  `json:"user_updated"`
+		ID             string `json:"id"`
+		Created        int64  `json:"created"`
+		Updated        int64  `json:"updated"`
+		Joined         int64  `json:"joined"`
+		LastMsgTs      int64  `json:"last_msg_ts"`
+		MembersUpdated int64  `json:"members_updated"`
+		UserUpdated    int64  `json:"user_updated"`
 	}{
-		Alias:       (*Alias)(d),
-		ID:          EncodeChatIdentity(d.Type, d.ID),
-		Created:     d.Created.Unix(),
-		Updated:     d.Updated.Unix(),
-		UserUpdated: d.UserUpdated.Unix(),
-		Joined:      d.Joined.Unix(),
-		LastMsgTs:   d.LastMsgTs.Unix(),
+		Alias:          (*Alias)(d),
+		ID:             EncodeChatIdentity(d.Type, d.ID),
+		Created:        d.Created.Unix(),
+		Updated:        d.Updated.Unix(),
+		Joined:         d.Joined.Unix(),
+		LastMsgTs:      d.LastMsgTs.Unix(),
+		MembersUpdated: d.MembersUpdated.Unix(),
+		UserUpdated:    d.UserUpdated.Unix(),
 	})
 }
 
