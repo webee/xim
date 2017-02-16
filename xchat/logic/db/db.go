@@ -10,6 +10,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const (
+	// UserChatSQLPrefix sql prefix for querying UserChat.
+	UserChatSQLPrefix = "SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, c.last_msg_ts, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.label, m.updated AS user_updated, m.join_msg_id FROM xchat_chat c left join xchat_member m on c.id = m.chat_id"
+)
+
 var (
 	db *sqlx.DB
 )
@@ -199,14 +204,14 @@ func GetChatWithType(chatID uint64, chatType string) (chat *Chat, err error) {
 // GetUserChat returns user's chat.
 func GetUserChat(user string, chatID uint64) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, c.last_msg_ts, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.label, m.updated AS user_updated, m.join_msg_id FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.is_deleted=false`, user, chatID)
+	err = db.Get(userChat, fmt.Sprintf("%s %s", UserChatSQLPrefix, `where m.user=$1 and c.id=$2 and c.is_deleted=false`), user, chatID)
 	return
 }
 
 // GetUserChatWithType returns user's chat.
 func GetUserChatWithType(user string, chatID uint64, chatType string) (userChat *UserChat, err error) {
 	userChat = &UserChat{}
-	err = db.Get(userChat, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, c.last_msg_ts, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.label, m.updated AS user_updated, m.join_msg_id FROM xchat_member m left join xchat_chat c on c.id = m.chat_id where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`, user, chatID, chatType)
+	err = db.Get(userChat, fmt.Sprintf("%s %s", UserChatSQLPrefix, `where m.user=$1 and c.id=$2 and c.type=$3 and c.is_deleted=false`), user, chatID, chatType)
 	return
 }
 
@@ -214,15 +219,15 @@ func GetUserChatWithType(user string, chatID uint64, chatType string) (userChat 
 func GetUserChatList(user string, onlyUnsync bool, lastMsgTs int64) (userChats []UserChat, err error) {
 	if lastMsgTs <= 0 {
 		if onlyUnsync {
-			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, c.last_msg_ts, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.label, m.updated AS user_updated, m.join_msg_id FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`, user)
+			err = db.Select(&userChats, fmt.Sprintf("%s %s", UserChatSQLPrefix, `where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id`), user)
 		} else {
-			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, c.last_msg_ts, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.label, m.updated AS user_updated, m.join_msg_id FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false`, user)
+			err = db.Select(&userChats, fmt.Sprintf("%s %s", UserChatSQLPrefix, `where m.user=$1 and c.is_deleted=false`), user)
 		}
 	} else {
 		if onlyUnsync {
-			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, c.last_msg_ts, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.label, m.updated AS user_updated, m.join_msg_id FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id and c.last_msg_ts >= $2`, user, time.Unix(lastMsgTs+1, 0))
+			err = db.Select(&userChats, fmt.Sprintf("%s %s", UserChatSQLPrefix, `where m.user=$1 and c.is_deleted=false and c.msg_id > m.cur_id and c.last_msg_ts >= $2`), user, time.Unix(lastMsgTs+1, 0))
 		} else {
-			err = db.Select(&userChats, `SELECT c.id, c.type, c.tag, c.title, c.msg_id, c.ext, c.created, c.updated, c.members_updated, c.last_msg_ts, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.label, m.updated AS user_updated, m.join_msg_id FROM xchat_chat c left join xchat_member m on c.id = m.chat_id where m.user=$1 and c.is_deleted=false and c.last_msg_ts >= $2`, user, time.Unix(lastMsgTs+1, 0))
+			err = db.Select(&userChats, fmt.Sprintf("%s %s", UserChatSQLPrefix, `where m.user=$1 and c.is_deleted=false and c.last_msg_ts >= $2`), user, time.Unix(lastMsgTs+1, 0))
 		}
 	}
 	return
