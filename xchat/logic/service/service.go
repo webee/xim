@@ -18,9 +18,11 @@ import (
 
 // constants
 const (
-	NSDefault = ""
-	NSCs      = "cs"
-	NSTest    = "test"
+	NSDefault                    = ""
+	NSCs                         = "cs"
+	NSTest                       = "test"
+	MaxRoomChatHistoryCount      = 100
+	MaxUserChatExtraHistoryCount = 500
 )
 
 // errors
@@ -130,24 +132,24 @@ func FetchUserChatMessages(user string, chatID uint64, chatType string, lID, rID
 	ns, _ := nsutils.DecodeNSUser(user)
 	// 客服可以拿任意消息
 	if ns != NSCs {
-		userChat, err := db.GetUserChatWithType(user, chatID, chatType)
-		if err != nil {
-			if chatType != types.ChatTypeRoom {
+		if chatType == types.ChatTypeRoom {
+			// 房间会话最多拿最近MaxRoomChatHistoryCount条消息
+			chat, err := db.GetChatWithType(chatID, chatType)
+			if err != nil {
 				return nil, ErrNoPermission
 			}
 
-			// 房间会话最多拿最近100条消息
-			chat, err2 := db.GetChatWithType(chatID, chatType)
-			if err2 != nil {
-				return nil, ErrNoPermission
-			}
-
-			if chat.MsgID > lID+100 {
-				lID = chat.MsgID - 100
+			if chat.MsgID > lID+MaxRoomChatHistoryCount {
+				lID = chat.MsgID - MaxRoomChatHistoryCount
 			}
 		} else {
-			if userChat.JoinMsgID > lID {
-				lID = userChat.JoinMsgID
+			userChat, err := db.GetUserChatWithType(user, chatID, chatType)
+			if err != nil {
+				return nil, ErrNoPermission
+			}
+			// 普通会话可以获取额外MaxUserChatExtraHistoryCount的历史消息
+			if userChat.JoinMsgID > lID+MaxUserChatExtraHistoryCount {
+				lID = userChat.JoinMsgID - MaxUserChatExtraHistoryCount
 			}
 		}
 	}
