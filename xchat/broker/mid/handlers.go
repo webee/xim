@@ -503,6 +503,14 @@ func setChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 				}
 				continue
 			}
+		case "label":
+			if val, ok := x.(string); ok {
+				if err := doSetUserChat(s.User, chatID, key, val); err != nil {
+					rerr = newDefaultAPIError(err.Error())
+					return
+				}
+				continue
+			}
 		case "cur_id":
 			if val, ok := x.(float64); ok {
 				// sync chat recv.

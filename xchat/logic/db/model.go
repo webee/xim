@@ -61,6 +61,7 @@ type UserChat struct {
 	ExitMsgID      uint64    `db:"exit_msg_id" json:"exit_msg_id"`
 	IsExited       bool      `db:"is_exited" json:"is_exited"`
 	Dnd            bool      `json:"dnd"`
+	Label          string    `json:"label"`
 	JoinMsgID      uint64    `db:"join_msg_id" json:"join_msg_id"`
 	LastMsgTs      time.Time `db:"last_msg_ts" json:"last_msg_ts"`
 }
@@ -93,6 +94,7 @@ type FullMember struct {
 	ExitMsgID uint64    `db:"exit_msg_id"`
 	IsExited  bool      `db:"is_exited"`
 	Dnd       bool      `db:"dnd"`
+	Label     string    `db:"label"`
 }
 
 // Member is a chat member.
