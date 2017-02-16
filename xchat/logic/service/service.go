@@ -82,7 +82,7 @@ func FetchUserChatList(user string, onlyUnsync bool, lastMsgTs int64) ([]db.User
 }
 
 // SetUserChat set user's chat attribute.
-func SetUserChat(user string, chatID uint64, key string, value interface{}) error {
+func SetUserChat(user string, chatID uint64, key string, value interface{}) (time.Time, error) {
 	return db.SetUserChat(user, chatID, key, value)
 }
 

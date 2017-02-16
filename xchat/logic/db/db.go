@@ -287,9 +287,9 @@ func SetUserChatTitle(user string, chatID uint64, chatType string, title string)
 }
 
 // SetUserChat set user's chat attribute.
-func SetUserChat(user string, chatID uint64, key string, value interface{}) (err error) {
-	s := fmt.Sprintf(`UPDATE xchat_member SET %s=$1 WHERE "user"=$2 and chat_id=$3`, key)
-	_, err = db.Exec(s, value, user, chatID)
+func SetUserChat(user string, chatID uint64, key string, value interface{}) (updated time.Time, err error) {
+	s := fmt.Sprintf(`UPDATE xchat_member SET %s=$1, updated=now() WHERE "user"=$2 and chat_id=$3 RETURNING updated`, key)
+	err = db.Get(&updated, s, value, user, chatID)
 	return
 }
 

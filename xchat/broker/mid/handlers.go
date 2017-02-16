@@ -467,17 +467,23 @@ func fetchChatList(s *Session, args []interface{}, kwargs map[string]interface{}
 	return []interface{}{true, userChats}, nil, nil
 }
 
-func doSetUserChat(user string, chatID uint64, key string, value interface{}) error {
-	return xchatLogic.Call(types.RPCXChatSetUserChat, &types.SetUserChatArgs{
+func doSetUserChat(user string, chatID uint64, key string, value interface{}) (updated int64, err error) {
+	return updated, xchatLogic.Call(types.RPCXChatSetUserChat, &types.SetUserChatArgs{
 		User:   user,
 		ChatID: chatID,
 		Key:    key,
 		Value:  value,
-	}, nil)
+	}, &updated)
 }
 
 // 设置用户会话属性
 func setChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
+	var (
+		err        error
+		updated    int64
+		tmpUpdated int64
+	)
+
 	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
 		rerr = InvalidArgumentError
@@ -497,24 +503,30 @@ func setChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 			continue
 		case "dnd":
 			if val, ok := x.(bool); ok {
-				if err := doSetUserChat(s.User, chatID, key, val); err != nil {
+				if tmpUpdated, err = doSetUserChat(s.User, chatID, key, val); err != nil {
 					rerr = newDefaultAPIError(err.Error())
 					return
+				}
+				if tmpUpdated > updated {
+					updated = tmpUpdated
 				}
 				continue
 			}
 		case "label":
 			if val, ok := x.(string); ok {
-				if err := doSetUserChat(s.User, chatID, key, val); err != nil {
+				if tmpUpdated, err = doSetUserChat(s.User, chatID, key, val); err != nil {
 					rerr = newDefaultAPIError(err.Error())
 					return
+				}
+				if tmpUpdated > updated {
+					updated = tmpUpdated
 				}
 				continue
 			}
 		case "cur_id":
 			if val, ok := x.(float64); ok {
 				// sync chat recv.
-				if err := xchatLogic.Call(types.RPCXChatSyncUserChatRecv, &types.SyncUserChatRecvArgs{
+				if err = xchatLogic.Call(types.RPCXChatSyncUserChatRecv, &types.SyncUserChatRecvArgs{
 					User:   s.User,
 					ChatID: chatID,
 					MsgID:  uint64(val),
@@ -527,6 +539,9 @@ func setChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 		}
 		rerr = InvalidArgumentError
 		return
+	}
+	if updated > 0 {
+		return []interface{}{true, updated}, nil, nil
 	}
 	return []interface{}{true}, nil, nil
 }
