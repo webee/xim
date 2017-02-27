@@ -54,14 +54,15 @@ func getNsUser(c echo.Context, u string) string {
 	return nsutils.EncodeNSUser(ns, u)
 }
 
-func doSendMsg(kind, domain, xchatID, msg, user string, permCheck bool) error {
+func doSendMsg(kind, domain, xchatID, msg, user string, permCheck bool) (id uint64, ts int64, err error) {
 	if len(msg) > 64*1024 {
-		return errors.New("msg excced size limit")
+		err = errors.New("msg excced size limit")
+		return
 	}
 
 	chatIdentity, err := db.ParseChatIdentity(xchatID)
 	if err != nil {
-		return err
+		return
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
@@ -80,16 +81,20 @@ func doSendMsg(kind, domain, xchatID, msg, user string, permCheck bool) error {
 	switch kind {
 	case "", types.MsgKindChat:
 		var message pubtypes.ChatMessage
-		if err := xchatLogic.Call(types.RPCXChatSendMsg, sendMsgArgs, &message); err != nil {
-			l.Warning("%s error: %s", types.RPCXChatSendMsg, err)
-			return errors.New("send msg failed")
+		if errx := xchatLogic.Call(types.RPCXChatSendMsg, sendMsgArgs, &message); errx != nil {
+			l.Warning("%s error: %s", types.RPCXChatSendMsg, errx)
+			err = errors.New("send msg failed")
+			return
 		}
+		id = message.ID
+		ts = message.Ts
 	case types.MsgKindChatNotify:
 		xchatLogic.AsyncCall(types.RPCXChatSendNotify, sendMsgArgs)
 	default:
-		return errors.New("invalid msg kind")
+		err = errors.New("invalid msg kind")
+		return
 	}
-	return nil
+	return
 }
 
 func sendMsg(c echo.Context) error {
@@ -99,10 +104,11 @@ func sendMsg(c echo.Context) error {
 	}
 
 	user := getNsUser(c, args.User)
-	if err := doSendMsg(args.Kind, args.Domain, args.ChatID, args.Msg, user, args.PermCheck); err != nil {
+	id, ts, err := doSendMsg(args.Kind, args.Domain, args.ChatID, args.Msg, user, args.PermCheck)
+	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": err.Error()})
 	}
-	return c.JSON(http.StatusOK, map[string]interface{}{"ok": true})
+	return c.JSON(http.StatusOK, map[string]interface{}{"ok": true, "id": id, "ts": ts})
 }
 
 func sendUniqueChatMsg(c echo.Context) error {
@@ -141,8 +147,12 @@ func sendUniqueChatMsg(c echo.Context) error {
 		return err
 	}
 
-	if err := doSendMsg(args.Kind, args.Domain, xchatID, args.Msg, user, false); err != nil {
+	id, ts, err := doSendMsg(args.Kind, args.Domain, xchatID, args.Msg, user, false)
+	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": err.Error()})
+	}
+	if id > 0 {
+		return c.JSON(http.StatusOK, map[string]interface{}{"ok": true, "id": id, "ts": ts})
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{"ok": true})
 }
