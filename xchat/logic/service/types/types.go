@@ -44,13 +44,14 @@ type SendMsgOptions struct {
 
 // SendMsgArgs is the arguments of SendMsg.
 type SendMsgArgs struct {
-	Source   *pubtypes.MsgSource
-	ChatID   uint64
-	ChatType string
-	Domain   string
-	User     string
-	Msg      string
-	Options  *SendMsgOptions
+	Source           *pubtypes.MsgSource
+	ChatID           uint64
+	ChatType         string
+	Domain           string
+	User             string
+	Msg              string
+	ForceNotifyUsers map[string]struct{}
+	Options          *SendMsgOptions
 }
 
 // SendUserMsgArgs is the arguments of SendUserMsg.

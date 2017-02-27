@@ -29,6 +29,7 @@ var (
 	xchatSub        *pub.Subscriber
 	xchat           *turnpike.Client
 	realm           *turnpike.Realm
+	emptyStruct     = struct{}{}
 	emptyArgs       = []interface{}{}
 	emptyKwargs     = make(map[string]interface{})
 )

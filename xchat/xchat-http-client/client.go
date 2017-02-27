@@ -91,6 +91,7 @@ func (c *XChatHTTPClient) NewChat(chatType string, users []string, title, tag, e
 	if err != nil {
 		return "", err
 	}
+	// NOTE: 利用了ns=""的情况可以添加任何ns的用户
 	req.Header.Add("Authorization", "Bearer "+c.Token())
 	req.Header.Add("Content-Type", "application/json")
 

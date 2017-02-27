@@ -150,7 +150,8 @@ func (r *RPCXChat) FetchChatMessagesByIDs(args *types.FetchChatMessagesByIDsArgs
 
 // SendMsg sends message.
 func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage) (err error) {
-	msg, err := SendChatMsg(args.Source, args.ChatID, args.ChatType, args.Domain, args.User, args.Msg, args.Options)
+	msg, err := SendChatMsg(args.Source, args.ChatID, args.ChatType, args.Domain, args.User, args.Msg,
+		args.ForceNotifyUsers, args.Options)
 	if err != nil {
 		return err
 	}
@@ -160,7 +161,8 @@ func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage)
 
 // SendNotify sends notify message.
 func (r *RPCXChat) SendNotify(args *types.SendMsgArgs, reply *int64) (err error) {
-	ts, err := SendChatNotifyMsg(args.Source, args.ChatID, args.ChatType, args.Domain, args.User, args.Msg, args.Options)
+	ts, err := SendChatNotifyMsg(args.Source, args.ChatID, args.ChatType, args.Domain, args.User, args.Msg,
+		args.ForceNotifyUsers, args.Options)
 	if err != nil {
 		return err
 	}

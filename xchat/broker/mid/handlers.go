@@ -128,10 +128,10 @@ func onPubUserInfo(s *Session, args []interface{}, kwargs map[string]interface{}
 	doPubUserInfo(s, types.UserStatusOnline, args[0])
 }
 
-func bindSendMsgArgs(s *Session, args []interface{}) (sendMsgArgs *types.SendMsgArgs, rerr APIError) {
+func bindSendMsgArgs(s *Session, args []interface{}, kwargs map[string]interface{}) (sendMsgArgs *types.SendMsgArgs, withMsg bool, rerr APIError) {
 	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
 	if err != nil {
-		return nil, InvalidArgumentError
+		return nil, false, InvalidArgumentError
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
@@ -139,7 +139,7 @@ func bindSendMsgArgs(s *Session, args []interface{}) (sendMsgArgs *types.SendMsg
 	msg := args[1].(string)
 	if len(msg) > 64*1024 {
 		// NOTE: msg exceed size limit
-		return nil, MsgSizeExceedLimitError
+		return nil, false, MsgSizeExceedLimitError
 	}
 	domain := ""
 	if len(args) >= 3 {
@@ -151,13 +151,38 @@ func bindSendMsgArgs(s *Session, args []interface{}) (sendMsgArgs *types.SendMsg
 		SessionID:  uint64(s.ID),
 	}
 
+	// kwargs
+	isNsUser := false
+	if x, ok := kwargs["is_ns_user"]; ok {
+		isNsUser = x.(bool)
+	}
+
+	ns, _ := nsutils.DecodeNSUser(s.User)
+	forceNotifyUsers := make(map[string]struct{})
+	if x, ok := kwargs["force_notify_users"]; ok {
+		users := x.([]interface{})
+		for _, user := range users {
+			nsUser := user.(string)
+			if !isNsUser {
+				nsUser = nsutils.EncodeNSUser(ns, nsUser)
+			}
+			forceNotifyUsers[nsUser] = emptyStruct
+		}
+	}
+
+	withMsg = false
+	if x, ok := kwargs["with_msg"]; ok {
+		withMsg = x.(bool)
+	}
+
 	sendMsgArgs = &types.SendMsgArgs{
-		Source:   src,
-		ChatID:   chatID,
-		ChatType: chatType,
-		Domain:   domain,
-		User:     s.User,
-		Msg:      msg,
+		Source:           src,
+		ChatID:           chatID,
+		ChatType:         chatType,
+		Domain:           domain,
+		User:             s.User,
+		Msg:              msg,
+		ForceNotifyUsers: forceNotifyUsers,
 	}
 	return
 }
@@ -213,7 +238,7 @@ func bindSendUserMsgArgs(s *Session, args []interface{}, kwargs map[string]inter
 
 // 用户发送消息, 会话消息
 func sendMsg(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	sendMsgArgs, rerr := bindSendMsgArgs(s, args)
+	sendMsgArgs, withMsg, rerr := bindSendMsgArgs(s, args, kwargs)
 	if rerr != nil {
 		return
 	}
@@ -227,10 +252,6 @@ func sendMsg(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 
 	go push(sendMsgArgs.Source, &message)
 
-	withMsg := false
-	if x, ok := kwargs["with_msg"]; ok {
-		withMsg = x.(bool)
-	}
 	if withMsg {
 		toPushMsg := NewMessageFromPubMsg(&message)
 		return []interface{}{true, message.ID, message.Ts}, map[string]interface{}{"msg": toPushMsg}, nil
@@ -241,7 +262,7 @@ func sendMsg(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 
 // 用户发布消息, 通知消息
 func onPubNotify(s *Session, args []interface{}, kwargs map[string]interface{}) {
-	sendMsgArgs, rerr := bindSendMsgArgs(s, args)
+	sendMsgArgs, _, rerr := bindSendMsgArgs(s, args, kwargs)
 	if rerr != nil {
 		return
 	}
@@ -250,7 +271,7 @@ func onPubNotify(s *Session, args []interface{}, kwargs map[string]interface{}) 
 }
 
 func sendNotify(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	sendMsgArgs, rerr := bindSendMsgArgs(s, args)
+	sendMsgArgs, _, rerr := bindSendMsgArgs(s, args, kwargs)
 	if rerr != nil {
 		return
 	}
@@ -333,7 +354,6 @@ func newChat(s *Session, args []interface{}, kwargs map[string]interface{}) (rar
 		ext = x.(string)
 	}
 
-	// NOTE: 利用了ns=""的情况可以添加任何ns的用户
 	xchatID, err := xchatHTTPClient.NewChat(chatType, users, title, "user", ext)
 	if err != nil {
 		rerr = newDefaultAPIError("create chat failed")

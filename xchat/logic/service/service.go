@@ -246,7 +246,9 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 }
 
 // SendChatMsg sends chat message.
-func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string, options *types.SendMsgOptions) (*pubtypes.ChatMessage, error) {
+func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string,
+	forceNotifyUsers map[string]struct{},
+	options *types.SendMsgOptions) (*pubtypes.ChatMessage, error) {
 	membersUpdated, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
 		return nil, err
@@ -283,14 +285,16 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 	})
 
 	if options == nil || !options.IgnoreNotifyOffline {
-		go notifyOfflineUsers(message.User, chatID, types.MsgKindChat, chatType, domain, message.Msg, message.Ts)
+		go notifyOfflineUsers(message.User, chatID, types.MsgKindChat, chatType, domain, message.Msg, message.Ts, forceNotifyUsers)
 	}
 
 	return &m, err
 }
 
 // SendChatNotifyMsg sends chat notify message.
-func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string, options *types.SendMsgOptions) (int64, error) {
+func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string,
+	forceNotifyUsers map[string]struct{},
+	options *types.SendMsgOptions) (int64, error) {
 	membersUpdated, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
 		return 0, err
@@ -311,7 +315,7 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain,
 		Source: src,
 		Msg:    m,
 	})
-	go notifyOfflineUsers(m.User, chatID, types.MsgKindChatNotify, chatType, domain, m.Msg, ts)
+	go notifyOfflineUsers(m.User, chatID, types.MsgKindChatNotify, chatType, domain, m.Msg, ts, forceNotifyUsers)
 
 	return ts.Unix(), nil
 }
@@ -394,7 +398,7 @@ func JoinChat(chatID uint64, chatType string, user string, users []string) (err 
 
 	if err = db.AddChatMembers(chatID, users, limit); err == nil {
 		if chatType == types.ChatTypeUsers {
-			SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatMembersUpdatedMsg, XChatDomainSendMsgOptions)
+			SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatMembersUpdatedMsg, nil, XChatDomainSendMsgOptions)
 		}
 	} else {
 		err = ErrOperationFailed
@@ -444,11 +448,11 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) (err 
 		if chatType == types.ChatTypeUsers {
 			// FIXME && TODO: 要保证一定发送成功
 			// 通知成员变化
-			SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatMembersUpdatedMsg, XChatDomainSendMsgOptions)
+			SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatMembersUpdatedMsg, nil, XChatDomainSendMsgOptions)
 			// 通知被删除的用户自己被从该会话删除
 			beRemovedMsg := fmt.Sprintf(`%s,%s.%d`, XChatDomainBeRemovedFromChatMsg, chatType, chatID)
 			for _, c := range deletedUsersSelfChats {
-				SendChatMsg(nil, c.ID, c.Type, XChatDomain, c.Owner.String, beRemovedMsg, XChatDomainSendMsgOptions)
+				SendChatMsg(nil, c.ID, c.Type, XChatDomain, c.Owner.String, beRemovedMsg, nil, XChatDomainSendMsgOptions)
 			}
 		}
 	}
@@ -458,7 +462,7 @@ func ExitChat(chatID uint64, chatType string, user string, users []string) (err 
 // SetChatTitle set chat's title.
 func SetChatTitle(user string, chatID uint64, chatType string, title string) (err error) {
 	if err = db.SetUserChatTitle(user, chatID, chatType, title); err == nil {
-		SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatInfoUpdatedMsg, XChatDomainSendMsgOptions)
+		SendChatMsg(nil, chatID, chatType, XChatDomain, user, XChatDomainChatInfoUpdatedMsg, nil, XChatDomainSendMsgOptions)
 	} else {
 		err = ErrNoPermission
 	}

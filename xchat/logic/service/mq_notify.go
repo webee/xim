@@ -22,6 +22,7 @@ type offlineMsg struct {
 
 var (
 	offlineNotifyEnabledChatTypes = map[string]bool{
+		types.ChatTypeSelf:  true,
 		types.ChatTypeUser:  true,
 		types.ChatTypeUsers: true,
 		types.ChatTypeGroup: true,
@@ -29,8 +30,8 @@ var (
 	}
 )
 
-func notifyOfflineUsers(from string, chatID uint64, kind, chatType, domain, msg string, ts time.Time) {
-	// TODO: 免打扰和@结合, exclude dnds.
+func notifyOfflineUsers(from string, chatID uint64, kind, chatType, domain, msg string,
+	ts time.Time, forceNotifyUsers map[string]struct{}) {
 	if !offlineNotifyEnabledChatTypes[chatType] {
 		return
 	}
@@ -54,9 +55,12 @@ func notifyOfflineUsers(from string, chatID uint64, kind, chatType, domain, msg 
 	users := []string{}
 	for _, member := range members {
 		// 不发通知给自己，免打扰，已退出的
-		if member.User != from && !member.Dnd && !member.IsExited {
-			users = append(users, member.User)
+		if member.User == from || member.Dnd || member.IsExited {
+			if _, ok := forceNotifyUsers[member.User]; !ok {
+				continue
+			}
 		}
+		users = append(users, member.User)
 	}
 	if len(users) == 0 {
 		return
