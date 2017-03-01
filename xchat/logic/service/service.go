@@ -292,9 +292,7 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 }
 
 // SendChatNotifyMsg sends chat notify message.
-func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string,
-	forceNotifyUsers map[string]struct{},
-	options *types.SendMsgOptions) (int64, error) {
+func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string, options *types.SendMsgOptions) (int64, error) {
 	membersUpdated, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
 		return 0, err
@@ -315,7 +313,6 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain,
 		Source: src,
 		Msg:    m,
 	})
-	go notifyOfflineUsers(m.User, chatID, types.MsgKindChatNotify, chatType, domain, m.Msg, ts, forceNotifyUsers)
 
 	return ts.Unix(), nil
 }
