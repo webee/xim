@@ -21,6 +21,7 @@ const (
 )
 
 // XChatHTTPClient is the xim http api client.
+// TODO: use multi  host urls to do load balance.
 type XChatHTTPClient struct {
 	sync.Mutex
 	client   *http.Client
