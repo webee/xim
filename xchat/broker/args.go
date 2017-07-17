@@ -11,7 +11,6 @@ import (
 type Args struct {
 	addr            string
 	endpoint        string
-	testWebDir      string
 	testing         bool
 	debug           bool
 	brokerDebug     bool
@@ -46,7 +45,6 @@ func init() {
 	flag.StringVar(&args.csUserKeyPath, "cs-user-key-path", path.Join("conf", env, "xchat/cs_user_key.txt"), "custom service user key file path.")
 	flag.StringVar(&args.addr, "addr", "127.0.0.1:48080", "wamp router websocket listen addr.")
 	flag.StringVar(&args.endpoint, "endpoint", "/ws", "wamp router websocket url endpoint.")
-	flag.StringVar(&args.testWebDir, "test-web-dir", "xchat/broker/web", "test web dir.")
 	flag.StringVar(&args.logicRPCAddr, "logic-rpc-addr", "tcp://:16787", "logic rpc addresses.")
 	flag.StringVar(&args.logicPubAddr, "logic-pub-addr", "tcp://:16783", "logic pub address.")
 	flag.StringVar(&args.xchatHostURL, "xchat-host-url", "http://localhost:9980", "xchat api host url.")
