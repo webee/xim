@@ -150,6 +150,7 @@ func (r *RPCXChat) FetchChatMessagesByIDs(args *types.FetchChatMessagesByIDsArgs
 
 // SendMsg sends message.
 func (r *RPCXChat) SendMsg(args *types.SendMsgArgs, reply *pubtypes.ChatMessage) (err error) {
+	l.Debug("SendMsg: %+v", args)
 	msg, err := SendChatMsg(args.Source, args.ChatID, args.ChatType, args.Domain, args.User, args.Msg,
 		args.ForceNotifyUsers, args.Options)
 	if err != nil {
