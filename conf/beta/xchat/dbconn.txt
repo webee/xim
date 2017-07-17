@@ -1,1 +1,1 @@
-postgres://xchat_beta:xchat1234@localhost:5432/xchat?sslmode=disable
+postgres://xchat_beta:xchat1234@localhost:5432/xchat_beta?sslmode=disable
