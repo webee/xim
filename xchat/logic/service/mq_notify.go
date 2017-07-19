@@ -56,7 +56,7 @@ func notifyOfflineUsers(from string, chatID uint64, kind, chatType, domain, msg 
 	for _, member := range members {
 		// 不发通知给自己，免打扰，已退出的
 		if member.User == from || member.Dnd || member.IsExited {
-			if _, ok := forceNotifyUsers[member.User]; !ok {
+			if _, ok := forceNotifyUsers[member.User]; !ok || member.IsExited {
 				continue
 			}
 		}
