@@ -26,8 +26,8 @@ func getSessionFromSessionDetails(sessionID turnpike.ID, details map[string]inte
 		return s
 	}
 	if forceCreate {
-		ns, user := details["ns"].(string), details["user"].(string)
-		return newSession(id, nsutils.EncodeNSUser(ns, user))
+		ns, name := details["ns"].(string), details["name"].(string)
+		return newSession(id, nsutils.EncodeNSUser(ns, name))
 	}
 	return nil
 }

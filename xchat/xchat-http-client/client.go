@@ -45,7 +45,7 @@ func (c *XChatHTTPClient) url(uri string, params ...interface{}) string {
 }
 
 // NewToken request a new app token.
-func (c *XChatHTTPClient) NewToken() (string, error) {
+func (c *XChatHTTPClient) newToken() (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"is_admin": true,
 		"exp":      time.Now().Add(30 * 24 * time.Hour).Unix(),
@@ -59,12 +59,12 @@ func (c *XChatHTTPClient) isCurrentTokenValid() bool {
 }
 
 // Token returns a valid token.
-func (c *XChatHTTPClient) Token() string {
+func (c *XChatHTTPClient) getToken() string {
 	if !c.isCurrentTokenValid() {
 		c.Lock()
 		defer c.Unlock()
 		if !c.isCurrentTokenValid() {
-			token, err := c.NewToken()
+			token, err := c.newToken()
 			if err != nil {
 				log.Println("get token:", err)
 				return ""
@@ -93,7 +93,7 @@ func (c *XChatHTTPClient) NewChat(chatType string, users []string, title, tag, e
 		return "", err
 	}
 	// NOTE: 利用了ns=""的情况可以添加任何ns的用户
-	req.Header.Add("Authorization", "Bearer "+c.Token())
+	req.Header.Add("Authorization", "Bearer "+c.getToken())
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
@@ -127,7 +127,7 @@ func (c *XChatHTTPClient) FetchUserChats(user string, chatType string, tag strin
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Authorization", "Bearer "+c.Token())
+	req.Header.Add("Authorization", "Bearer "+c.getToken())
 
 	resp, err := c.client.Do(req)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 
 // DecodeNSJwt decode ns/token from token string.
 func DecodeNSJwt(rawToken string) (ns string, t string) {
+	ns = ""
 	t = rawToken
 	parts := strings.SplitN(rawToken, ":", 2)
 	if len(parts) > 1 {

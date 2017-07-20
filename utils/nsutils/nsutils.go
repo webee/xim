@@ -5,11 +5,11 @@ import (
 )
 
 // EncodeNSUser encode ns user.
-func EncodeNSUser(ns, u string) (user string) {
+func EncodeNSUser(ns, name string) string {
 	if ns == "" {
-		return u
+		return name
 	}
-	return ns + ":" + u
+	return ns + ":" + name
 }
 
 // DecodeNSUser decode nsUser.
