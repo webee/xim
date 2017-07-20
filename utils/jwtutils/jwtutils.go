@@ -9,12 +9,21 @@ import (
 )
 
 // DecodeNSJwt decode ns/token from token string.
-func DecodeNSJwt(t string) (ns string, token string) {
-	parts := strings.SplitN(t, ":", 2)
+func DecodeNSJwt(rawToken string) (ns string, t string) {
+	t = rawToken
+	parts := strings.SplitN(rawToken, ":", 2)
 	if len(parts) > 1 {
-		return parts[0], parts[1]
+		ns = parts[0]
+		t = parts[1]
 	}
-	return "", t
+
+	token, _ := jwt.Parse(t, nil)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	// 优先使用claims中的ns
+	if ok {
+		ns = claims["ns"].(string)
+	}
+	return ns, t
 }
 
 // ParseToken parse auth token with key to Token object.
