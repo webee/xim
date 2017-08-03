@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"xim/utils/commons"
 )
 
 var (
@@ -19,6 +20,7 @@ func setupKeys() {
 	if userKey, err = ioutil.ReadFile(userKeyPath); err != nil {
 		log.Fatalln(err)
 	}
+	userKey = commons.TrimBytesSpace(userKey)
 
 	// test user key
 	testUserKeyPath := args.testUserKeyPath
@@ -26,6 +28,7 @@ func setupKeys() {
 	if testUserKey, err = ioutil.ReadFile(testUserKeyPath); err != nil {
 		log.Fatalln(err)
 	}
+	testUserKey = commons.TrimBytesSpace(testUserKey)
 
 	// cs user key
 	csUserKeyPath := args.csUserKeyPath
@@ -33,6 +36,7 @@ func setupKeys() {
 	if csUserKey, err = ioutil.ReadFile(csUserKeyPath); err != nil {
 		log.Fatalln(err)
 	}
+	csUserKey = commons.TrimBytesSpace(csUserKey)
 
 	if args.debug {
 		log.Println("userKey: ", string(userKey))

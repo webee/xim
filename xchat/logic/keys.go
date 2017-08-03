@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"xim/utils/commons"
 )
 
 var (
@@ -17,6 +18,7 @@ func setupKeys() {
 	if redisPassword, err = ioutil.ReadFile(redisPasswordPath); err != nil {
 		log.Fatalln(err)
 	}
+	redisPassword = commons.TrimBytesSpace(redisPassword)
 
 	args.redisPassword = string(redisPassword)
 
