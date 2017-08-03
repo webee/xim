@@ -47,6 +47,7 @@ func (c *XChatHTTPClient) url(uri string, params ...interface{}) string {
 // NewToken request a new app token.
 func (c *XChatHTTPClient) newToken() (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"ns":       "",
 		"is_admin": true,
 		"exp":      time.Now().Add(30 * 24 * time.Hour).Unix(),
 	})
