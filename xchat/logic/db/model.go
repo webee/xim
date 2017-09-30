@@ -12,6 +12,7 @@ type Chat struct {
 	Type           string         `json:"type"`
 	Owner          sql.NullString `json:"-"`
 	Title          string         `json:"title"`
+	MqTopic        string         `db:"mq_topic" json:"mq_topic"`
 	Tag            string         `json:"tag"`
 	MsgID          uint64         `db:"msg_id" json:"msg_id"`
 	Ext            string         `db:"ext" json:"ext"`
@@ -49,6 +50,7 @@ type UserChat struct {
 	ID             uint64    `db:"id" json:"id"`
 	Type           string    `json:"type"`
 	Title          string    `json:"title"`
+	MqTopic        string    `db:"mq_topic" json:"mq_topic"`
 	Tag            string    `json:"tag"`
 	MsgID          uint64    `db:"msg_id" json:"msg_id"`
 	Ext            string    `db:"ext" json:"ext"`

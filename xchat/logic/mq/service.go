@@ -10,7 +10,9 @@ const (
 
 // Publish publish msg to topic.
 var (
-	Publish = nilPublish
+	Publish             = nilPublish
+	PublishBytes        = nilPublishBytes
+	PublishBytesWithKey = nilPublishBytesWithKey
 )
 
 // InitMQ init message queues.
@@ -20,6 +22,8 @@ func InitMQ(kafkaAddrs []string) (close func()) {
 			l.Warning("init kafka failed:", err.Error())
 		} else {
 			Publish = publishToKafka
+			PublishBytes = publishBytesToKafka
+			PublishBytesWithKey = publishBytesWithKeyToKafka
 			return func() {
 				kafkaProducer.Close()
 			}
@@ -30,5 +34,15 @@ func InitMQ(kafkaAddrs []string) (close func()) {
 
 func nilPublish(topic string, msg string) error {
 	l.Info("nil publish: %s, %s", topic, msg)
+	return nil
+}
+
+func nilPublishBytes(topic string, msg []byte) error {
+	l.Info("nil publish: %s, %s", topic, string(msg))
+	return nil
+}
+
+func nilPublishBytesWithKey(topic string, key string, msg []byte) error {
+	l.Info("nil publish: %s, %s, %s", topic, key, string(msg))
 	return nil
 }

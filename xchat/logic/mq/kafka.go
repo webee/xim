@@ -10,7 +10,7 @@ var (
 
 func initKafka(addrs []string) (err error) {
 	config := sarama.NewConfig()
-	config.Producer.RequiredAcks = sarama.NoResponse
+	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Partitioner = sarama.NewHashPartitioner
 	config.Producer.Return.Successes = true
 	config.Producer.Return.Errors = true
@@ -25,6 +25,16 @@ func initKafka(addrs []string) (err error) {
 
 func publishToKafka(topic string, msg string) error {
 	kafkaProducer.Input() <- &sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(msg)}
+	return nil
+}
+
+func publishBytesToKafka(topic string, msg []byte) error {
+	kafkaProducer.Input() <- &sarama.ProducerMessage{Topic: topic, Value: sarama.ByteEncoder(msg)}
+	return nil
+}
+
+func publishBytesWithKeyToKafka(topic string, key string, msg []byte) error {
+	kafkaProducer.Input() <- &sarama.ProducerMessage{Topic: topic, Key: sarama.StringEncoder(key), Value: sarama.ByteEncoder(msg)}
 	return nil
 }
 

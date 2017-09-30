@@ -1,10 +1,6 @@
 package service
 
-import (
-	"encoding/json"
-	"time"
-	"xim/xchat/logic/mq"
-)
+import "time"
 
 type userStatus struct {
 	User   string    `json:"user"`
@@ -13,6 +9,7 @@ type userStatus struct {
 }
 
 func publishUserStatus(user string, status string, ts time.Time) {
+	/* FIXME: 暂时停止
 	m := userStatus{
 		User:   user,
 		Status: status,
@@ -26,4 +23,5 @@ func publishUserStatus(user string, status string, ts time.Time) {
 	}
 
 	mq.Publish(mq.XChatUserStatuses, string(b))
+	*/
 }

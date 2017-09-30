@@ -1,16 +1,13 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 	"xim/utils/nsutils"
 	"xim/xchat/logic/cache"
 	"xim/xchat/logic/db"
-	"xim/xchat/logic/mq"
 	"xim/xchat/logic/pub"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
@@ -214,42 +211,48 @@ func SendUserNotify(src *pubtypes.MsgSource, toUser, domain, user, msg string, o
 	return m.Ts, nil
 }
 
-func checkSendPermissions(chatID uint64, chatType, user string, options *types.SendMsgOptions) (int64, error) {
-	var membersUpdated int64
+func checkSendPermissions(chatID uint64, chatType, user string, options *types.SendMsgOptions) (int64, string, error) {
+	var (
+		membersUpdated int64
+		mqTopic        string
+	)
 	if options != nil && options.IgnorePermCheck {
 		chat, err2 := db.GetChatWithType(chatID, chatType)
 		if err2 != nil {
 			//return 0, fmt.Errorf("no permission: %s", err2.Error())
-			return 0, ErrNoPermission
+			return 0, "", ErrNoPermission
 		}
 		membersUpdated = chat.MembersUpdated.Unix()
+		mqTopic = chat.MqTopic
 	} else {
 		userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 		if err != nil {
 			// FIXME: 目前房间和客服可以随意发消息
 			if chatType != types.ChatTypeRoom && user != CSUser {
 				//return 0, fmt.Errorf("no permission: %s", err.Error())
-				return 0, ErrNoPermission
+				return 0, "", ErrNoPermission
 			}
 
 			chat, err2 := db.GetChatWithType(chatID, chatType)
 			if err2 != nil {
 				//return 0, fmt.Errorf("no permission: %s", err2.Error())
-				return 0, ErrNoPermission
+				return 0, "", ErrNoPermission
 			}
 			membersUpdated = chat.MembersUpdated.Unix()
+			mqTopic = chat.MqTopic
 		} else {
 			membersUpdated = userChat.MembersUpdated.Unix()
+			mqTopic = userChat.MqTopic
 		}
 	}
-	return membersUpdated, nil
+	return membersUpdated, mqTopic, nil
 }
 
 // SendChatMsg sends chat message.
 func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string,
 	forceNotifyUsers map[string]struct{},
 	options *types.SendMsgOptions) (*pubtypes.ChatMessage, error) {
-	membersUpdated, err := checkSendPermissions(chatID, chatType, user, options)
+	membersUpdated, mqTopic, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
 		return nil, err
 	}
@@ -273,9 +276,15 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 				// TODO: remove this if custom service has implemented.
 				//SendChatMsg(m.ChatID, m.ChatType, CSUser, fmt.Sprintf("{\"text\":\"%s\",\"messageType\":0}",
 				//	"您好，由于现在咨询人数较多，可能无法及时回复您，您可以先完整描述您的问题，我们会尽快为您解决~"), nil)
-				go publishCSRequest(m.User, m.ChatID, types.MsgKindChat, m.ID, m.Msg, message.Ts)
+				// FIXME: 暂时停止
+				//go publishCSRequest(m.User, m.ChatID, types.MsgKindChat, m.ID, m.Msg, message.Ts)
 			}
 		}
+	}
+
+	// forward msg
+	if mqTopic != "" {
+		go forwardChatMessage(mqTopic, message)
 	}
 
 	// FIXME: goroutine pool?
@@ -285,7 +294,8 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 	})
 
 	if options == nil || !options.IgnoreNotifyOffline {
-		go notifyOfflineUsers(message.User, chatID, types.MsgKindChat, chatType, domain, message.Msg, message.Ts, forceNotifyUsers)
+		// FIXME: 暂时停止
+		// go notifyOfflineUsers(message.User, chatID, types.MsgKindChat, chatType, domain, message.Msg, message.Ts, forceNotifyUsers)
 	}
 
 	return &m, err
@@ -293,7 +303,7 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 
 // SendChatNotifyMsg sends chat notify message.
 func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string, options *types.SendMsgOptions) (int64, error) {
-	membersUpdated, err := checkSendPermissions(chatID, chatType, user, options)
+	membersUpdated, mqTopic, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
 		return 0, err
 	}
@@ -308,6 +318,12 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain,
 		Msg:            msg,
 		MembersUpdated: membersUpdated,
 	}
+
+	// forward msg
+	if mqTopic != "" {
+		go forwardChatNotifyMessage(mqTopic, chatID, chatType, user, msg, ts, domain)
+	}
+
 	// FIXME: goroutine pool?
 	go pub.PublishMessage(&pubtypes.XMessage{
 		Source: src,
@@ -335,24 +351,28 @@ func PubUserStatus(instanceID, sessionID uint64, user string, status string) err
 // PubUserInfo publish user's status info.
 func PubUserInfo(instanceID, sessionID uint64, user string, status string, info string) error {
 	l.Debug("instance:%d, session:%d, user:%s, status:%s, info:%s", instanceID, sessionID, user, status, info)
-
-	t := time.Now()
-	// 发送用户信息
-	if info != "*" && info != "" {
-		msg := make(map[string]string)
-		msg["user"] = user
-		msg["type"] = status
-		msg["info"] = info
-		msg["ts"] = strconv.FormatInt(t.Unix(), 10)
-
-		b, err := json.Marshal(&msg)
-		if err != nil {
-			return err
-		}
-
-		return mq.Publish(mq.XChatLogsTopic, string(b))
-	}
+	// FIXME: 暂时停止
 	return nil
+
+	/*
+		t := time.Now()
+		// 发送用户信息
+		if info != "*" && info != "" {
+			msg := make(map[string]string)
+			msg["user"] = user
+			msg["type"] = status
+			msg["info"] = info
+			msg["ts"] = strconv.FormatInt(t.Unix(), 10)
+
+			b, err := json.Marshal(&msg)
+			if err != nil {
+				return err
+			}
+
+			return mq.Publish(mq.XChatLogsTopic, string(b))
+		}
+		return nil
+	*/
 }
 
 // FetchNewRoomChats fetch room chats' ids.
