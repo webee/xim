@@ -12,7 +12,7 @@ import (
 
 const (
 	// UserChatSQLPrefix sql prefix for querying UserChat.
-	UserChatSQLPrefix = "SELECT c.id, c.type, c.tag, c.title, c.mq_topic, c.msg_id, c.ext, c.created, c.updated, c.members_updated, c.last_msg_ts, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.label, m.updated AS user_updated, m.join_msg_id FROM xchat_chat c left join xchat_member m on c.id = m.chat_id"
+	UserChatSQLPrefix = "SELECT c.id, c.type, c.tag, c.title, c.app_id, c.msg_id, c.ext, c.created, c.updated, c.members_updated, c.last_msg_ts, m.user, m.cur_id, m.joined, m.exit_msg_id, m.is_exited, m.dnd, m.label, m.updated AS user_updated, m.join_msg_id FROM xchat_chat c left join xchat_member m on c.id = m.chat_id"
 )
 
 var (
@@ -27,6 +27,12 @@ func InitDB(driverName, dataSourceName string, maxConn int) (close func()) {
 	return func() {
 		db.Close()
 	}
+}
+
+// GetApp returns app
+func GetApp(appID string) (*App, error) {
+	app := &App{}
+	return app, db.Select(app, `SELECT app_id, msg_notify_url FROM xchat_app where app_id=$1`, appID)
 }
 
 // GetFullChatMembers returns chat's members with full attributes.
@@ -198,7 +204,7 @@ func GetChat(chatID uint64) (chat *Chat, err error) {
 // GetChatWithType returns chat.
 func GetChatWithType(chatID uint64, chatType string) (chat *Chat, err error) {
 	chat = &Chat{}
-	return chat, db.Get(chat, `SELECT id, type, owner, tag, mq_topic, title, msg_id, ext, created, updated, members_updated FROM xchat_chat where id=$1 and type=$2 and is_deleted=false`, chatID, chatType)
+	return chat, db.Get(chat, `SELECT id, type, owner, tag, app_id, title, msg_id, ext, created, updated, members_updated FROM xchat_chat where id=$1 and type=$2 and is_deleted=false`, chatID, chatType)
 }
 
 // GetUserChat returns user's chat.

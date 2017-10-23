@@ -128,6 +128,16 @@ func (r *RPCXChat) FetchUserChatMessages(args *types.FetchUserChatMessagesArgs, 
 	return nil
 }
 
+// GetChatMessages fetch chat's messages between sID and eID.
+func (r *RPCXChat) GetChatMessages(args *types.FetchChatMessagesArgs, reply *[]db.Message) (err error) {
+	msgs, err := GetChatMessages(args.ChatID, args.ChatType, args.LID, args.RID, args.Limit, args.Desc)
+	if err != nil {
+		return err
+	}
+	*reply = msgs
+	return nil
+}
+
 // FetchChatMessages fetch chat's messages between sID and eID.
 func (r *RPCXChat) FetchChatMessages(args *types.FetchChatMessagesArgs, reply *[]pubtypes.ChatMessage) (err error) {
 	msgs, err := FetchChatMessages(args.ChatID, args.ChatType, args.LID, args.RID, args.Limit, args.Desc)

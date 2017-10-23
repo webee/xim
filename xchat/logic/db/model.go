@@ -6,13 +6,19 @@ import (
 	"time"
 )
 
+// App is xchat application
+type App struct {
+	AppID        string         `db:"app_id" json:"app_id"`
+	MsgNotifyURL sql.NullString `db:"msg_notify_url" json:"msg_notify_url"`
+}
+
 // Chat is a conversation.
 type Chat struct {
 	ID             uint64         `db:"id" json:"id"`
 	Type           string         `json:"type"`
 	Owner          sql.NullString `json:"-"`
 	Title          string         `json:"title"`
-	MqTopic        string         `db:"mq_topic" json:"mq_topic"`
+	AppID          sql.NullString `db:"app_id" json:"app_id"`
 	Tag            string         `json:"tag"`
 	MsgID          uint64         `db:"msg_id" json:"msg_id"`
 	Ext            string         `db:"ext" json:"ext"`
@@ -47,26 +53,26 @@ type RoomChat struct {
 
 // UserChat is a user's conversation.
 type UserChat struct {
-	ID             uint64    `db:"id" json:"id"`
-	Type           string    `json:"type"`
-	Title          string    `json:"title"`
-	MqTopic        string    `db:"mq_topic" json:"mq_topic"`
-	Tag            string    `json:"tag"`
-	MsgID          uint64    `db:"msg_id" json:"msg_id"`
-	Ext            string    `db:"ext" json:"ext"`
-	Created        time.Time `json:"created"`
-	Updated        time.Time `json:"updated"`
-	MembersUpdated time.Time `db:"members_updated" json:"members_updated"`
-	User           string    `json:"user"`
-	CurID          uint64    `db:"cur_id" json:"cur_id"`
-	Joined         time.Time `json:"joined"`
-	ExitMsgID      uint64    `db:"exit_msg_id" json:"exit_msg_id"`
-	IsExited       bool      `db:"is_exited" json:"is_exited"`
-	Dnd            bool      `json:"dnd"`
-	Label          string    `json:"label"`
-	JoinMsgID      uint64    `db:"join_msg_id" json:"join_msg_id"`
-	LastMsgTs      time.Time `db:"last_msg_ts" json:"last_msg_ts"`
-	UserUpdated    time.Time `db:"user_updated" json:"user_updated"`
+	ID             uint64         `db:"id" json:"id"`
+	Type           string         `json:"type"`
+	Title          string         `json:"title"`
+	AppID          sql.NullString `db:"app_id" json:"app_id"`
+	Tag            string         `json:"tag"`
+	MsgID          uint64         `db:"msg_id" json:"msg_id"`
+	Ext            string         `db:"ext" json:"ext"`
+	Created        time.Time      `json:"created"`
+	Updated        time.Time      `json:"updated"`
+	MembersUpdated time.Time      `db:"members_updated" json:"members_updated"`
+	User           string         `json:"user"`
+	CurID          uint64         `db:"cur_id" json:"cur_id"`
+	Joined         time.Time      `json:"joined"`
+	ExitMsgID      uint64         `db:"exit_msg_id" json:"exit_msg_id"`
+	IsExited       bool           `db:"is_exited" json:"is_exited"`
+	Dnd            bool           `json:"dnd"`
+	Label          string         `json:"label"`
+	JoinMsgID      uint64         `db:"join_msg_id" json:"join_msg_id"`
+	LastMsgTs      time.Time      `db:"last_msg_ts" json:"last_msg_ts"`
+	UserUpdated    time.Time      `db:"user_updated" json:"user_updated"`
 }
 
 // MarshalJSON encoding this to json.

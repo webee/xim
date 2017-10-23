@@ -114,6 +114,11 @@ func msgsToChatMsgs(msgs []db.Message) []pubtypes.ChatMessage {
 	return ms
 }
 
+// GetChatMessages fetch chat's messages between lID and rID.
+func GetChatMessages(chatID uint64, chatType string, lID, rID uint64, limit int, desc bool) ([]db.Message, error) {
+	return db.GetChatMessages(chatID, chatType, lID, rID, limit, desc)
+}
+
 // FetchChatMessages fetch chat's messages between lID and rID.
 func FetchChatMessages(chatID uint64, chatType string, lID, rID uint64, limit int, desc bool) ([]pubtypes.ChatMessage, error) {
 	msgs, err := db.GetChatMessages(chatID, chatType, lID, rID, limit, desc)
@@ -214,7 +219,7 @@ func SendUserNotify(src *pubtypes.MsgSource, toUser, domain, user, msg string, o
 func checkSendPermissions(chatID uint64, chatType, user string, options *types.SendMsgOptions) (int64, string, error) {
 	var (
 		membersUpdated int64
-		mqTopic        string
+		appID          string
 	)
 	if options != nil && options.IgnorePermCheck {
 		chat, err2 := db.GetChatWithType(chatID, chatType)
@@ -223,7 +228,9 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 			return 0, "", ErrNoPermission
 		}
 		membersUpdated = chat.MembersUpdated.Unix()
-		mqTopic = chat.MqTopic
+		if chat.AppID.Valid {
+			appID = chat.AppID.String
+		}
 	} else {
 		userChat, err := db.GetUserChatWithType(user, chatID, chatType)
 		if err != nil {
@@ -239,20 +246,24 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 				return 0, "", ErrNoPermission
 			}
 			membersUpdated = chat.MembersUpdated.Unix()
-			mqTopic = chat.MqTopic
+			if chat.AppID.Valid {
+				appID = chat.AppID.String
+			}
 		} else {
 			membersUpdated = userChat.MembersUpdated.Unix()
-			mqTopic = userChat.MqTopic
+			if userChat.AppID.Valid {
+				appID = userChat.AppID.String
+			}
 		}
 	}
-	return membersUpdated, mqTopic, nil
+	return membersUpdated, appID, nil
 }
 
 // SendChatMsg sends chat message.
 func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string,
 	forceNotifyUsers map[string]struct{},
 	options *types.SendMsgOptions) (*pubtypes.ChatMessage, error) {
-	membersUpdated, mqTopic, err := checkSendPermissions(chatID, chatType, user, options)
+	membersUpdated, appID, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
 		return nil, err
 	}
@@ -283,8 +294,8 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 	}
 
 	// forward msg
-	if mqTopic != "" {
-		go forwardChatMessage(mqTopic, message)
+	if appID != "" {
+		notifyChatMessage(appID, message)
 	}
 
 	// FIXME: goroutine pool?
@@ -303,7 +314,7 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 
 // SendChatNotifyMsg sends chat notify message.
 func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user, msg string, options *types.SendMsgOptions) (int64, error) {
-	membersUpdated, mqTopic, err := checkSendPermissions(chatID, chatType, user, options)
+	membersUpdated, appID, err := checkSendPermissions(chatID, chatType, user, options)
 	if err != nil {
 		return 0, err
 	}
@@ -320,8 +331,8 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain,
 	}
 
 	// forward msg
-	if mqTopic != "" {
-		go forwardChatNotifyMessage(mqTopic, chatID, chatType, user, msg, ts, domain)
+	if appID != "" {
+		notifyChatNotifyMessage(appID, chatID, chatType, user, msg, ts, domain)
 	}
 
 	// FIXME: goroutine pool?
