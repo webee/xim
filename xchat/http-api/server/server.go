@@ -63,6 +63,8 @@ func setup(e *echo.Echo) {
 	gXChatAPI.Post("/user/msg/send/", sendMsg)
 	gXChatAPI.Post("/user/msg/send/unique/chat/", sendUniqueChatMsg)
 	gXChatAPI.Post("/user/notify/send/", sendUserNotify)
+
+	gXChatAPI.Get("/chats/:chat_id/msgs", fetchChatMsgs)
 }
 
 func test(c echo.Context) error {

@@ -41,7 +41,7 @@ func jwtFromHeader(c echo.Context) (string, error) {
 func jwtFromHeaderOrQueryParam(c echo.Context) (string, error) {
 	token, err := jwtFromHeader(c)
 	if err != nil {
-		token = c.FormValue("jwt")
+		token = c.QueryParam("jwt")
 	}
 	if token != "" {
 		return token, nil

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	mid "xim/xchat/broker/mid"
 	"xim/xchat/logic/db"
 	pubtypes "xim/xchat/logic/pub/types"
 	"xim/xchat/logic/service/types"
@@ -209,4 +211,37 @@ func sendUserNotify(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": errMsg})
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{"ok": true, "ts": ts})
+}
+
+func fetchChatMsgs(c echo.Context) error {
+	chatID := c.Param("chat_id")
+	// params
+	kwargs := make(map[string]interface{})
+	params := c.QueryParams()
+	// parse kwargs
+	if params["lid"] != nil && len(params["lid"]) > 0 {
+		if v, err := strconv.ParseUint(params["lid"][0], 10, 64); err == nil {
+			kwargs["lid"] = v
+		}
+	}
+	if params["rid"] != nil && len(params["rid"]) > 0 {
+		if v, err := strconv.ParseUint(params["rid"][0], 10, 64); err == nil {
+			kwargs["rid"] = v
+		}
+	}
+	if params["limit"] != nil && len(params["limit"]) > 0 {
+		if v, err := strconv.Atoi(params["limit"][0]); err == nil {
+			kwargs["limit"] = v
+		}
+	}
+	if params["desc"] != nil {
+		kwargs["desc"] = true
+	}
+
+	msgs, hasMore, err := mid.FetchChatMsgs(xchatLogic, "", chatID, kwargs)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, []interface{}{msgs, hasMore})
 }

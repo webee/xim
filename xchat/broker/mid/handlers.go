@@ -595,75 +595,21 @@ func syncChatRecv(s *Session, args []interface{}, kwargs map[string]interface{})
 
 // 获取历史消息
 func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}) (rargs []interface{}, rkwargs map[string]interface{}, rerr APIError) {
-	// params
-	chatIdentity, err := db.ParseChatIdentity(args[0].(string))
-	if err != nil {
-		rerr = InvalidArgumentError
-		return
-	}
-	chatID := chatIdentity.ID
-	chatType := chatIdentity.Type
-
-	var lid, rid uint64
-	var originLimit int
-	var limit int
-	var desc bool
+	chatID := args[0].(string)
 	if kwargs["lid"] != nil {
-		lid = uint64(kwargs["lid"].(float64))
-	} else {
-		desc = true
+		kwargs["lid"] = uint64(kwargs["lid"].(float64))
 	}
-
 	if kwargs["rid"] != nil {
-		rid = uint64(kwargs["rid"].(float64))
+		kwargs["rid"] = uint64(kwargs["rid"].(float64))
 	}
-
-	if lid > 0 && rid > 0 && lid+1 >= rid {
-		return []interface{}{true, []interface{}{}, false}, nil, nil
-	}
-
-	if kwargs["desc"] != nil {
-		desc = kwargs["desc"].(bool)
-	}
-
 	if kwargs["limit"] != nil {
-		limit = int(kwargs["limit"].(float64))
-	}
-	originLimit = limit
-	if lid > 0 && rid > 0 {
-		originLimit = int(rid - lid - 1)
+		kwargs["limit"] = int(kwargs["limit"].(float64))
 	}
 
-	if limit <= 0 {
-		limit = 256
-	} else if limit > 3000 {
-		limit = 3000
-	}
-
-	var msgs []pubtypes.ChatMessage
-	arguments := &types.FetchUserChatMessagesArgs{
-		User:     s.User,
-		ChatID:   chatID,
-		ChatType: chatType,
-		LID:      lid,
-		RID:      rid,
-		Limit:    limit,
-		Desc:     desc,
-	}
-
-	if err := xchatLogic.Call(types.RPCXChatFetchUserChatMessages, arguments, &msgs); err != nil {
+	toPushMsgs, hasMore, err := FetchChatMsgs(xchatLogic, s.User, chatID, kwargs)
+	if err != nil {
 		rerr = newDefaultAPIError(err.Error())
 		return
-	}
-
-	toPushMsgs := []*Message{}
-	for i := range msgs {
-		toPushMsgs = append(toPushMsgs, NewMessageFromPubMsg(&msgs[i]))
-	}
-	// 判断是否还有更多数据
-	hasMore := false
-	if originLimit <= 0 || originLimit > 3000 {
-		hasMore = len(toPushMsgs) >= limit
 	}
 	return []interface{}{true, toPushMsgs, hasMore}, nil, nil
 }
