@@ -14,27 +14,14 @@ var (
 )
 
 func notifyChatMessage(appID string, msg *db.Message) {
-	app := getAppInfo(appID)
-	if app == nil || !app.MsgNotifyURL.Valid || app.MsgNotifyURL.String == "" {
-		return
-	}
-	chatIdentity := db.ChatIdentity{
-		ID:   msg.ChatID,
-		Type: msg.ChatType,
-	}
-	params := make(map[string]interface{})
-	params["kind"] = types.MsgKindChat
-	params["chat_id"] = chatIdentity.String()
-	params["uid"] = msg.User
-	params["id"] = msg.ID
-	params["msg"] = msg.Msg
-	params["ts"] = msg.Ts
-	params["domain"] = msg.Domain
-
-	go doNotify(params, app.MsgNotifyURL.String)
+	notifyMessage(appID, types.MsgKindChat, msg.ChatID, msg.ChatType, msg.User, msg.Msg, msg.ID, msg.Ts, msg.Domain)
 }
 
 func notifyChatNotifyMessage(appID string, chatID uint64, chatType, user, msg string, ts time.Time, domain string) {
+	notifyMessage(appID, types.MsgKindChatNotify, chatID, chatType, user, msg, 0, ts, domain)
+}
+
+func notifyMessage(appID, kind string, chatID uint64, chatType, user, msg string, id uint64, ts time.Time, domain string) {
 	app := getAppInfo(appID)
 	if app == nil || !app.MsgNotifyURL.Valid || app.MsgNotifyURL.String == "" {
 		return
@@ -44,11 +31,14 @@ func notifyChatNotifyMessage(appID string, chatID uint64, chatType, user, msg st
 		Type: chatType,
 	}
 	params := make(map[string]interface{})
-	params["kind"] = types.MsgKindChatNotify
+	params["kind"] = kind
 	params["chat_id"] = chatIdentity.String()
 	params["uid"] = user
+	if id > 0 {
+		params["id"] = id
+	}
 	params["msg"] = msg
-	params["ts"] = ts
+	params["ts"] = ts.Unix()
 	params["domain"] = domain
 
 	go doNotify(params, app.MsgNotifyURL.String)

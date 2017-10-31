@@ -111,16 +111,6 @@ type FetchUserChatMessagesArgs struct {
 	Desc     bool
 }
 
-// FetchChatMessagesArgs is the arguments of FetchChatMessages
-type FetchChatMessagesArgs struct {
-	ChatID   uint64
-	ChatType string
-	LID      uint64
-	RID      uint64
-	Limit    int
-	Desc     bool
-}
-
 // FetchChatMessagesByIDsArgs is the arguments of FetchChatMessagesByIDs
 type FetchChatMessagesByIDsArgs struct {
 	ChatID   uint64
