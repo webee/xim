@@ -17,10 +17,13 @@ func getAppInfo(appID string) *db.App {
 	if ok {
 		return value.(*db.App)
 	}
+	l.Debug("loading app: %s", appID)
 	app, err := db.GetApp(appID)
 	if err != nil {
+		l.Error("load app error: %+v", err)
 		return nil
 	}
+	l.Debug("loaded app: %+v", app)
 	appsCache.Set(appID, app, cache.DefaultExpiration)
 	return app
 }

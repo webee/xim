@@ -45,6 +45,7 @@ func notifyMessage(appID, kind string, chatID uint64, chatType, user, msg string
 }
 
 func doNotify(params map[string]interface{}, url string) {
+	l.Debug("notify msg: %+v", params)
 	b, _ := json.Marshal(params)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
 	if err != nil {
