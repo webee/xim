@@ -294,7 +294,7 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 	}
 
 	// forward msg
-	if appID != "" {
+	if (options == nil || !options.IgnoreMsgNotify) && appID != "" {
 		notifyChatMessage(appID, message)
 	}
 
@@ -331,7 +331,7 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain,
 	}
 
 	// forward msg
-	if appID != "" {
+	if (options == nil || !options.IgnoreMsgNotify) && appID != "" {
 		notifyChatNotifyMessage(appID, chatID, chatType, user, msg, ts, domain)
 	}
 

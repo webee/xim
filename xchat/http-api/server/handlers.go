@@ -24,6 +24,7 @@ type SendMsgArgs struct {
 	Kind             string   `json:"kind"`
 	ForceNotifyUsers []string `json:"force_notify_users"`
 	PermCheck        bool     `json:"perm_check"`
+	MsgNotify        bool     `json:"msg_notify"`
 }
 
 // SendUniqueChatMsgArgs is arguments of sendUniqueChatMsg.
@@ -53,7 +54,8 @@ func getNs(c echo.Context) string {
 	return GetContextString(NsContextKey, c)
 }
 
-func doSendMsg(kind, domain, xchatID, msg, user string, forceNotifyUsers map[string]struct{}, permCheck bool) (id uint64, ts int64, err error) {
+func doSendMsg(kind, domain, xchatID, msg, user string, forceNotifyUsers map[string]struct{},
+	permCheck, msgNotify bool) (id uint64, ts int64, err error) {
 	if len(msg) > 64*1024 {
 		err = errors.New("msg excced size limit")
 		return
@@ -65,7 +67,6 @@ func doSendMsg(kind, domain, xchatID, msg, user string, forceNotifyUsers map[str
 	}
 	chatID := chatIdentity.ID
 	chatType := chatIdentity.Type
-	ignorePermCheck := !permCheck
 	sendMsgArgs := &types.SendMsgArgs{
 		ChatID:           chatID,
 		ChatType:         chatType,
@@ -74,7 +75,8 @@ func doSendMsg(kind, domain, xchatID, msg, user string, forceNotifyUsers map[str
 		Msg:              msg,
 		ForceNotifyUsers: forceNotifyUsers,
 		Options: &types.SendMsgOptions{
-			IgnorePermCheck: ignorePermCheck,
+			IgnorePermCheck: !permCheck,
+			IgnoreMsgNotify: !msgNotify,
 		},
 	}
 
@@ -110,7 +112,8 @@ func sendMsg(c echo.Context) error {
 		forceNotifyUsers[nsutils.EncodeNSUser(ns, u)] = emptyStruct
 	}
 
-	id, ts, err := doSendMsg(args.Kind, args.Domain, args.ChatID, args.Msg, user, forceNotifyUsers, args.PermCheck)
+	id, ts, err := doSendMsg(args.Kind, args.Domain, args.ChatID, args.Msg, user, forceNotifyUsers,
+		args.PermCheck, args.MsgNotify)
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": err.Error()})
 	}
@@ -153,7 +156,7 @@ func sendUniqueChatMsg(c echo.Context) error {
 		return err
 	}
 
-	id, ts, err := doSendMsg(args.Kind, args.Domain, xchatID, args.Msg, user, nil, false)
+	id, ts, err := doSendMsg(args.Kind, args.Domain, xchatID, args.Msg, user, nil, false, false)
 	if err != nil {
 		return c.JSON(http.StatusOK, map[string]interface{}{"ok": false, "error": err.Error()})
 	}

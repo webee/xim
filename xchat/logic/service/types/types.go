@@ -40,6 +40,7 @@ type PingArgs struct {
 type SendMsgOptions struct {
 	IgnorePermCheck     bool
 	IgnoreNotifyOffline bool
+	IgnoreMsgNotify     bool
 }
 
 // SendMsgArgs is the arguments of SendMsg.
