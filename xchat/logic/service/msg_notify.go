@@ -33,7 +33,7 @@ func notifyMessage(appID, kind string, chatID uint64, chatType, user, msg string
 	params := make(map[string]interface{})
 	params["kind"] = kind
 	params["chat_id"] = chatIdentity.String()
-	params["uid"] = user
+	params["user"] = user
 	if id > 0 {
 		params["id"] = id
 	}
