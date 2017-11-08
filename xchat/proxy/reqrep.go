@@ -8,6 +8,7 @@ import (
 	"github.com/go-mangos/mangos/protocol/req"
 	"github.com/go-mangos/mangos/transport/ipc"
 	"github.com/go-mangos/mangos/transport/tcp"
+	"time"
 )
 
 func startReqRepProxy() (close func()) {
@@ -18,7 +19,7 @@ func startReqRepProxy() (close func()) {
 	sRep.AddTransport(tcp.NewTransport())
 	sRep.AddTransport(ipc.NewTransport())
 	for _, addr := range args.repAddrs.List() {
-		if err := sRep.Listen(addr); err != nil {
+		if err = sRep.Listen(addr); err != nil {
 			log.Fatal("can't listen on reply socket:", err)
 		}
 		l.Info("reply listen on: %s", addr)
@@ -28,11 +29,14 @@ func startReqRepProxy() (close func()) {
 	if err != nil {
 		log.Fatal("failed to open request socket:", err)
 	}
+	sReq.SetOption(mangos.OptionSendDeadline, 5*time.Second)
+	// 不要重试
+	sReq.SetOption(mangos.OptionRetryTime, 0)
 
 	sReq.AddTransport(tcp.NewTransport())
 	sReq.AddTransport(ipc.NewTransport())
 	for _, addr := range args.reqAddrs.List() {
-		if err := sReq.Listen(addr); err != nil {
+		if err = sReq.Listen(addr); err != nil {
 			log.Fatal("can't listen on request socket:", err)
 		}
 		l.Info("request listen on: %s", addr)

@@ -224,7 +224,6 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 	if options != nil && options.IgnorePermCheck {
 		chat, err2 := db.GetChatWithType(chatID, chatType)
 		if err2 != nil {
-			//return 0, fmt.Errorf("no permission: %s", err2.Error())
 			return 0, "", ErrNoPermission
 		}
 		membersUpdated = chat.MembersUpdated.Unix()
@@ -236,13 +235,11 @@ func checkSendPermissions(chatID uint64, chatType, user string, options *types.S
 		if err != nil {
 			// FIXME: 目前房间和客服可以随意发消息
 			if chatType != types.ChatTypeRoom && user != CSUser {
-				//return 0, fmt.Errorf("no permission: %s", err.Error())
 				return 0, "", ErrNoPermission
 			}
 
 			chat, err2 := db.GetChatWithType(chatID, chatType)
 			if err2 != nil {
-				//return 0, fmt.Errorf("no permission: %s", err2.Error())
 				return 0, "", ErrNoPermission
 			}
 			membersUpdated = chat.MembersUpdated.Unix()

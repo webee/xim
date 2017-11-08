@@ -18,7 +18,7 @@ func startPubSubProxy() (close func()) {
 	sPub.AddTransport(tcp.NewTransport())
 	sPub.AddTransport(ipc.NewTransport())
 	for _, addr := range args.pubAddrs.List() {
-		if err := sPub.Listen(addr); err != nil {
+		if err = sPub.Listen(addr); err != nil {
 			log.Fatal("can't listen on publish socket:", err)
 		}
 		l.Info("publish listen on: %s", addr)
@@ -31,7 +31,7 @@ func startPubSubProxy() (close func()) {
 	sSub.AddTransport(tcp.NewTransport())
 	sSub.AddTransport(ipc.NewTransport())
 	for _, addr := range args.subAddrs.List() {
-		if err := sSub.Listen(addr); err != nil {
+		if err = sSub.Listen(addr); err != nil {
 			log.Fatal("can't listen on subscribe socket:", err)
 		}
 		l.Info("subscribe listen on: %s", addr)

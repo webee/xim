@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"time"
 	"xim/utils/argsutils"
 )
 
@@ -16,6 +17,8 @@ type Args struct {
 
 	repAddrs *argsutils.StringSlice
 	reqAddrs *argsutils.StringSlice
+
+	reqSendTimeout time.Duration
 }
 
 var (
@@ -38,4 +41,6 @@ func init() {
 
 	flag.Var(args.repAddrs, "rep-addr", "proxy reply listen addresses.")
 	flag.Var(args.reqAddrs, "req-addr", "proxy request listen addresses.")
+
+	flag.DurationVar(&args.reqSendTimeout, "req-send-timeout", 4*time.Second, "request send timeout.")
 }
