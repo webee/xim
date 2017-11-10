@@ -28,9 +28,13 @@ func (r *RPCXChat) PubUserInfo(args *types.PubUserInfoArgs, reply *types.NoReply
 
 // SyncOnlineUsers update online users.
 func (r *RPCXChat) SyncOnlineUsers(args *types.SyncOnlineUsersArgs, reply *types.NoReply) error {
+	userStatuses := []UserStatus{}
 	for sessionID, user := range args.Users {
-		UpdateUserStatus(args.InstanceID, sessionID, user, types.UserStatusOnline)
+		if err := UpdateUserStatus(args.InstanceID, sessionID, user, types.UserStatusOnline); err == nil {
+			userStatuses = append(userStatuses, UserStatus{user, types.UserStatusOnline})
+		}
 	}
+	appNotifyUserStatus(userStatuses)
 	return nil
 }
 

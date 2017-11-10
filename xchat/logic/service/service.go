@@ -292,7 +292,7 @@ func SendChatMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain, user,
 
 	// forward msg
 	if (options == nil || !options.IgnoreMsgNotify) && appID != "" {
-		notifyChatMessage(appID, message)
+		appNotifyChatMessage(appID, message)
 	}
 
 	// FIXME: goroutine pool?
@@ -329,7 +329,7 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain,
 
 	// forward msg
 	if (options == nil || !options.IgnoreMsgNotify) && appID != "" {
-		notifyChatNotifyMessage(appID, chatID, chatType, user, msg, ts, domain)
+		appNotifyChatNotifyMessage(appID, chatID, chatType, user, msg, ts, domain)
 	}
 
 	// FIXME: goroutine pool?
@@ -348,6 +348,9 @@ func PubUserStatus(instanceID, sessionID uint64, user string, status string) err
 	if err := UpdateUserStatus(instanceID, sessionID, user, status); err != nil {
 		return err
 	}
+
+	// notify  user status
+	appNotifyUserStatus([]UserStatus{UserStatus{user, status}})
 
 	t := time.Now()
 	// 发送上下线日志

@@ -32,7 +32,7 @@ func InitDB(driverName, dataSourceName string, maxConn int) (close func()) {
 // GetApp returns app
 func GetApp(appID string) (*App, error) {
 	app := &App{}
-	return app, db.Get(app, `SELECT app_id, msg_notify_url FROM xchat_app where app_id=$1`, appID)
+	return app, db.Get(app, `SELECT app_id, event_notify_url FROM xchat_app where app_id=$1`, appID)
 }
 
 // GetFullChatMembers returns chat's members with full attributes.

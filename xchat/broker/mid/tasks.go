@@ -11,7 +11,7 @@ import (
 func TaskUpdatingOnlineUsers() {
 	for {
 		time.Sleep(95 * time.Second)
-		// 下线超过30s没有设置client_info（即为初始值"*"）的session.
+		// 上线超过30s没有设置client_info（即为初始值"*"）的session.
 		sesses := GetSlowSessions()
 		for _, id := range sesses {
 			realm.KillSession(turnpike.ID(id))

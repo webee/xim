@@ -8,8 +8,8 @@ import (
 
 // App is xchat application
 type App struct {
-	AppID        string         `db:"app_id" json:"app_id"`
-	MsgNotifyURL sql.NullString `db:"msg_notify_url" json:"msg_notify_url"`
+	AppID          string         `db:"app_id" json:"app_id"`
+	EventNotifyURL sql.NullString `db:"event_notify_url" json:"event_notify_url"`
 }
 
 // Chat is a conversation.
