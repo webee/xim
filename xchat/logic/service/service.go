@@ -344,13 +344,20 @@ func SendChatNotifyMsg(src *pubtypes.MsgSource, chatID uint64, chatType, domain,
 // PubUserStatus publish user's status msg.
 func PubUserStatus(instanceID, sessionID uint64, user string, status string) error {
 	l.Debug("instance:%d, session:%d, user:%s, status:%s", instanceID, sessionID, user, status)
+	// notify  user status
+	if status == types.UserStatusOffline {
+		if c, _ := cache.GetUserOnlineCount(user); c <= 1 {
+			// 在发送离线通知时，判断是否真的所有连接都离线了
+			appNotifyUserStatus([]UserStatus{UserStatus{user, status}})
+		}
+	} else {
+		appNotifyUserStatus([]UserStatus{UserStatus{user, status}})
+	}
+
 	// 记录用户在线状态
 	if err := UpdateUserStatus(instanceID, sessionID, user, status); err != nil {
 		return err
 	}
-
-	// notify  user status
-	appNotifyUserStatus([]UserStatus{UserStatus{user, status}})
 
 	t := time.Now()
 	// 发送上下线日志

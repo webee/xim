@@ -274,3 +274,12 @@ func IsUserOnline(user string) (bool, error) {
 	}
 	return len(uis) > 0, nil
 }
+
+// GetUserOnlineCount get online user instance count
+func GetUserOnlineCount(user string) (int, error) {
+	uis, err := GetOnlineUsers(user)
+	if err != nil {
+		return 0, err
+	}
+	return len(uis), nil
+}
