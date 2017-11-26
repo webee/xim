@@ -47,10 +47,8 @@ func appNotifyUserStatus(userStatuses []UserStatus) {
 		if err != nil {
 			continue
 		}
-		data := make(map[string]interface{})
-		data["statuses"] = userStatuses
 		// FIXME: 考虑分次发送
-		go doNotify("user_status", data, eventNotifyURL)
+		go doNotify("user_status", userStatuses, eventNotifyURL)
 	}
 }
 
@@ -88,7 +86,7 @@ func notifyMessage(appID, kind string, chatID uint64, chatType, user, msg string
 	go doNotify("msg", data, eventNotifyURL)
 }
 
-func doNotify(event string, data map[string]interface{}, url string) {
+func doNotify(event string, data interface{}, url string) {
 	l.Debug("notify %s: %+v", event, data)
 	params := map[string]interface{}{
 		"event": event,
