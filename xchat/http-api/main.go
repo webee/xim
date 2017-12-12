@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"runtime"
-	"xim/xchat/broker/logger"
+	"xim/xchat/http-api/logger"
 	"xim/xchat/http-api/server"
 
 	"xim/utils/pprofutils"

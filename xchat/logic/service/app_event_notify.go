@@ -91,6 +91,7 @@ func doNotify(event string, data interface{}, url string) {
 	params := map[string]interface{}{
 		"event": event,
 		"data":  data,
+		"ts":    time.Now().Unix(),
 	}
 	b, _ := json.Marshal(params)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
