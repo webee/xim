@@ -13,7 +13,7 @@ const (
 )
 
 // FetchChatMsgs fetch chat's messages
-func FetchChatMsgs(xchatLogic *nanorpc.Client, user, chatID string, kwargs map[string]interface{}) (msgs []*Message, hasMore bool, err error) {
+func FetchChatMsgs(xchatLogic *nanorpc.Client, user, chatID string, kwargs map[string]interface{}) (msgs []*Message, hasMore, noMore bool, err error) {
 	// params
 	chatIdentity, err := db.ParseChatIdentity(chatID)
 	if err != nil {
@@ -36,7 +36,7 @@ func FetchChatMsgs(xchatLogic *nanorpc.Client, user, chatID string, kwargs map[s
 	}
 
 	if lid > 0 && rid > 0 && lid+1 >= rid {
-		return []*Message{}, false, nil
+		return []*Message{}, false, false, nil
 	}
 
 	if kwargs["desc"] != nil {
@@ -87,5 +87,6 @@ func FetchChatMsgs(xchatLogic *nanorpc.Client, user, chatID string, kwargs map[s
 		// 没有指定limit或者指定范围超出的情况
 		hasMore = len(msgs) >= limit
 	}
-	return msgs, hasMore, nil
+	noMore = len(msgs) < limit
+	return msgs, hasMore, noMore, nil
 }

@@ -241,10 +241,10 @@ func fetchChatMsgs(c echo.Context) error {
 		kwargs["desc"] = true
 	}
 
-	msgs, hasMore, err := mid.FetchChatMsgs(xchatLogic, "", chatID, kwargs)
+	msgs, hasMore, noMore, err := mid.FetchChatMsgs(xchatLogic, "", chatID, kwargs)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, []interface{}{msgs, hasMore})
+	return c.JSON(http.StatusOK, []interface{}{msgs, hasMore, noMore})
 }

@@ -606,7 +606,7 @@ func fetchChatMsgs(s *Session, args []interface{}, kwargs map[string]interface{}
 		kwargs["limit"] = int(kwargs["limit"].(float64))
 	}
 
-	toPushMsgs, hasMore, err := FetchChatMsgs(xchatLogic, s.User, chatID, kwargs)
+	toPushMsgs, hasMore, _, err := FetchChatMsgs(xchatLogic, s.User, chatID, kwargs)
 	if err != nil {
 		rerr = newDefaultAPIError(err.Error())
 		return
